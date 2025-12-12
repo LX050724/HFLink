@@ -1,0 +1,3 @@
+[submodule "MCU/Firmware/CMSIS_6"]
+	path = MCU/Firmware/CMSIS_6
+	url = https://github.com/ARM-software/CMSIS_6.git

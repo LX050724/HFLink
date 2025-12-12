@@ -1,0 +1,7 @@
+*/build/
+*.cache/
+*temp/
+*tmp.v
+*.vo
+FPGA/impl/gwsynthesis
+FPGA/impl/pnr
