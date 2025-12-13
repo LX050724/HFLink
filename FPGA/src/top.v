@@ -13,6 +13,14 @@ module HFLink_TOP(
         ,inout FLASH_SPI_WPN_io
         ,inout FLASH_SPI_CLK_io
 
+        // ,output _FLASH_SPI_HOLDN_io
+        // ,output _FLASH_SPI_CSN_io
+        // ,output _FLASH_SPI_MISO_io
+        // ,output _FLASH_SPI_MOSI_io
+        // ,output _FLASH_SPI_WPN_io
+        // ,output _FLASH_SPI_CLK_io
+
+
         ,output usb_clk
         ,output usb_rstn
         ,inout [7:0] usb_ulpi_data
@@ -20,6 +28,33 @@ module HFLink_TOP(
         ,input usb_ulpi_dir
         ,output usb_ulpi_stp
     );
+
+
+//     wire FLASH_SPI_MISO_in;
+//     wire FLASH_SPI_MOSI_in;
+//     wire FLASH_SPI_HOLDN_in;
+//     wire FLASH_SPI_WPN_in;
+//     wire FLASH_SPI_CSN_in;
+//     wire FLASH_SPI_CLK_in;
+//     wire spi1_clk_out;
+//     wire spi1_csn_out;
+//     wire spi1_mosi_out;
+//     wire spi1_miso_out;
+//     wire spi1_wpn_out;
+//     wire spi1_holdn_out;
+// wire IO_5;
+// wire IO_5_243;
+// wire IO_5_244;
+// wire IO_5_245;
+// wire IO_5_246;
+// wire IO_5_247;
+
+//     assign _FLASH_SPI_HOLDN_io = IO_5 ? FLASH_SPI_HOLDN_in : spi1_holdn_out;
+//     assign _FLASH_SPI_CSN_io = IO_5_243 ? FLASH_SPI_CSN_in : spi1_csn_out;
+//     assign _FLASH_SPI_MISO_io = IO_5_244 ? FLASH_SPI_MISO_in : spi1_miso_out;
+//     assign _FLASH_SPI_MOSI_io = IO_5_245 ? FLASH_SPI_MOSI_in : spi1_mosi_out;
+//     assign _FLASH_SPI_WPN_io = IO_5_246 ? FLASH_SPI_WPN_in : spi1_wpn_out;
+//     assign _FLASH_SPI_CLK_io = IO_5_247 ? FLASH_SPI_CLK_in : spi1_clk_out;
 
 
     wire lock;
@@ -50,7 +85,7 @@ module HFLink_TOP(
                   .lock(lock), //output lock
                   .clkout0(clkout0), //output clkout0
                   .clkin(clk_osc), //input clkin
-                  // .mdclk(clk_osc),
+                  .mdclk(clk_osc),
                   .reset(reset) //input reset
               );
 
@@ -90,6 +125,28 @@ module HFLink_TOP(
                           .FLASH_SPI_MOSI(FLASH_SPI_MOSI_io), //inout FLASH_SPI_MOSI
                           .FLASH_SPI_WPN(FLASH_SPI_WPN_io), //inout FLASH_SPI_WPN
                           .FLASH_SPI_CLK(FLASH_SPI_CLK_io), //inout FLASH_SPI_CLK
+
+
+                            // .FLASH_SPI_MISO_in(FLASH_SPI_MISO_in),
+                            // .FLASH_SPI_MOSI_in(FLASH_SPI_MOSI_in),
+                            // .FLASH_SPI_HOLDN_in(FLASH_SPI_HOLDN_in),
+                            // .FLASH_SPI_WPN_in(FLASH_SPI_WPN_in),
+                            // .FLASH_SPI_CSN_in(FLASH_SPI_CSN_in),
+                            // .FLASH_SPI_CLK_in(FLASH_SPI_CLK_in),
+
+                            // .spi1_clk_out(spi1_clk_out),
+                            // .spi1_csn_out(spi1_csn_out),
+                            // .spi1_mosi_out(spi1_mosi_out),
+                            // .spi1_miso_out(spi1_miso_out),
+                            // .spi1_wpn_out(spi1_wpn_out),
+                            // .spi1_holdn_out(spi1_holdn_out),
+
+                            // .IO_5(IO_5),
+                            // .IO_5_243(IO_5_243),
+                            // .IO_5_244(IO_5_244),
+                            // .IO_5_245(IO_5_245),
+                            // .IO_5_246(IO_5_246),
+                            // .IO_5_247(IO_5_247),
 
                           .EXTINT(intr) //input [3:0] EXTINT
                       );

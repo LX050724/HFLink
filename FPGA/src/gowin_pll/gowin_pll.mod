@@ -5,8 +5,8 @@
 -part_number GW5A-LV25MG121NES
 
 
--mod_name Gowin_PLL
--file_name gowin_pll
+-mod_name Gowin_PLL_MOD
+-file_name gowin_pll_mod
 -path D:/source/tang25K/HFLink/FPGA/src/gowin_pll/
 -type PLL_ADV
 -file_type vlg
@@ -14,6 +14,7 @@
 -rst true
 -rst_pwd false
 -rst_i false
+-mdrp_en true
 -rst_o false
 -fclkin 50
 -idiv_sel 1

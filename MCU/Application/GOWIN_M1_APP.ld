@@ -4,8 +4,9 @@ _estack = ORIGIN(RAM) + LENGTH(RAM);    /* end of RAM */
 
 MEMORY
 {
-    RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 32K
-    ITCM (rx) : ORIGIN = 0x00000000, LENGTH = 32K
+    ITCM (rx) :    ORIGIN = 0x00000000+192, LENGTH = 32K-192
+    RAM (rwx) :    ORIGIN = 0x20000000, LENGTH = 32K
+    EXFLASH (rx) : ORIGIN = 0x4D400000, LENGTH = 4080K
 }
 
 SECTIONS
@@ -17,7 +18,7 @@ SECTIONS
         KEEP(*(.isr_vector)) /* Startup code */
         __isr_vector_end__ = .;
         . = ALIGN(4);
-    } >ITCM
+    } >EXFLASH
 
     .text :
     {
@@ -33,32 +34,34 @@ SECTIONS
 
         . = ALIGN(4);
         _etext = .;        /* define a global symbols at end of code */
-    } >ITCM
-    
+    } >EXFLASH
+
+
+
     .rodata :
     {
         . = ALIGN(4);
         *(.rodata)         /* .rodata sections (constants, strings, etc.) */
         *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
         . = ALIGN(4);
-    } >ITCM
+    } >EXFLASH
 
     .ARM.extab : {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } >ITCM
+    } >EXFLASH
 
     .ARM : {
         __exidx_start = .;
         *(.ARM.exidx*)
         __exidx_end = .;
-    } >ITCM
+    } >EXFLASH
 
     .preinit_array     :
     {
         PROVIDE_HIDDEN (__preinit_array_start = .);
         KEEP (*(.preinit_array*))
         PROVIDE_HIDDEN (__preinit_array_end = .);
-    } >ITCM
+    } >EXFLASH
 
     .init_array :
     {
@@ -66,7 +69,7 @@ SECTIONS
         KEEP (*(SORT(.init_array.*)))
         KEEP (*(.init_array*))
         PROVIDE_HIDDEN (__init_array_end = .);
-    } >ITCM
+    } >EXFLASH
 
     .fini_array :
     {
@@ -74,7 +77,7 @@ SECTIONS
         KEEP (*(SORT(.fini_array.*)))
         KEEP (*(.fini_array*))
         PROVIDE_HIDDEN (__fini_array_end = .);
-    } >ITCM
+    } >EXFLASH
 
     /* used by the startup to initialize data */
     __data_load_addr__ = LOADADDR(.data);
@@ -89,7 +92,7 @@ SECTIONS
 
         . = ALIGN(4);
         __data_end__ = .;        /* define a global symbol at data end */
-    } > RAM AT> ITCM
+    } > RAM AT> EXFLASH
 
     /* Uninitialized data section */
     . = ALIGN(4);
@@ -107,7 +110,17 @@ SECTIONS
         __bss_end__ = _ebss;
     } > RAM
     
-
+    .itcm :
+    {
+        . = ALIGN(4);
+        __itcm_start__ = .;
+        *(.itcm)
+        *(.itcm*)
+        __itcm_end__ = .;
+        . = ALIGN(4);
+    } >ITCM AT>EXFLASH
+    __itcm_loadaddr__ = LOADADDR(.itcm);
+    
     /DISCARD/ :
     {
         libc.a ( * )

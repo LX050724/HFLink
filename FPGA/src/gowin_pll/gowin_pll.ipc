@@ -143,3 +143,5 @@ PLLPowerDown=false
 PLLReset=true
 clkfbExternal=false
 clkfbExternalValue=
+EnableMDRP=false
+mDRP_Clock_Frequency=50

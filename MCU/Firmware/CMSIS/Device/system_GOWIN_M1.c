@@ -59,7 +59,7 @@ void SystemCoreClockUpdate(void)
  * @brief  Setup the Cortex-M1 system.
  *         Initialize the System.
  */
-void SystemInit(void)
+__WEAK void SystemInit(void)
 {
     uint32_t i, size;
     SystemCoreClock = SYSTEM_CLOCK;
@@ -67,6 +67,8 @@ void SystemInit(void)
     extern uint8_t __bss_start__[], __bss_end__[];
     extern uint8_t __data_start__[], __data_end__[];
     extern uint8_t __data_load_addr__[];
+    extern uint8_t __itcm_start__[], __itcm_end__[];
+    extern uint8_t __itcm_loadaddr__[];
     // extern uint8_t __isr_vector_start__[], __isr_vector_end__[];
 
     size = __data_end__ - __data_start__;
@@ -75,9 +77,17 @@ void SystemInit(void)
         *(uint32_t *)(__data_start__ + i) = *(uint32_t *)(__data_load_addr__ + i);
     }
 
+    size = __itcm_end__ - __itcm_start__;
+    for (i = 0; i < size; i += sizeof(uint32_t))
+    {
+        *(uint32_t *)(__itcm_end__ + i) = *(uint32_t *)(__itcm_loadaddr__ + i);
+    }
+
     size = __bss_end__ - __bss_start__;
     for (i = 0; i < size; i += sizeof(uint32_t))
     {
         *(uint32_t *)(__bss_start__ + i) = 0;
     }
+
+    __enable_irq();
 }

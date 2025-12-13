@@ -1,0 +1,6 @@
+{
+    "git.autoRepositoryDetection": "openEditors",
+    "cmake.parseBuildDiagnostics": false,
+    "cmake.enabledOutputParsers": [
+    ]
+}

@@ -213,87 +213,87 @@ typedef struct
 /*----------------------------- I2C --------------------------*/
 typedef struct
 {
-	__IO uint32_t PRER;          /* Offset: 0x00 (R/W) I2C Prescale Register                              */
-	__IO uint32_t CTR;           /* Offset: 0x04 (R/W) I2C Control Register                               */
-	union
-	{
-		__I uint32_t RXR;        /* Offset: 0x0C (R/ ) I2C Data Receive Register                          */
-		__O uint32_t TXR;        /* Offset: 0x08 ( /W) I2C Data Transmit Register                         */
-	};
-	union
-	{
-		__I uint32_t SR;         /* Offset: 0x14 (R/ ) I2C Status Register                                */
-		__O uint32_t CR;         /* Offset: 0x10 ( /W) I2C Command Register                               */
-	};
+    __IO uint32_t PRER;          /* Offset: 0x00 (R/W) I2C Prescale Register                              */
+    __IO uint32_t CTR;           /* Offset: 0x04 (R/W) I2C Control Register                               */
+    union
+    {
+        __I uint32_t RXR;        /* Offset: 0x0C (R/ ) I2C Data Receive Register                          */
+        __O uint32_t TXR;        /* Offset: 0x08 ( /W) I2C Data Transmit Register                         */
+    };
+    union
+    {
+        __I uint32_t SR;         /* Offset: 0x14 (R/ ) I2C Status Register                                */
+        __O uint32_t CR;         /* Offset: 0x10 ( /W) I2C Command Register                               */
+    };
 }I2C_TypeDef;
 
 /*----------------------------- CAN --------------------------*/
 typedef struct
 {
-	__IO uint32_t SRST;       /* 0x0000 software reset register                             */
-	__IO uint32_t CMD;        /* 0x0004 command register                                    */
-	__IO uint32_t BRP;        /* 0x0008 baud rate prescalar register                        */
-	__IO uint32_t BTN;        /* 0x000C bit timing (nominal) register                       */
-	__IO uint32_t BTD;        /* 0x0010 bit timing (data)register                           */
-	__I  uint32_t RSVD0[3];   /* 0x001C reserved                                            */
-	__I  uint32_t IS;         /* 0x0020 interrupt status register                           */
-	__IO uint32_t IE;         /* 0x0024 interrupt enable register                           */
-	__O  uint32_t IC;         /* 0x0028 interrupt clear register                            */
-	__I  uint32_t RSVD1;      /* 0x002C reserved                                            */
-	__IO uint32_t CFG;        /* 0x0030 configuration register                              */
-	__I  uint32_t RSVD2[3];   /* 0x0034~0x003c reserved                                     */
-	__IO uint32_t RXBCFG;     /* 0x0040 rx buffer/fifo configuration register               */
-	__IO uint32_t TXBCFG;     /* 0x0044 tx buffer/fifo configuration register               */
-	__IO uint32_t TXHBCFG;    /* 0x0048 tx high-priority/fifo configuration register        */
-	__I  uint32_t RSVD3;	  /* 0x004C reserved                                            */
-	__IO uint32_t TXBRETRY;   /* 0x0050 tx buffer retry count                               */
-	__IO uint32_t TXHBRETRY;  /* 0x0054 tx high-priority buffer retry count                 */
-	__I  uint32_t TXMSGSTS;   /* 0x0058 transmit message status register                    */
-	__I  uint32_t TXHMSGSTS;  /* 0x005C transmit high-priority message status register      */
-	__IO uint32_t ERRSTS;     /* 0x0060 error status register                               */
-	__I  uint32_t ERRCNTR;    /* 0x0064 error counter register                              */
-	__I  uint32_t RSVD4[38];  /* 0x0068~0x00fc reserved                                     */
-	__IO uint32_t AF[16];     /* 0x0100 receive acceptance filter register                  */
-	__IO uint32_t AFM[16];    /* 0x0140 receive acceptance filter mask register             */
-	__I  uint32_t RSVD5[32];  /* 0x0180~0x01fc reserved                                     */
-	__I  uint32_t RXB;        /* 0x0200 receive buffer/fifo window register                 */
-	__O  uint32_t TXB;        /* 0x0204 transmit buffer/fifo window register                */
-	__O  uint32_t TXHB;       /* 0x0208 transmit high-priority buffer/fifo window register  */
-	__I  uint32_t TXBSTS;     /* 0x020C transmit buffer/fifo status                         */
-	__I  uint32_t TXHBSTS;    /* 0x0210 transmit high-priority byffer/fifo status           */
-	__I  uint32_t RXBSTS;     /* 0x0214 receive buffer/fifo status                          */
+    __IO uint32_t SRST;       /* 0x0000 software reset register                             */
+    __IO uint32_t CMD;        /* 0x0004 command register                                    */
+    __IO uint32_t BRP;        /* 0x0008 baud rate prescalar register                        */
+    __IO uint32_t BTN;        /* 0x000C bit timing (nominal) register                       */
+    __IO uint32_t BTD;        /* 0x0010 bit timing (data)register                           */
+    __I  uint32_t RSVD0[3];   /* 0x001C reserved                                            */
+    __I  uint32_t IS;         /* 0x0020 interrupt status register                           */
+    __IO uint32_t IE;         /* 0x0024 interrupt enable register                           */
+    __O  uint32_t IC;         /* 0x0028 interrupt clear register                            */
+    __I  uint32_t RSVD1;      /* 0x002C reserved                                            */
+    __IO uint32_t CFG;        /* 0x0030 configuration register                              */
+    __I  uint32_t RSVD2[3];   /* 0x0034~0x003c reserved                                     */
+    __IO uint32_t RXBCFG;     /* 0x0040 rx buffer/fifo configuration register               */
+    __IO uint32_t TXBCFG;     /* 0x0044 tx buffer/fifo configuration register               */
+    __IO uint32_t TXHBCFG;    /* 0x0048 tx high-priority/fifo configuration register        */
+    __I  uint32_t RSVD3;	  /* 0x004C reserved                                            */
+    __IO uint32_t TXBRETRY;   /* 0x0050 tx buffer retry count                               */
+    __IO uint32_t TXHBRETRY;  /* 0x0054 tx high-priority buffer retry count                 */
+    __I  uint32_t TXMSGSTS;   /* 0x0058 transmit message status register                    */
+    __I  uint32_t TXHMSGSTS;  /* 0x005C transmit high-priority message status register      */
+    __IO uint32_t ERRSTS;     /* 0x0060 error status register                               */
+    __I  uint32_t ERRCNTR;    /* 0x0064 error counter register                              */
+    __I  uint32_t RSVD4[38];  /* 0x0068~0x00fc reserved                                     */
+    __IO uint32_t AF[16];     /* 0x0100 receive acceptance filter register                  */
+    __IO uint32_t AFM[16];    /* 0x0140 receive acceptance filter mask register             */
+    __I  uint32_t RSVD5[32];  /* 0x0180~0x01fc reserved                                     */
+    __I  uint32_t RXB;        /* 0x0200 receive buffer/fifo window register                 */
+    __O  uint32_t TXB;        /* 0x0204 transmit buffer/fifo window register                */
+    __O  uint32_t TXHB;       /* 0x0208 transmit high-priority buffer/fifo window register  */
+    __I  uint32_t TXBSTS;     /* 0x020C transmit buffer/fifo status                         */
+    __I  uint32_t TXHBSTS;    /* 0x0210 transmit high-priority byffer/fifo status           */
+    __I  uint32_t RXBSTS;     /* 0x0214 receive buffer/fifo status                          */
 }CAN_RegDef;
 
 /*----------------------------- Ethernet Mac--------------------------*/
 typedef struct
 {
-	union
-	{
-		__O  uint32_t ETH_TX_DATA[384];     /* 0x000~0x5ff transmit data registers          */
-		__I  uint32_t ETH_RX_DATA[384];     /* 0x000~0x5ff receive data registers           */
-	};
-	__IO uint32_t ETH_TX_LENGTH;            /* 0x600 transmit data length, bit[10:0]        */
-	__IO uint32_t ETH_TX_EN;                /* 0x604 transmit enable, bit[0]                */
-	__IO uint32_t ETH_TX_FAIL;              /* 0x608 transmit fail, bit[2,1,0]              */
-	__I  uint32_t ETH_TX_IS;                /* 0x60c transmit interrupt status, bit[0]      */
-	__O  uint32_t ETH_TX_IC;                /* 0x610 transmit interrupt clear, bit[0]       */
-	__IO uint32_t ETH_TX_IE;                /* 0x614 transmit interrupt enable, bit[0]      */
-	     uint32_t RESERVED_1[26];           /* 0x618~0x67f reserved                         */
-	__I  uint32_t ETH_RX_LENGTH;            /* 0x680 receive data length                    */
-	__I  uint32_t ETH_RX_IS;                /* 0x684 receive interrupt status, bit[0]       */
-	__IO uint32_t ETH_RX_IE;                /* 0x688 receive interrupt enable, bit[0]       */
-	__O  uint32_t ETH_RX_IC;                /* 0x68c receive interrupt clear, bit[0]        */
-	     uint32_t RESERVED_2[28];           /* 0x690~0x6ff reserved                         */
-	__IO uint32_t MIIM_OP_MODE;             /* 0x700 miim operation mode, bit[0]            */
-	__IO uint32_t MIIM_PHY_ADDR;            /* 0x704 miim phy address, bit[4:0]             */
-	__IO uint32_t MIIM_REG_ADDR;            /* 0x708 miim reg address, bit[4:0]             */
-	__IO uint32_t MIIM_WR_DATA;             /* 0x70c miim write data, bit[15:0]             */
-	__I  uint32_t MIIM_RD_DATA;             /* 0x710 miim read data, bit[15:0]              */
-	__I  uint32_t MIIM_IS;                  /* 0x714 miim interrupt status, bit[1,0]        */
-	__IO uint32_t MIIM_IE;                  /* 0x718 miim interrupt enable, bit[1,0]        */
-	__O  uint32_t MIIM_IC;                  /* 0x71c miim interrupt clear, bit[1,0]         */
-	__IO uint32_t MIIM_OP_EN;               /* 0x720 miim operation enable, bit[0]          */
-	__IO uint32_t ETH_MODE;                 /* 0x724 ethernet operation mode, bit[2,1,0]    */
+    union
+    {
+        __O  uint32_t ETH_TX_DATA[384];     /* 0x000~0x5ff transmit data registers          */
+        __I  uint32_t ETH_RX_DATA[384];     /* 0x000~0x5ff receive data registers           */
+    };
+    __IO uint32_t ETH_TX_LENGTH;            /* 0x600 transmit data length, bit[10:0]        */
+    __IO uint32_t ETH_TX_EN;                /* 0x604 transmit enable, bit[0]                */
+    __IO uint32_t ETH_TX_FAIL;              /* 0x608 transmit fail, bit[2,1,0]              */
+    __I  uint32_t ETH_TX_IS;                /* 0x60c transmit interrupt status, bit[0]      */
+    __O  uint32_t ETH_TX_IC;                /* 0x610 transmit interrupt clear, bit[0]       */
+    __IO uint32_t ETH_TX_IE;                /* 0x614 transmit interrupt enable, bit[0]      */
+         uint32_t RESERVED_1[26];           /* 0x618~0x67f reserved                         */
+    __I  uint32_t ETH_RX_LENGTH;            /* 0x680 receive data length                    */
+    __I  uint32_t ETH_RX_IS;                /* 0x684 receive interrupt status, bit[0]       */
+    __IO uint32_t ETH_RX_IE;                /* 0x688 receive interrupt enable, bit[0]       */
+    __O  uint32_t ETH_RX_IC;                /* 0x68c receive interrupt clear, bit[0]        */
+         uint32_t RESERVED_2[28];           /* 0x690~0x6ff reserved                         */
+    __IO uint32_t MIIM_OP_MODE;             /* 0x700 miim operation mode, bit[0]            */
+    __IO uint32_t MIIM_PHY_ADDR;            /* 0x704 miim phy address, bit[4:0]             */
+    __IO uint32_t MIIM_REG_ADDR;            /* 0x708 miim reg address, bit[4:0]             */
+    __IO uint32_t MIIM_WR_DATA;             /* 0x70c miim write data, bit[15:0]             */
+    __I  uint32_t MIIM_RD_DATA;             /* 0x710 miim read data, bit[15:0]              */
+    __I  uint32_t MIIM_IS;                  /* 0x714 miim interrupt status, bit[1,0]        */
+    __IO uint32_t MIIM_IE;                  /* 0x718 miim interrupt enable, bit[1,0]        */
+    __O  uint32_t MIIM_IC;                  /* 0x71c miim interrupt clear, bit[1,0]         */
+    __IO uint32_t MIIM_OP_EN;               /* 0x720 miim operation enable, bit[0]          */
+    __IO uint32_t ETH_MODE;                 /* 0x724 ethernet operation mode, bit[2,1,0]    */
 }ETH_RegDef;
 
 /*----------------Serial Peripheral Interface (SPI)-----------------*/
@@ -309,150 +309,150 @@ typedef struct
 /*--------------------------------DUALTIMER-----------------------------*/
 typedef struct 
 {
-	__IO uint32_t TIMER1LOAD;         /* Offset: 0x00 (R/W) Load Register                   */
-	__I  uint32_t TIMER1VALUE ;       /* Offset: 0x04 (R/ ) Current Value Register          */
-	__IO uint32_t TIMER1CONTROL;      /* Offset: 0x08 (R/W) Timer Control Register          */
-	__O  uint32_t TIMER1INTCLR ;      /* Offset: 0x0C ( /W) Interrupt Clear Register        */
-	__I  uint32_t TIMER1RIS    ;      /* Offset: 0x10 (R/ ) Raw Interrupt Status Register   */
-	__I  uint32_t TIMER1MIS    ;      /* Offset: 0x14 (R/ ) Interrupt Status Register       */
-	__IO uint32_t TIMER1BGLOAD ;      /* Offset: 0x18 (R/W) Background Load Register        */
+    __IO uint32_t TIMER1LOAD;         /* Offset: 0x00 (R/W) Load Register                   */
+    __I  uint32_t TIMER1VALUE ;       /* Offset: 0x04 (R/ ) Current Value Register          */
+    __IO uint32_t TIMER1CONTROL;      /* Offset: 0x08 (R/W) Timer Control Register          */
+    __O  uint32_t TIMER1INTCLR ;      /* Offset: 0x0C ( /W) Interrupt Clear Register        */
+    __I  uint32_t TIMER1RIS    ;      /* Offset: 0x10 (R/ ) Raw Interrupt Status Register   */
+    __I  uint32_t TIMER1MIS    ;      /* Offset: 0x14 (R/ ) Interrupt Status Register       */
+    __IO uint32_t TIMER1BGLOAD ;      /* Offset: 0x18 (R/W) Background Load Register        */
 
-	__IO uint32_t RESERVE1;           /* Reserved                                           */
-	
-	__IO uint32_t TIMER2LOAD;         /* Offset: 0x20 (R/W) Load Register                   */
-	__I  uint32_t TIMER2VALUE ;       /* Offset: 0x24 (R/ ) Current Value Register          */
-	__IO uint32_t TIMER2CONTROL;      /* Offset: 0x28 (R/W) Timer Control Register          */
-	__O  uint32_t TIMER2INTCLR ;      /* Offset: 0x2C ( /W) Interrupt Clear Register        */
-	__I  uint32_t TIMER2RIS    ;      /* Offset: 0x30 (R/ ) Raw Interrupt Status Register   */
-	__I  uint32_t TIMER2MIS    ;      /* Offset: 0x34 (R/ ) Interrupt Status Register       */
-	__IO uint32_t TIMER2BGLOAD ;      /* Offset: 0x38 (R/W) Background Load Register        */
+    __IO uint32_t RESERVE1;           /* Reserved                                           */
+    
+    __IO uint32_t TIMER2LOAD;         /* Offset: 0x20 (R/W) Load Register                   */
+    __I  uint32_t TIMER2VALUE ;       /* Offset: 0x24 (R/ ) Current Value Register          */
+    __IO uint32_t TIMER2CONTROL;      /* Offset: 0x28 (R/W) Timer Control Register          */
+    __O  uint32_t TIMER2INTCLR ;      /* Offset: 0x2C ( /W) Interrupt Clear Register        */
+    __I  uint32_t TIMER2RIS    ;      /* Offset: 0x30 (R/ ) Raw Interrupt Status Register   */
+    __I  uint32_t TIMER2MIS    ;      /* Offset: 0x34 (R/ ) Interrupt Status Register       */
+    __IO uint32_t TIMER2BGLOAD ;      /* Offset: 0x38 (R/W) Background Load Register        */
 }DUALTIMER_RegDef;
 
 /*--------------------------RTC----------------------------*/
 typedef struct
 {
-	__I  uint32_t RTC_CURRENT_DATA;       /* Offset: 0x000 (R/ ) Data Register                          */
-	__IO uint32_t RTC_MATCH_VALUE;        /* Offset: 0x004 (R/W) Match Register                         */
-	__IO uint32_t RTC_LOAD_VALUE;         /* Offset: 0x008 (R/W) Load Register                          */
-	__IO uint32_t RTC_CTROLLER_REG;       /* Offset: 0x00C (R/W) Control Register                       */
-	__IO uint32_t RTC_IMSC;               /* Offset: 0x010 (R/W) Interrupt Mask Set and Clear Register  */
-	__I  uint32_t RTC_RIS;                /* Offset: 0x014 (R/ ) Raw Interrupt Status Register          */
-	__I  uint32_t RTC_MIS;                /* Offset: 0x018 (R/ ) Masked Interrupt Status Register       */
-	__O  uint32_t RTC_INTR_CLEAR;         /* Offset: 0x01C ( /W) Interrupt Clear Register               */
+    __I  uint32_t RTC_CURRENT_DATA;       /* Offset: 0x000 (R/ ) Data Register                          */
+    __IO uint32_t RTC_MATCH_VALUE;        /* Offset: 0x004 (R/W) Match Register                         */
+    __IO uint32_t RTC_LOAD_VALUE;         /* Offset: 0x008 (R/W) Load Register                          */
+    __IO uint32_t RTC_CTROLLER_REG;       /* Offset: 0x00C (R/W) Control Register                       */
+    __IO uint32_t RTC_IMSC;               /* Offset: 0x010 (R/W) Interrupt Mask Set and Clear Register  */
+    __I  uint32_t RTC_RIS;                /* Offset: 0x014 (R/ ) Raw Interrupt Status Register          */
+    __I  uint32_t RTC_MIS;                /* Offset: 0x018 (R/ ) Masked Interrupt Status Register       */
+    __O  uint32_t RTC_INTR_CLEAR;         /* Offset: 0x01C ( /W) Interrupt Clear Register               */
 }RTC_RegDef;
 
 /*---------------------------TRNG------------------------------*/
 typedef struct
 {
-	__I  uint8_t  RESEVE1[0x100];         /* Offset: 0x000-0x0FC Reserved                                        */
-	__IO uint32_t RNG_IMR;                /* Offset: 0x100 (R/W) Interrupt Mask Register                         */
-	__I  uint32_t RNG_ISR;                /* Offset: 0x104 (R/ ) Interrupt Status Register                       */
-	__O  uint32_t RNG_ICR;                /* Offset: 0x108 ( /W) Interrupt Clear Register                        */
-	__IO uint32_t TRNG_CONFIG;            /* Offset: 0x10C (R/W) Configuration Register                          */
-	__I  uint32_t TRNG_VALID;             /* Offset: 0x110 (R/ ) Valid Register                                  */
-	__I  uint32_t EHR_DATA0;              /* Offset: 0x114-0x128 (R/ ) Entropy Holding Register Data Registers   */
-	__I  uint32_t EHR_DATA1;
-	__I  uint32_t EHR_DATA2;
-	__I  uint32_t EHR_DATA3;
-	__I  uint32_t EHR_DATA4;
-	__I  uint32_t EHR_DATA5;
-	__IO uint32_t RND_SOURCE_ENABLE;      /* Offset: 0x12C (R/W) Random Source Enable Register                   */
-	__IO uint32_t SAMPLE_CNT1;            /* Offset: 0x130 (R/W) Sample Count Register                           */
-	__IO uint32_t AUTOCORR_STATISTIC;     /* Offset: 0x134 (R/W) Autocorrelation Register                        */
-	__I  uint32_t TRNG_DEBUG_CONTROL;     /* Offset: 0x138 (R/ ) Debug Control Register                          */
-	__I  uint32_t RESEVE2;                /* Offset: 0x13C Reserved                                              */
-	__O  uint32_t TRNG_SW_RESET;          /* Offset: 0x140 ( /W) Reset Register                                  */
-	__I  uint8_t  RESEVE3[0x74];          /* Offset: 0x144-0x1B4 Reserved                                        */
-	__I  uint32_t TRNG_BUSY;              /* Offset: 0x1B8 (R/ ) Busy Register                                   */
-	__O  uint32_t RST_BIT_COUNT;          /* Offset: 0x1BC ( /W) Reset Bits Counter Register                     */
-	__I  uint8_t  RESEVE4[0x20];          /* Offset: 0x1C0-0x1DC Reserved                                        */
-	__I  uint32_t RNG_BIST_CNTR0;         /* Offset: 0x1E0-0x1E8 BIST Counter Registers                          */
-	__I  uint32_t RNG_BIST_CNTR1;
-	__I  uint32_t RNG_BIST_CNTR2;
+    __I  uint8_t  RESEVE1[0x100];         /* Offset: 0x000-0x0FC Reserved                                        */
+    __IO uint32_t RNG_IMR;                /* Offset: 0x100 (R/W) Interrupt Mask Register                         */
+    __I  uint32_t RNG_ISR;                /* Offset: 0x104 (R/ ) Interrupt Status Register                       */
+    __O  uint32_t RNG_ICR;                /* Offset: 0x108 ( /W) Interrupt Clear Register                        */
+    __IO uint32_t TRNG_CONFIG;            /* Offset: 0x10C (R/W) Configuration Register                          */
+    __I  uint32_t TRNG_VALID;             /* Offset: 0x110 (R/ ) Valid Register                                  */
+    __I  uint32_t EHR_DATA0;              /* Offset: 0x114-0x128 (R/ ) Entropy Holding Register Data Registers   */
+    __I  uint32_t EHR_DATA1;
+    __I  uint32_t EHR_DATA2;
+    __I  uint32_t EHR_DATA3;
+    __I  uint32_t EHR_DATA4;
+    __I  uint32_t EHR_DATA5;
+    __IO uint32_t RND_SOURCE_ENABLE;      /* Offset: 0x12C (R/W) Random Source Enable Register                   */
+    __IO uint32_t SAMPLE_CNT1;            /* Offset: 0x130 (R/W) Sample Count Register                           */
+    __IO uint32_t AUTOCORR_STATISTIC;     /* Offset: 0x134 (R/W) Autocorrelation Register                        */
+    __I  uint32_t TRNG_DEBUG_CONTROL;     /* Offset: 0x138 (R/ ) Debug Control Register                          */
+    __I  uint32_t RESEVE2;                /* Offset: 0x13C Reserved                                              */
+    __O  uint32_t TRNG_SW_RESET;          /* Offset: 0x140 ( /W) Reset Register                                  */
+    __I  uint8_t  RESEVE3[0x74];          /* Offset: 0x144-0x1B4 Reserved                                        */
+    __I  uint32_t TRNG_BUSY;              /* Offset: 0x1B8 (R/ ) Busy Register                                   */
+    __O  uint32_t RST_BIT_COUNT;          /* Offset: 0x1BC ( /W) Reset Bits Counter Register                     */
+    __I  uint8_t  RESEVE4[0x20];          /* Offset: 0x1C0-0x1DC Reserved                                        */
+    __I  uint32_t RNG_BIST_CNTR0;         /* Offset: 0x1E0-0x1E8 BIST Counter Registers                          */
+    __I  uint32_t RNG_BIST_CNTR1;
+    __I  uint32_t RNG_BIST_CNTR2;
 }TRNG_RegDef;
 
 /*--------------------------SD-Card-----------------------------*/
 typedef struct
 {
-	__IO uint32_t  SPI_MASTER_VERSION;           /* Offset: 0x000 (R/W) SPI Master Version Register                   */
-	__O  uint32_t  SPI_MASTER_CONTROL;           /* Offset: 0x001 ( /W) SPI Master Control Register                   */
-	__IO uint32_t  TRANS_TYPE;                   /* Offset: 0x002 (R/W) Transaction Type Register                     */
-	__O  uint32_t  TRANS_CTRL;                   /* Offset: 0x003 ( /W) Transaction Control Register                  */
-	__I  uint32_t  TRANS_STS;                    /* Offset: 0x004 (R/ ) Transaction Status Register                   */
-	__I  uint32_t  TRANS_ERROR;                  /* Offset: 0x005 (R/ ) Transaction Error Register                    */
-	__IO uint32_t  DIRECT_ACCESS_DATA;           /* Offset: 0x006 (R/W) Data Direct Access Register                   */
-	__IO uint32_t  SD_ADDR_7_0;                  /* Offset: 0x007 (R/W) SD Address[7:0] Register                      */
-	__IO uint32_t  SD_ADDR_15_8;                 /* Offset: 0x008 (R/W) SD Address[15:8] Register                     */
-	__IO uint32_t  SD_ADDR_23_16;                /* Offset: 0x009 (R/W) SD Address[23:16] Register                    */
-	__IO uint32_t  SD_ADDR_31_24;                /* Offset: 0x00A (R/W) SD Address[31:24] Register                    */
-	__IO uint32_t  SPI_CLK_DEL;                  /* Offset: 0x00B (R/W) SPI Clock Control Register                    */
-	     uint32_t  RESERVED0[4];                 /* Offset: 0x00C-0x00F Reserved                                      */
-	__IO uint32_t  RX_FIFO_DATA;                 /* Offset: 0x010 (R/W) SD Block Read Data Register                   */
-	     uint32_t  RESERVED1;                    /* Offset: 0x011 (R/W) Reserved                                      */
-	__I  uint32_t  RX_FIFO_DATA_COUNT_MSB;       /* Offset: 0x012 (R/ ) MSByte of Read Data Count Register            */
-	__I  uint32_t  RX_FIFO_DATA_COUNT_LSB;       /* Offset: 0x013 (R/ ) LSByte of Read Data Count Register            */
-	__O  uint32_t  RX_FIFO_CONTROL;              /* Offset: 0x014 ( /W) SD Block Read Data Control Register           */
-	     uint32_t  RESERVED2[11];                /* Offset: 0x015-0x019 Reserved                                      */
-	__O  uint32_t  TX_FIFO_DATA;                 /* Offset: 0x020 ( /W) SD Block Write Data Register                  */
-	     uint32_t  RESERVED3[3];                 /* Offset: 0x021-0x023 Reserved                                      */
-	__O  uint32_t  TX_FIFO_CONTROL;              /* Offset: 0x024 ( /W) SD Block Write Data Control Register          */
+    __IO uint32_t  SPI_MASTER_VERSION;           /* Offset: 0x000 (R/W) SPI Master Version Register                   */
+    __O  uint32_t  SPI_MASTER_CONTROL;           /* Offset: 0x001 ( /W) SPI Master Control Register                   */
+    __IO uint32_t  TRANS_TYPE;                   /* Offset: 0x002 (R/W) Transaction Type Register                     */
+    __O  uint32_t  TRANS_CTRL;                   /* Offset: 0x003 ( /W) Transaction Control Register                  */
+    __I  uint32_t  TRANS_STS;                    /* Offset: 0x004 (R/ ) Transaction Status Register                   */
+    __I  uint32_t  TRANS_ERROR;                  /* Offset: 0x005 (R/ ) Transaction Error Register                    */
+    __IO uint32_t  DIRECT_ACCESS_DATA;           /* Offset: 0x006 (R/W) Data Direct Access Register                   */
+    __IO uint32_t  SD_ADDR_7_0;                  /* Offset: 0x007 (R/W) SD Address[7:0] Register                      */
+    __IO uint32_t  SD_ADDR_15_8;                 /* Offset: 0x008 (R/W) SD Address[15:8] Register                     */
+    __IO uint32_t  SD_ADDR_23_16;                /* Offset: 0x009 (R/W) SD Address[23:16] Register                    */
+    __IO uint32_t  SD_ADDR_31_24;                /* Offset: 0x00A (R/W) SD Address[31:24] Register                    */
+    __IO uint32_t  SPI_CLK_DEL;                  /* Offset: 0x00B (R/W) SPI Clock Control Register                    */
+         uint32_t  RESERVED0[4];                 /* Offset: 0x00C-0x00F Reserved                                      */
+    __IO uint32_t  RX_FIFO_DATA;                 /* Offset: 0x010 (R/W) SD Block Read Data Register                   */
+         uint32_t  RESERVED1;                    /* Offset: 0x011 (R/W) Reserved                                      */
+    __I  uint32_t  RX_FIFO_DATA_COUNT_MSB;       /* Offset: 0x012 (R/ ) MSByte of Read Data Count Register            */
+    __I  uint32_t  RX_FIFO_DATA_COUNT_LSB;       /* Offset: 0x013 (R/ ) LSByte of Read Data Count Register            */
+    __O  uint32_t  RX_FIFO_CONTROL;              /* Offset: 0x014 ( /W) SD Block Read Data Control Register           */
+         uint32_t  RESERVED2[11];                /* Offset: 0x015-0x019 Reserved                                      */
+    __O  uint32_t  TX_FIFO_DATA;                 /* Offset: 0x020 ( /W) SD Block Write Data Register                  */
+         uint32_t  RESERVED3[3];                 /* Offset: 0x021-0x023 Reserved                                      */
+    __O  uint32_t  TX_FIFO_CONTROL;              /* Offset: 0x024 ( /W) SD Block Write Data Control Register          */
 }SDCard_TypeDef;
 
 /*--------------------------DDR3 Memory-----------------------------*/
 typedef struct
 {
-	__IO unsigned int RESERVED;    /* Offset: 0x0000 (R/W) Reserved                               */
-	__IO unsigned int WR_ADDR;     /* Offset: 0x0004 (R/W) Write Address Register                 */
-	__O  unsigned int WR_DATA[4];  /* Offset: 0x0008~0x0014 ( /W) Write Data Register             */
-	__IO unsigned int RD_ADDR;     /* Offset: 0x0018 (R/W) Read Address Register                  */
-	__IO unsigned int RD_EN;       /* Offset: 0x001c (R/W) Read Enable Register                   */
-	__I  unsigned int RD_DATA[4];  /* Offset: 0x0020~0x002c (R/ ) Read Data Register              */
-	__IO unsigned int INIT;        /* Offset: 0x0030 (R/W) Init Done Flag Register                */
-	__IO unsigned int WR_EN;       /* Offset: 0x0034 (R/W) Write Enable and End flag Register     */
+    __IO unsigned int RESERVED;    /* Offset: 0x0000 (R/W) Reserved                               */
+    __IO unsigned int WR_ADDR;     /* Offset: 0x0004 (R/W) Write Address Register                 */
+    __O  unsigned int WR_DATA[4];  /* Offset: 0x0008~0x0014 ( /W) Write Data Register             */
+    __IO unsigned int RD_ADDR;     /* Offset: 0x0018 (R/W) Read Address Register                  */
+    __IO unsigned int RD_EN;       /* Offset: 0x001c (R/W) Read Enable Register                   */
+    __I  unsigned int RD_DATA[4];  /* Offset: 0x0020~0x002c (R/ ) Read Data Register              */
+    __IO unsigned int INIT;        /* Offset: 0x0030 (R/W) Init Done Flag Register                */
+    __IO unsigned int WR_EN;       /* Offset: 0x0034 (R/W) Write Enable and End flag Register     */
 }DDR3_RegDef;
 
 /*--------------------------SPI-Flash Memory-----------------------------*/
 typedef struct 
 {
-	__I  unsigned int IDREV;                /* Offset: 0x00 (R/ ) ID and revision Register           */
-	     unsigned int RESERVED0[3];         /* Offset: 0x04~0x0c Reserved                            */
-	__IO unsigned int TRANSFMT;             /* Offset: 0x10 (R/W) SPI transfer format Register       */
-	__IO unsigned int DIRECTIO;             /* Offset: 0x14 (R/W) SPI direct IO control Register     */
-	     unsigned int RESERVED1[2];         /* Offset: 0x18~0x1c Reserved                            */
-	__IO unsigned int TRANSCTRL;            /* Offset: 0x20 (R/W) SPI transfer control Register      */
-	__IO unsigned int CMD;                  /* Offset: 0x24 (R/W) SPI command Register               */
-	__IO unsigned int ADDR;                 /* Offset: 0x28 (R/W) SPI address Register               */
-	__IO unsigned int DATA;                 /* Offset: 0x2c (R/W) SPI data Register                  */
-	__IO unsigned int CTRL;                 /* Offset: 0x30 (R/W) SPI control Register               */
-	__I  unsigned int STATUS;               /* Offset: 0x34 (R/ ) SPI status Register                */
-	__IO unsigned int INTREN;               /* Offset: 0x38 (R/W) SPI interrupt enable Register      */
-	__O  unsigned int INTRST;               /* Offset: 0x3c ( /W)SPI interrupt status Register       */
-	__IO unsigned int TIMING;               /* Offset: 0x40 (R/W) SPI interface timing Register      */
-	     unsigned int RESERVED2[3];         /* Offset: 0x44~0x4c Reserved                            */
-	__IO unsigned int MEMCTRL;              /* Offset: 0x50 (R/W) SPI memory access control Register */
-	     unsigned int RESERVED3[3];         /* Offset: 0x54~0x5c Reserved                            */
-	__IO unsigned int SLVST;                /* Offset: 0x60 (R/W) SPI slave status Register          */
-	__I  unsigned int SLVDATACNT;           /* Offset: 0x64 (R/ ) SPI slave data count Register      */
-	     unsigned int RESERVED4[5];         /* Offset: 0x68~0x78 Reserved                            */
-	__I  unsigned int CONFIG;               /* Offset: 0x7c (R/ ) Configuration Register             */
+    __I  unsigned int IDREV;                /* Offset: 0x00 (R/ ) ID and revision Register           */
+         unsigned int RESERVED0[3];         /* Offset: 0x04~0x0c Reserved                            */
+    __IO unsigned int TRANSFMT;             /* Offset: 0x10 (R/W) SPI transfer format Register       */
+    __IO unsigned int DIRECTIO;             /* Offset: 0x14 (R/W) SPI direct IO control Register     */
+         unsigned int RESERVED1[2];         /* Offset: 0x18~0x1c Reserved                            */
+    __IO unsigned int TRANSCTRL;            /* Offset: 0x20 (R/W) SPI transfer control Register      */
+    __IO unsigned int CMD;                  /* Offset: 0x24 (R/W) SPI command Register               */
+    __IO unsigned int ADDR;                 /* Offset: 0x28 (R/W) SPI address Register               */
+    __IO unsigned int DATA;                 /* Offset: 0x2c (R/W) SPI data Register                  */
+    __IO unsigned int CTRL;                 /* Offset: 0x30 (R/W) SPI control Register               */
+    __I  unsigned int STATUS;               /* Offset: 0x34 (R/ ) SPI status Register                */
+    __IO unsigned int INTREN;               /* Offset: 0x38 (R/W) SPI interrupt enable Register      */
+    __O  unsigned int INTRST;               /* Offset: 0x3c ( /W)SPI interrupt status Register       */
+    __IO unsigned int TIMING;               /* Offset: 0x40 (R/W) SPI interface timing Register      */
+         unsigned int RESERVED2[3];         /* Offset: 0x44~0x4c Reserved                            */
+    __IO unsigned int MEMCTRL;              /* Offset: 0x50 (R/W) SPI memory access control Register */
+         unsigned int RESERVED3[3];         /* Offset: 0x54~0x5c Reserved                            */
+    __IO unsigned int SLVST;                /* Offset: 0x60 (R/W) SPI slave status Register          */
+    __I  unsigned int SLVDATACNT;           /* Offset: 0x64 (R/ ) SPI slave data count Register      */
+         unsigned int RESERVED4[5];         /* Offset: 0x68~0x78 Reserved                            */
+    __I  unsigned int CONFIG;               /* Offset: 0x7c (R/ ) Configuration Register             */
 }SPI_FLASH_RegDef;
 
 /*--------------------------------------PSRAM--------------------------------------*/
 typedef struct
 {
-	__IO unsigned int CMD;                  /* Offset: 0x00 (R/W) PSRAM command register                */
-	__IO unsigned int ADDRESS;              /* Offset: 0x04 (R/W) PSRAM address register                */
-	__IO unsigned int WR_DATA0;             /* Offset: 0x08 (R/W) PSRAM write data register 0           */
-	__IO unsigned int WR_DATA1;             /* Offset: 0x0C (R/W) PSRAM write data register 1           */
-	__IO unsigned int WR_DATA2;             /* Offset: 0x10 (R/W) PSRAM write data register 2           */
-	__IO unsigned int WR_DATA3;             /* Offset: 0x14 (R/W) PSRAM write data register 3           */
-	__O  unsigned int CMD_EN;               /* Offset: 0x18 ( /W) PSRAM command enable register         */
-	__IO unsigned int READ_DONE;            /* Offset: 0x1C (R/W) PSRAM read status register            */
-	__I  unsigned int RD_DATA0;             /* Offset: 0x20 (R/ ) PSRAM read data register 0            */
-	__I  unsigned int RD_DATA1;             /* Offset: 0x24 (R/ ) PSRAM read data register 1            */
-	__I  unsigned int RD_DATA2;             /* Offset: 0x28 (R/ ) PSRAM read data register 2            */
-	__I  unsigned int RD_DATA3;             /* Offset: 0x2C (R/ ) PSRAM read data register 3            */
-	__I  unsigned int INIT_DONE;            /* Offset: 0x30 (R/ ) PSRAM initialization status register  */
+    __IO unsigned int CMD;                  /* Offset: 0x00 (R/W) PSRAM command register                */
+    __IO unsigned int ADDRESS;              /* Offset: 0x04 (R/W) PSRAM address register                */
+    __IO unsigned int WR_DATA0;             /* Offset: 0x08 (R/W) PSRAM write data register 0           */
+    __IO unsigned int WR_DATA1;             /* Offset: 0x0C (R/W) PSRAM write data register 1           */
+    __IO unsigned int WR_DATA2;             /* Offset: 0x10 (R/W) PSRAM write data register 2           */
+    __IO unsigned int WR_DATA3;             /* Offset: 0x14 (R/W) PSRAM write data register 3           */
+    __O  unsigned int CMD_EN;               /* Offset: 0x18 ( /W) PSRAM command enable register         */
+    __IO unsigned int READ_DONE;            /* Offset: 0x1C (R/W) PSRAM read status register            */
+    __I  unsigned int RD_DATA0;             /* Offset: 0x20 (R/ ) PSRAM read data register 0            */
+    __I  unsigned int RD_DATA1;             /* Offset: 0x24 (R/ ) PSRAM read data register 1            */
+    __I  unsigned int RD_DATA2;             /* Offset: 0x28 (R/ ) PSRAM read data register 2            */
+    __I  unsigned int RD_DATA3;             /* Offset: 0x2C (R/ ) PSRAM read data register 3            */
+    __I  unsigned int INIT_DONE;            /* Offset: 0x30 (R/ ) PSRAM initialization status register  */
 }PSRAM_TypeDef;
 
 /*--------------------------------------AHB_USBDevice--------------------------------------*/
@@ -517,6 +517,7 @@ typedef struct
 
 /* AHB and APB Peripheral base address */
 #define AHB1PERIPH_BASE   ((uint32_t)0x40000000)   /*!< (AHB1 Peripheral) Base Address                       */
+#define SPIFLASH_XIP_BASE ((uint32_t)0x4D000000)
 #define AHB2PERIPH_BASE   ((uint32_t)0x80000000)   /*!< (AHB2 Peripheral) Base Address                       */
 #define APB1PERIPH_BASE   ((uint32_t)0x50000000)   /*!< (APB1 Peripheral) Base Address                       */
 #define APB2PERIPH_BASE   ((uint32_t)0x60000000)   /*!< (APB2 Peripheral) Base Address                       */
@@ -750,6 +751,158 @@ typedef struct
 /******************************************************************************/
 /*                                SPI Flash                                   */
 /******************************************************************************/
+
+#define SPIFLASH_TRANSFMT_ADSIZE_Pos (16U)
+#define SPIFLASH_TRANSFMT_ADSIZE_Msk (3UL << SPIFLASH_TRANSFMT_ADSIZE_Pos)
+#define SPIFLASH_TRANSFMT_ADSIZE     SPI_FLASH_TRANSFMT_ADSIZE_Msk
+#define SPIFLASH_TRANSFMT_ADSIZE_0   (1UL << SPIFLASH_TRANSFMT_ADSIZE_Pos)
+#define SPIFLASH_TRANSFMT_ADSIZE_1   (2UL << SPIFLASH_TRANSFMT_ADSIZE_Pos)
+
+#define SPIFLASH_TRANSFMT_DATAL_Pos  (8U)
+#define SPIFLASH_TRANSFMT_DATAL_Msk  (0x1FUL << SPIFLASH_TRANSFMT_DATAL_Pos)
+#define SPIFLASH_TRANSFMT_DATAL 	 SPIFLASH_TRANSFMT_DATAL_Msk
+#define SPIFLASH_TRANSFMT_DATAL_0    (0x01UL << SPIFLASH_TRANSFMT_DATAL_Pos)
+#define SPIFLASH_TRANSFMT_DATAL_1    (0x02UL << SPIFLASH_TRANSFMT_DATAL_Pos)
+#define SPIFLASH_TRANSFMT_DATAL_2    (0x04UL << SPIFLASH_TRANSFMT_DATAL_Pos)
+#define SPIFLASH_TRANSFMT_DATAL_3    (0x08UL << SPIFLASH_TRANSFMT_DATAL_Pos)
+#define SPIFLASH_TRANSFMT_DATAL_4    (0x10UL << SPIFLASH_TRANSFMT_DATAL_Pos)
+
+#define SPIFLASH_TRANSFMT_DATAMERGE_Pos (7U)
+#define SPIFLASH_TRANSFMT_DATAMERGE_Msk (0x1UL << SPIFLASH_TRANSFMT_DATAMERGE_Pos)
+#define SPIFLASH_TRANSFMT_DATAMERGE 	SPIFLASH_TRANSFMT_DATAMERGE_Msk
+
+#define SPIFLASH_TRANSFMT_BIMISO_Pos (4U)
+#define SPIFLASH_TRANSFMT_BIMISO_Msk (0x1UL << SPIFLASH_TRANSFMT_BIMISO_Pos)
+#define SPIFLASH_TRANSFMT_BIMISO 	 SPIFLASH_TRANSFMT_BIMISO_Msk
+
+#define SPIFLASH_TRANSFMT_BIMISO_Pos (4U)
+#define SPIFLASH_TRANSFMT_BIMISO_Msk (0x1UL << SPIFLASH_TRANSFMT_BIMISO_Pos)
+#define SPIFLASH_TRANSFMT_BIMISO 	 SPIFLASH_TRANSFMT_BIMISO_Msk
+
+#define SPIFLASH_TRANSFMT_LSB_Pos    (3U)
+#define SPIFLASH_TRANSFMT_LSB_Msk    (0x1UL << SPIFLASH_TRANSFMT_LSB_Pos)
+#define SPIFLASH_TRANSFMT_LSB 	     SPIFLASH_TRANSFMT_LSB_Msk
+
+#define SPIFLASH_TRANSFMT_SLAVE_Pos  (2U)
+#define SPIFLASH_TRANSFMT_SLAVE_Msk  (0x1UL << SPIFLASH_TRANSFMT_SLAVE_Pos)
+#define SPIFLASH_TRANSFMT_SLAVE 	 SPIFLASH_TRANSFMT_SLAVE_Msk
+
+#define SPIFLASH_TRANSFMT_CLKPOL_Pos (1U)
+#define SPIFLASH_TRANSFMT_CLKPOL_Msk (0x1UL << SPIFLASH_TRANSFMT_CLKPOL_Pos)
+#define SPIFLASH_TRANSFMT_CLKPOL 	 SPIFLASH_TRANSFMT_CLKPOL_Msk
+
+#define SPIFLASH_TRANSFMT_CLKPHA_Pos (0U)
+#define SPIFLASH_TRANSFMT_CLKPHA_Msk (0x1UL << SPIFLASH_TRANSFMT_CLKPHA_Pos)
+#define SPIFLASH_TRANSFMT_CLKPHA 	 SPIFLASH_TRANSFMT_CLKPHA_Msk
+
+/******************************************************************************/
+
+
+
+/******************************************************************************/
+#define SPIFLASH_SR_TXFF_Pos (23)
+#define SPIFLASH_SR_TXFF_Msk (0x1UL << SPIFLASH_SR_TXFF_Pos)
+#define SPIFLASH_SR_TXFF     SPIFLASH_SR_TXFF_Msk
+
+#define SPIFLASH_SR_TXFE_Pos (22)
+#define SPIFLASH_SR_TXFE_Msk (0x1UL << SPIFLASH_SR_TXFE_Pos)
+#define SPIFLASH_SR_TXFE     SPIFLASH_SR_TXFE_Msk
+
+#define SPIFLASH_SR_TXFN_Pos (16)
+#define SPIFLASH_SR_TXFN_Msk (0x1FUL << SPIFLASH_SR_TXFN_Pos)
+
+#define SPIFLASH_SR_RXFF_Pos (15)
+#define SPIFLASH_SR_RXFF_Msk (0x1UL << SPIFLASH_SR_RXFF_Pos)
+#define SPIFLASH_SR_RXFF     SPIFLASH_SR_RXFF_Msk
+
+#define SPIFLASH_SR_RXFE_Pos (14)
+#define SPIFLASH_SR_RXFE_Msk (0x1UL << SPIFLASH_SR_RXFE_Pos)
+#define SPIFLASH_SR_RXFE     SPIFLASH_SR_RXFE_Msk
+
+#define SPIFLASH_SR_RXFN_Pos (8)
+#define SPIFLASH_SR_RXFN_Msk (0x1FUL << SPIFLASH_SR_RXFN_Pos)
+
+#define SPIFLASH_SR_PRGBUSY_Pos (0)
+#define SPIFLASH_SR_PRGBUSY_Msk (0x1FUL << SPIFLASH_SR_PRGBUSY_Pos)
+#define SPIFLASH_SR_PRGBUSY     SPIFLASH_SR_PRGBUSY_Msk
+
+/* ---------------------- SPI Flash Transfer Control (TRANSCTRL) ------------- */
+/* bit [31] Reserved */
+#define SPIFLASH_TRANSCTRL_CMDEN_Pos    (30U)
+#define SPIFLASH_TRANSCTRL_CMDEN_Msk    (1UL << SPIFLASH_TRANSCTRL_CMDEN_Pos)
+#define SPIFLASH_TRANSCTRL_CMDEN        SPIFLASH_TRANSCTRL_CMDEN_Msk /* Enable command phase (Master only) */
+
+#define SPIFLASH_TRANSCTRL_ADREN_Pos    (29U)
+#define SPIFLASH_TRANSCTRL_ADREN_Msk    (1UL << SPIFLASH_TRANSCTRL_ADREN_Pos)
+#define SPIFLASH_TRANSCTRL_ADREN        SPIFLASH_TRANSCTRL_ADREN_Msk /* Enable address phase (Master only) */
+
+#define SPIFLASH_TRANSCTRL_ADRMODE_Pos  (28U)
+#define SPIFLASH_TRANSCTRL_ADRMODE_Msk  (1UL << SPIFLASH_TRANSCTRL_ADRMODE_Pos)
+#define SPIFLASH_TRANSCTRL_ADRMODE      SPIFLASH_TRANSCTRL_ADRMODE_Msk /* Address phase format: 0=single, 1=same as Dual/Quad data phase (Master only) */
+
+#define SPIFLASH_TRANSCTRL_TRMODE_Pos   (24U)
+#define SPIFLASH_TRANSCTRL_TRMODE_Msk   (0xFUL << SPIFLASH_TRANSCTRL_TRMODE_Pos)
+#define SPIFLASH_TRANSCTRL_TRMODE       SPIFLASH_TRANSCTRL_TRMODE_Msk
+
+#define SPIFLASH_TRANSCTRL_DATAFMT_Pos  (22U)
+#define SPIFLASH_TRANSCTRL_DATAFMT_Msk  (0x3UL << SPIFLASH_TRANSCTRL_DATAFMT_Pos)
+#define SPIFLASH_TRANSCTRL_DATAFMT      SPIFLASH_TRANSCTRL_DATAFMT_Msk
+#define SPIFLASH_TRANSCTRL_DATAFMT_0    (0x1UL << SPIFLASH_TRANSCTRL_DATAFMT_Pos)
+#define SPIFLASH_TRANSCTRL_DATAFMT_1    (0x2UL << SPIFLASH_TRANSCTRL_DATAFMT_Pos)
+
+#define SPIFLASH_TRANSCTRL_APPENDTOKEN_Pos (21U)
+#define SPIFLASH_TRANSCTRL_APPENDTOKEN_Msk (1UL << SPIFLASH_TRANSCTRL_APPENDTOKEN_Pos)
+#define SPIFLASH_TRANSCTRL_APPENDTOKEN     SPIFLASH_TRANSCTRL_APPENDTOKEN_Msk /* Append one-byte special token after address for read transfers */
+
+#define SPIFLASH_TRANSCTRL_WRDT_CNT_Pos  (12U)
+#define SPIFLASH_TRANSCTRL_WRDT_CNT_Msk  (0x1FFUL << SPIFLASH_TRANSCTRL_WRDT_CNT_Pos)
+#define SPIFLASH_TRANSCTRL_WRDT_CNT      SPIFLASH_TRANSCTRL_WRDT_CNT_Msk /* Transfer count for write data [20:12] */
+
+#define SPIFLASH_TRANSCTRL_TOKENVAL_Pos  (11U)
+#define SPIFLASH_TRANSCTRL_TOKENVAL_Msk  (1UL << SPIFLASH_TRANSCTRL_TOKENVAL_Pos)
+#define SPIFLASH_TRANSCTRL_TOKENVAL      SPIFLASH_TRANSCTRL_TOKENVAL_Msk /* 0=token 0x00, 1=token 0x69 */
+
+#define SPIFLASH_TRANSCTRL_DUMMYCNT_Pos  (9U)
+#define SPIFLASH_TRANSCTRL_DUMMYCNT_Msk  (0x3UL << SPIFLASH_TRANSCTRL_DUMMYCNT_Pos)
+#define SPIFLASH_TRANSCTRL_DUMMYCNT      SPIFLASH_TRANSCTRL_DUMMYCNT_Msk /* Dummy data count [10:9] */
+
+#define SPIFLASH_TRANSCTRL_RDDT_CNT_Pos  (0U)
+#define SPIFLASH_TRANSCTRL_RDDT_CNT_Msk  (0x1FFUL << SPIFLASH_TRANSCTRL_RDDT_CNT_Pos)
+#define SPIFLASH_TRANSCTRL_RDDT_CNT      SPIFLASH_TRANSCTRL_RDDT_CNT_Msk /* Transfer count for read data [8:0] */
+
+#define SPIFLASH_CONF_SLAVE_Pos        (14)
+#define SPIFLASH_CONF_SLAVE_Msk        (1UL << SPIFLASH_CONF_SLAVE_Pos)
+#define SPIFLASH_CONF_SLAVE            SPIFLASH_CONF_SLAVE_Msk
+
+#define SPIFLASH_CONF_MMAP_Pos         (12)
+#define SPIFLASH_CONF_MMAP_Msk         (1UL << SPIFLASH_CONF_MMAP_Pos)
+#define SPIFLASH_CONF_MMAP             SPIFLASH_CONF_MMAP_Msk
+
+#define SPIFLASH_CONF_DIRECT_IO_Pos    (11)
+#define SPIFLASH_CONF_DIRECT_IO_Msk    (1UL << SPIFLASH_CONF_DIRECT_IO_Pos)
+#define SPIFLASH_CONF_DIRECT_IO        SPIFLASH_CONF_DIRECT_IO_Msk
+
+#define SPIFLASH_CONF_QUADIO_Pos       (9)
+#define SPIFLASH_CONF_QUADIO_Msk       (1UL << SPIFLASH_CONF_QUADIO_Pos)
+#define SPIFLASH_CONF_QUADIO           SPIFLASH_CONF_QUADIO_Msk
+
+#define SPIFLASH_CONF_DUALIO_Pos       (8)
+#define SPIFLASH_CONF_DUALIO_Msk       (1UL << SPIFLASH_CONF_DUALIO_Pos)
+#define SPIFLASH_CONF_DUALIO           SPIFLASH_CONF_DUALIO_Msk
+
+#define SPIFLASH_CONF_TX_DEPTH_Pos       (4)
+#define SPIFLASH_CONF_TX_DEPTH_Msk       (3UL << SPIFLASH_CONF_TX_DEPTH_Pos)
+#define SPIFLASH_CONF_TX_DEPTH           SPIFLASH_CONF_TX_DEPTH_Msk
+#define SPIFLASH_CONF_TX_DEPTH_0         (1UL << SPIFLASH_CONF_TX_DEPTH_Pos)
+#define SPIFLASH_CONF_TX_DEPTH_1         (2UL << SPIFLASH_CONF_TX_DEPTH_Pos)
+
+#define SPIFLASH_CONF_RX_DEPTH_Pos       (0)
+#define SPIFLASH_CONF_RX_DEPTH_Msk       (3UL << SPIFLASH_CONF_RX_DEPTH_Pos)
+#define SPIFLASH_CONF_RX_DEPTH           SPIFLASH_CONF_RX_DEPTH_Msk
+#define SPIFLASH_CONF_RX_DEPTH_0         (1UL << SPIFLASH_CONF_RX_DEPTH_Pos)
+#define SPIFLASH_CONF_RX_DEPTH_1         (2UL << SPIFLASH_CONF_RX_DEPTH_Pos)
+
+
 
 
 

@@ -5,3 +5,5 @@
 *.vo
 FPGA/impl/gwsynthesis
 FPGA/impl/pnr
+*.jdebug
+*.jdebug.user

@@ -12,7 +12,7 @@
 
 /* Declarations ------------------------------------------------------------------*/
 static uint8_t qspi_get_fifo_depth(uint8_t fifo_depth_config);
-static void qspi_flash_read_status(void);
+// static uint8_t qspi_flash_read_status(void);
 static void qspi_flash_write_cmd(uint32_t cmd);
 
 /* Functions ------------------------------------------------------------------*/
@@ -36,9 +36,14 @@ void qspi_flash_init(void)
     while ((SPI_FLASH->STATUS & 0x01))
         ; // wait until QSPI active finish
 
-    buff = (2 << 16) | (7 << 8) | (0 << 7) | 0;
+    buff = QSPI_ADDRESS_24_BITS | QSPI_DATA_8_BITS | SPIFLASH_TRANSFMT_DATAMERGE;
     // other fields reset to 0 while qspi_default_modes connected to 0
     SPI_FLASH->TRANSFMT = buff;
+
+    // SPI_FLASH->CMD = 0xEB;
+    SPI_FLASH->TRANSCTRL = QSPI_INSTRUCTION_1_LINE | // enable cmd
+                           QSPI_ADDRESS_SAME_DATA | QSPI_DATA_4_LINES | QSPI_TRMODE_DUMMY_READ |
+                           (2 << SPIFLASH_TRANSCTRL_DUMMYCNT_Pos); // set read trans byte count
 
     SPI_FLASH->CTRL |= (0x1 << 2); // reset tx fifo
     while ((SPI_FLASH->CTRL & 0x2))
@@ -52,9 +57,7 @@ void qspi_flash_init(void)
 
     SPI_FLASH->INTREN &= 0x00000000; // close all the interrupt
     SPI_FLASH->TIMING &= (~(0xff));
-    SPI_FLASH->TIMING |= (0x0) | (5 << 12) | (5 << 8); // Set the QSPI Interface Timing Register (0x40)
-                                                       // to set SCLK_DIV to 4, which divide the qspi_clk into
-                                                       //((4+1)*2) = 10 as SCLK
+    SPI_FLASH->TIMING |= (7) | (5 << 12) | (5 << 8);
 }
 
 /**
@@ -136,13 +139,10 @@ void qspi_flash_fast_read_quad(uint32_t address, uint8_t *read_buffer, uint16_t 
         return;
     }
 
-    SPI_FLASH->TRANSCTRL = (1 << 30) |          // enable cmd
-                           (1 << 29) |          // open the address
-                           (1 << 28) |          // 地址与数据相同模式传输
-                           (9 << 24) |          // trans mode = 9 (Dummy, Read)
-                           (2 << 22) |          // 数据四线模式
-                           (3 << 9) |           // dummy data count
-                           ((rd_len - 1) << 0); // set read trans byte count
+    SPI_FLASH->TRANSCTRL = QSPI_INSTRUCTION_1_LINE | // enable cmd
+                           QSPI_ADDRESS_SAME_DATA | QSPI_DATA_4_LINES | QSPI_TRMODE_DUMMY_READ |
+                           (2 << SPIFLASH_TRANSCTRL_DUMMYCNT_Pos) |
+                           ((rd_len - 1) << SPIFLASH_TRANSCTRL_RDDT_CNT_Pos); // set read trans byte count
 
     SPI_FLASH->ADDR = address;
     SPI_FLASH->CMD = 0xEB;
@@ -152,9 +152,9 @@ void qspi_flash_fast_read_quad(uint32_t address, uint8_t *read_buffer, uint16_t 
         // check the status of txfifo
         // do
         // {
-        while (SPI_FLASH->STATUS & (0x1 << 14))
+        while (SPI_FLASH->STATUS & SPIFLASH_SR_RXFE)
             ;
-        *read_buffer = SPI_FLASH->DATA;
+        *read_buffer = *(uint8_t *)&SPI_FLASH->DATA;
         read_buffer++;
     }
 
@@ -203,7 +203,7 @@ void qspi_flash_write(uint16_t wr_len, uint32_t cmd, uint32_t address, uint8_t *
 /**
  * @brief Switch QSPI-Flash mode between download and read/write/erase memory
  */
-void change_mode_qspi_flash()
+void change_mode_qspi_flash(void)
 {
     uint32_t i;
 
@@ -309,6 +309,29 @@ void qspi_flash_64ksector_erase(uint32_t address)
     qspi_flash_read_status(); // wait qspi flash free
 }
 
+void qspi_flash_32ksector_erase(uint32_t address)
+{
+    qspi_flash_write_cmd(WRITE_ENABLE_CMD);
+    qspi_flash_read_status();
+
+    // litter endian and the range of address
+    SPI_FLASH->TRANSCTRL = (1 << 30) + // enable cmd
+                           (1 << 29) + // enable address
+                           (7 << 24) + // trans mode = 1 (write only)
+                           (2 << 22) + // dual mode
+                           (0 << 12);  // set address - 3bytes
+
+    SPI_FLASH->ADDR = address;
+
+    SPI_FLASH->CMD = ERASE_32K_CMD; // 64K sector erase cmd
+
+    while ((SPI_FLASH->STATUS & 0x01))
+        ; // wait until QSPI_ctroller active finish
+
+    qspi_flash_write_cmd(WRITE_DISABLE_CMD);
+    qspi_flash_read_status(); // wait qspi flash free
+}
+
 /**
  * @brief Erase full chip of QSPI-Flash
  */
@@ -379,7 +402,7 @@ static void qspi_flash_write_cmd(uint32_t cmd)
 /**
  * @brief Read QSPI-Flash status
  */
-static void qspi_flash_read_status(void)
+uint8_t qspi_flash_read_status(void)
 {
     uint8_t temp_first;
 
@@ -397,6 +420,8 @@ static void qspi_flash_read_status(void)
 
     while ((SPI_FLASH->STATUS & 0x01))
         ; // wait until QSPI_Ctroller active finish
+
+    return temp_first;
 }
 
 /**
@@ -502,10 +527,27 @@ uint8_t qspi_flash_read_sr(uint8_t reg)
     return byte;
 }
 
-
 uint8_t qspi_flash_chip_reset()
 {
-    
+    SPI_FLASH->TRANSCTRL = QSPI_INSTRUCTION_1_LINE | QSPI_TRMODE_NONE_DATA | QSPI_TRMODE_WRITE_ONLY;
     SPI_FLASH->CMD = 0x66;
-    
+    while (SPI_FLASH->STATUS & SPIFLASH_SR_PRGBUSY)
+        ;
+    SPI_FLASH->CMD = 0x99;
+    while (SPI_FLASH->STATUS & SPIFLASH_SR_PRGBUSY)
+        ;
+    qspi_flash_read_status();
+
+    return 0;
 }
+
+// void qspi_enable_mmap()
+// {
+//     SPI_FLASH->TRANSCTRL = QSPI_INSTRUCTION_1_LINE | // enable cmd
+//                         QSPI_ADDRESS_SAME_DATA | QSPI_DATA_4_LINES | QSPI_TRMODE_DUMMY_READ |
+//                         (2 << SPIFLASH_TRANSCTRL_DUMMYCNT_Pos);
+
+//     SPI_FLASH->ADDR = 0;
+//     SPI_FLASH->CMD = 0xEB;
+//     SPI_FLASH->CONFIG |= 
+// }

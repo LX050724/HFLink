@@ -38,6 +38,7 @@
 #define READ_STATUS_CMD										0x05	//read status
 #define WRITE_ENABLE_CMD                  0x06	//enable write
 #define	ERASE_4K_CMD											0x20	//erase 4k
+#define ERASE_32K_CMD											0x52	//erase 32k
 #define ERASE_64K_CMD											0xD8	//erase 64k
 #define ERASE_CHIP_CMD                    0x60  //erase full chip
 
@@ -57,6 +58,34 @@
 #define WRITE_STATUS_REG2_CMD    					0x31 
 #define WRITE_STATUS_REG3_CMD    					0x11 
 
+#define QSPI_ADDRESS_8_BITS  (0x00000000U)
+#define QSPI_ADDRESS_16_BITS ((uint32_t)SPIFLASH_TRANSFMT_ADSIZE_0)
+#define QSPI_ADDRESS_24_BITS ((uint32_t)SPIFLASH_TRANSFMT_ADSIZE_1)
+#define QSPI_ADDRESS_32_BITS ((uint32_t)SPIFLASH_TRANSFMT_ADSIZE)
+
+#define QSPI_DATA_8_BITS ((uint32_t)(7 << SPIFLASH_TRANSFMT_DATAL_Pos))
+
+#define QSPI_INSTRUCTION_NONE          0x00000000U                          /*!<No instruction*/
+#define QSPI_INSTRUCTION_1_LINE        ((uint32_t)SPIFLASH_TRANSCTRL_CMDEN) /*!<Instruction on a single line*/
+
+#define QSPI_DATA_1_LINE   (0x00000000U)
+#define QSPI_DATA_2_LINES  ((uint32_t)SPIFLASH_TRANSCTRL_DATAFMT_0)
+#define QSPI_DATA_4_LINES  ((uint32_t)SPIFLASH_TRANSCTRL_DATAFMT_1)
+
+#define QSPI_ADDRESS_NONE      (0x00000000U)
+#define QSPI_ADDRESS_1LINE     ((uint32_t)SPIFLASH_TRANSCTRL_ADREN)
+#define QSPI_ADDRESS_SAME_DATA ((uint32_t)(SPIFLASH_TRANSCTRL_ADREN | SPIFLASH_TRANSCTRL_ADRMODE))
+
+#define QSPI_TRMODE_WRITE_READ       ((uint32_t)(0x0UL << SPIFLASH_TRANSCTRL_TRMODE_Pos)) /* Write and read at same time */
+#define QSPI_TRMODE_WRITE_ONLY       ((uint32_t)(0x1UL << SPIFLASH_TRANSCTRL_TRMODE_Pos))
+#define QSPI_TRMODE_READ_ONLY        ((uint32_t)(0x2UL << SPIFLASH_TRANSCTRL_TRMODE_Pos))
+#define QSPI_TRMODE_WRITE_COMMA_READ ((uint32_t)(0x3UL << SPIFLASH_TRANSCTRL_TRMODE_Pos)) /* Write, Read */
+#define QSPI_TRMODE_READ_COMMA_WRITE ((uint32_t)(0x4UL << SPIFLASH_TRANSCTRL_TRMODE_Pos)) /* Read, Write */
+#define QSPI_TRMODE_WRITE_DUMMY_READ ((uint32_t)(0x5UL << SPIFLASH_TRANSCTRL_TRMODE_Pos)) /* Write, Dummy, Read */
+#define QSPI_TRMODE_READ_DUMMY_WRITE ((uint32_t)(0x6UL << SPIFLASH_TRANSCTRL_TRMODE_Pos)) /* Read, Dummy, Write */
+#define QSPI_TRMODE_NONE_DATA        ((uint32_t)(0x7UL << SPIFLASH_TRANSCTRL_TRMODE_Pos)) /* None data */
+#define QSPI_TRMODE_DUMMY_WRITE      ((uint32_t)(0x8UL << SPIFLASH_TRANSCTRL_TRMODE_Pos)) /* Dummy, Write */
+#define QSPI_TRMODE_DUMMY_READ       ((uint32_t)(0x9UL << SPIFLASH_TRANSCTRL_TRMODE_Pos)) /* Dummy, Read */
 
 /* Functions ------------------------------------------------------------------*/
 /**
@@ -92,6 +121,7 @@ extern void qspi_flash_page_program(uint16_t wr_len,uint32_t address,uint8_t *wr
   * @brief Erase a 4K sector of QSPI-Flash
   */
 extern void qspi_flash_4ksector_erase(uint32_t address);
+void qspi_flash_32ksector_erase(uint32_t address);
 
 /**
   * @brief Erase a 64K sector of QSPI-Flash
@@ -119,6 +149,8 @@ extern uint8_t qspi_flash_read_sr(uint8_t reg);
 extern void qspi_flash_Enable(void);
 
 void qspi_flash_fast_read_quad(uint32_t address, uint8_t *read_buffer, uint16_t rd_len);
+uint8_t qspi_flash_chip_reset();
+uint8_t qspi_flash_read_status(void);
 
 #ifdef __cplusplus
 }
