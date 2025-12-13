@@ -1,6 +1,6 @@
 <DataBase>
   <Device>
-    <ChipInfo Vendor="GOWIN" Name="GOWIN_M1" WorkRAMAddr="0x20000000" WorkRAMSize="0x8000" Core="JLINK_CORE_CORTEX_M1"/>
+    <ChipInfo Vendor="GOWIN" Name="GOWIN_M1" WorkRAMAddr="0x20000000" WorkRAMSize="0x8000" Core="JLINK_CORE_CORTEX_M0"/>
     <FlashBankInfo Name="XIP_FLASH" BaseAddr="0x4D000000" AlwaysPresent="1" >
       <LoaderInfo Name="XT25F64" MaxSize="0x800000" Loader="HFLinkFlashAlgo.elf" LoaderType="FLASH_ALGO_TYPE_OPEN" />
     </FlashBankInfo>

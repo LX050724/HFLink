@@ -1,6 +1,4 @@
 #include "GOWIN_M1.h"
-
-#include "SEGGER_RTT.h"
 #include "core_cm1.h"
 #include <stdint.h>
 #include <string.h>
@@ -8,8 +6,12 @@
 #include "usb/usbd.h"
 #include <GOWIN_M1_qspi_flash.h>
 
-
+#ifdef DEBUG
+#include "SEGGER_RTT.h"
 #define print(fmt, ...) SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__)
+#else
+#define print(fmt, ...)
+#endif
 
 static volatile uint32_t delay;
 

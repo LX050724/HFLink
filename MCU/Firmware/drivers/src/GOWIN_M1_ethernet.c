@@ -46,7 +46,7 @@ void rx_int_event(void)
 	*rx_data_length = rx_length;
 	uint8_t *rx_buffer = (uint8_t *)(Ethernet->ETH_RX_DATA);
 	
-	for(int i = 0; i < rx_length; i++)
+	for(uint32_t i = 0; i < rx_length; i++)
 	{
 		rx_message[i] = rx_buffer[i];
 	}
@@ -105,7 +105,7 @@ int32_t eth_tx (uint8_t *tx_message, uint32_t tx_length)
 	uint32_t *tx_message_ptr = (uint32_t *)(tx_message);
 	uint32_t tx_word_num = tx_length / 4 + (tx_length % 4 ? 1 : 0);
 	
-	for(int i = 0; i < tx_word_num; i++)
+	for(uint32_t i = 0; i < tx_word_num; i++)
 	{
 		Ethernet->ETH_TX_DATA[i] = tx_message_ptr[i];
 	}
