@@ -1,4 +1,5 @@
 #include "GOWIN_M1.h"
+#include "GOWIN_M1_usbd.h"
 #include "core_cm1.h"
 #include <stdint.h>
 #include <string.h>
@@ -54,9 +55,13 @@ uint32_t crc32(uint32_t init, uint8_t *data, uint16_t length)
     return ~crc;
 }
 
+uint8_t rbuff[2048];
+
 int main()
 {
+#ifdef DEBUG
     SEGGER_RTT_Init();
+#endif
 
     NVIC_SetPriority(SysTick_IRQn, 15);
 
@@ -72,61 +77,36 @@ int main()
     qspi_flash_init();
     // qspi_flash_Enable();
 
-
     print("SPI_FLASH IDREV: %08x\n", SPI_FLASH->IDREV);
     print("SPI_FLASH Support Slave: %d\n", !!(SPI_FLASH->CONFIG & SPIFLASH_CONF_SLAVE_Msk));
     print("SPI_FLASH Support Mmap: %d\n", !!(SPI_FLASH->CONFIG & SPIFLASH_CONF_MMAP_Msk));
     print("SPI_FLASH Support direct IO: %d\n", !!(SPI_FLASH->CONFIG & SPIFLASH_CONF_DIRECT_IO_Msk));
     print("SPI_FLASH Support QuadSPI: %d\n", !!(SPI_FLASH->CONFIG & SPIFLASH_CONF_QUADIO_Msk));
     print("SPI_FLASH Support DualSPI: %d\n", !!(SPI_FLASH->CONFIG & SPIFLASH_CONF_DUALIO_Msk));
-    print("SPI_FLASH TxFIFO Depth: %d\n", (SPI_FLASH->CONFIG & SPIFLASH_CONF_TX_DEPTH_Msk) >> SPIFLASH_CONF_TX_DEPTH_Pos);
-    print("SPI_FLASH RxFIFO Depth: %d\n", (SPI_FLASH->CONFIG & SPIFLASH_CONF_RX_DEPTH_Msk) >> SPIFLASH_CONF_RX_DEPTH_Pos);
+    print("SPI_FLASH TxFIFO Depth: %d\n",
+          (SPI_FLASH->CONFIG & SPIFLASH_CONF_TX_DEPTH_Msk) >> SPIFLASH_CONF_TX_DEPTH_Pos);
+    print("SPI_FLASH RxFIFO Depth: %d\n",
+          (SPI_FLASH->CONFIG & SPIFLASH_CONF_RX_DEPTH_Msk) >> SPIFLASH_CONF_RX_DEPTH_Pos);
 
     qspi_flash_chip_reset();
     change_mode_qspi_flash();
 
-    usbd_init_desc();
-    usbd_enable();
+    usbd_enable(USBD);
+    usbd_enable_it(USBD, USBD_CR_IT_EP0RXNE);
 
-    uint32_t address = 0;
-    uint32_t c = 0xffffffff;
-
-    // uint8_t sr2 = qspi_flash_read_sr(2);
-    // SEGGER_RTT_printf(0, "SR2=%02x\n", sr2);
-    // if ((sr2 & 0x02) == 0)
-    // {
-    //     SEGGER_RTT_printf(0, "enable quda\n");
-    //     qspi_flash_Enable();
-    //     qspi_flash_write_sr(2, sr2 | 0x02);
-    //     qspi_flash_read_status();
-    //     sr2 = qspi_flash_read_sr(2);
-    //     SEGGER_RTT_printf(0, "SR2=%02x\n", sr2);
-    // }
+    NVIC_EnableIRQ(EXTINT_0_IRQn);
+    print("CR:%08x\n", USBD->CR);
 
     while (1)
     {
-        // uint8_t buf[16];
-        // qspi_flash_fast_read_quad(address, buf, 16);
-        // if (address + 16 > 895186)
-        // {
-        //     c = crc32(c, buf, 895186 % 16);
-        //     SEGGER_RTT_printf(0, "crc32 %08x\n", c);
-        //     while (1) {
-            
-        //     }
-        // }
-        // else
-        // {
-        //     c = crc32(c, buf, 16);
-        // }
+    }
+}
 
-        // SEGGER_RTT_printf(0, "%08x: ", address);
-        // for (int i = 0; i < 16; i++)
-        // {
-        //     SEGGER_RTT_printf(0, "%02x ", buf[i]);
-        // }
-        // SEGGER_RTT_printf(0, "\n");
-        address += 16;
-        // delay_1ms(1);
+void EXTINT_0_Handler(void)
+{
+    if (usbd_is_active_flag(USBD, USBD_SR_IT_EP0RXNE))
+    {
+        usbd_ep0_rx_irq_handler(USBD);
+        usbd_ep_readall(USBD, 0, rbuff, sizeof(rbuff));
     }
 }

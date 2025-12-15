@@ -458,30 +458,15 @@ typedef struct
 /*--------------------------------------AHB_USBDevice--------------------------------------*/
 typedef struct
 {
-    __IO uint8_t DESC_DATA[2048];
-    __I uint16_t SR;
-    __IO uint16_t CR;
-    __IO uint16_t DESC_DEV_LEN;
-    __IO uint16_t DESC_DEV_ADDR;
-    __IO uint16_t DESC_QUAL_LEN;
-    __IO uint16_t DESC_QUAL_ADDR;
-    __IO uint16_t DESC_FSCFG_LEN;
-    __IO uint16_t DESC_FSCFG_ADDR;
-    __IO uint16_t DESC_HSCFG_LEN;
-    __IO uint16_t DESC_HSCFG_ADDR;
-    __IO uint16_t DESC_STRLANG_ADDR;
-    __IO uint16_t DESC_OSCFG_ADDR;
-    __IO uint16_t DESC_HIDRPT_LEN;
-    __IO uint16_t DESC_HIDRPT_ADDR;
-    __IO uint16_t DESC_BOS_LEN;
-    __IO uint16_t DESC_BOS_ADDR;
-    __IO uint16_t DESC_STRVENDOR_LEN;
-    __IO uint16_t DESC_STRVENDOR_ADDR;
-    __IO uint16_t DESC_STRPORDUCT_LEN;
-    __IO uint16_t DESC_STRPORDUCT_ADDR;
-    __IO uint16_t DESC_STRERTIAL_LEN;
-    __IO uint16_t DESC_STRERTIAL_ADDR;
-    __IO uint16_t DESC_HASSTR;
+    __I uint32_t SR;
+    __IO uint32_t CR;
+    __I uint32_t EP_RFFE;
+    __I uint32_t EP_TFFE;
+    __IO uint32_t EP_DATA[16];
+    struct {
+        __I uint16_t RN;
+        __I uint16_t TN;
+    } EP_FIFONUM[16];
 } USBD_TypeDef;
 
 /* --------  End of section using anonymous unions and disabling warnings  -------- */
@@ -741,12 +726,81 @@ typedef struct
 /******************************************************************************/
 /*                            AHB USB Device (USBD)                           */
 /******************************************************************************/
-#define USBD_SR_ONLINE  		((uint16_t) 0x0001) 	/* USB在线标志位 */
-#define USBD_SR_SUSPEND 		((uint16_t) 0x0002)
-#define USBD_SR_HISPEED 		((uint16_t) 0x0004)
+#define USBD_SR_ONLINE      ((uint32_t) 0x00000001) 	/* USB在线标志位 */
+#define USBD_SR_SUSPEND     ((uint32_t) 0x00000002)
+#define USBD_SR_HISPEED     ((uint32_t) 0x00000004)
+#define USBD_SR_SETUP       ((uint32_t) 0x00000008)
+#define USBD_SR_IT_EP0RXNE  ((uint32_t) 0x80000000)
 
-#define USBD_CR_EN 				((uint16_t) 0x0001)
 
+#define USBD_CR_EN          ((uint32_t) 0x00000001)
+#define USBD_CR_IT_EP0RXNE  ((uint32_t) 0x80000000)
+
+#define USBD_EP_RFFE_EP0E    (1U << 0)
+#define USBD_EP_RFFE_EP1E    (1U << 1)
+#define USBD_EP_RFFE_EP2E    (1U << 2)
+#define USBD_EP_RFFE_EP3E    (1U << 3)
+#define USBD_EP_RFFE_EP4E    (1U << 4)
+#define USBD_EP_RFFE_EP5E    (1U << 5)
+#define USBD_EP_RFFE_EP6E    (1U << 6)
+#define USBD_EP_RFFE_EP7E    (1U << 7)
+#define USBD_EP_RFFE_EP8E    (1U << 8)
+#define USBD_EP_RFFE_EP9E    (1U << 9)
+#define USBD_EP_RFFE_EP10E   (1U << 10)
+#define USBD_EP_RFFE_EP11E   (1U << 11)
+#define USBD_EP_RFFE_EP12E   (1U << 12)
+#define USBD_EP_RFFE_EP13E   (1U << 13)
+#define USBD_EP_RFFE_EP14E   (1U << 14)
+#define USBD_EP_RFFE_EP15E   (1U << 15)
+#define USBD_EP_RFFE_EP0F    (1U << 16)
+#define USBD_EP_RFFE_EP1F    (1U << 17)
+#define USBD_EP_RFFE_EP2F    (1U << 18)
+#define USBD_EP_RFFE_EP3F    (1U << 19)
+#define USBD_EP_RFFE_EP4F    (1U << 20)
+#define USBD_EP_RFFE_EP5F    (1U << 21)
+#define USBD_EP_RFFE_EP6F    (1U << 22)
+#define USBD_EP_RFFE_EP7F    (1U << 23)
+#define USBD_EP_RFFE_EP8F    (1U << 24)
+#define USBD_EP_RFFE_EP9F    (1U << 25)
+#define USBD_EP_RFFE_EP10F   (1U << 26)
+#define USBD_EP_RFFE_EP11F   (1U << 27)
+#define USBD_EP_RFFE_EP12F   (1U << 28)
+#define USBD_EP_RFFE_EP13F   (1U << 29)
+#define USBD_EP_RFFE_EP14F   (1U << 30)
+#define USBD_EP_RFFE_EP15F   (1U << 31)
+
+#define USBD_EP_TFFE_EP0E    (1U << 0)
+#define USBD_EP_TFFE_EP1E    (1U << 1)
+#define USBD_EP_TFFE_EP2E    (1U << 2)
+#define USBD_EP_TFFE_EP3E    (1U << 3)
+#define USBD_EP_TFFE_EP4E    (1U << 4)
+#define USBD_EP_TFFE_EP5E    (1U << 5)
+#define USBD_EP_TFFE_EP6E    (1U << 6)
+#define USBD_EP_TFFE_EP7E    (1U << 7)
+#define USBD_EP_TFFE_EP8E    (1U << 8)
+#define USBD_EP_TFFE_EP9E    (1U << 9)
+#define USBD_EP_TFFE_EP10E   (1U << 10)
+#define USBD_EP_TFFE_EP11E   (1U << 11)
+#define USBD_EP_TFFE_EP12E   (1U << 12)
+#define USBD_EP_TFFE_EP13E   (1U << 13)
+#define USBD_EP_TFFE_EP14E   (1U << 14)
+#define USBD_EP_TFFE_EP15E   (1U << 15)
+#define USBD_EP_TFFE_EP0F    (1U << 16)
+#define USBD_EP_TFFE_EP1F    (1U << 17)
+#define USBD_EP_TFFE_EP2F    (1U << 18)
+#define USBD_EP_TFFE_EP3F    (1U << 19)
+#define USBD_EP_TFFE_EP4F    (1U << 20)
+#define USBD_EP_TFFE_EP5F    (1U << 21)
+#define USBD_EP_TFFE_EP6F    (1U << 22)
+#define USBD_EP_TFFE_EP7F    (1U << 23)
+#define USBD_EP_TFFE_EP8F    (1U << 24)
+#define USBD_EP_TFFE_EP9F    (1U << 25)
+#define USBD_EP_TFFE_EP10F   (1U << 26)
+#define USBD_EP_TFFE_EP11F   (1U << 27)
+#define USBD_EP_TFFE_EP12F   (1U << 28)
+#define USBD_EP_TFFE_EP13F   (1U << 29)
+#define USBD_EP_TFFE_EP14F   (1U << 30)
+#define USBD_EP_TFFE_EP15F   (1U << 31)
 
 /******************************************************************************/
 /*                                SPI Flash                                   */

@@ -13,12 +13,14 @@ int main(void)
 
     if (msp != 0xffffffff && entry != 0xffffffff)
     {
-        // for (uint32_t i = 0; i < 48; i++)
-        //     ((uint32_t *)ITCM_ADDR)[i] = ((uint32_t *)APP_ADDR)[i];
-
-        // __disable_irq();
-        // __set_MSP(msp);
-        // ((void (*)(void))entry)();
+        __disable_irq();
+        for (uint32_t i = 0; i < 48; i++)
+            ((uint32_t *)ITCM_ADDR)[i] = ((uint32_t *)APP_ADDR)[i];
+        __set_MSP(msp);
+        __set_PSP(msp);
+        __set_CONTROL(0);
+        __enable_irq();
+        __ASM volatile("bx %0" :: "r"(entry));
     }
 
     while (1)

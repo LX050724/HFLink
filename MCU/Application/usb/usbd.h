@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GOWIN_M1.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -16,8 +17,8 @@ extern "C" {
 #define USBD_MAX_POWER     300
 #define USBD_LANGID_STRING 1033
 
-void usbd_init_desc();
-void usbd_enable();
+void usbd_init_desc(void);
+void usbd_ep0_rx_irq_handler(USBD_TypeDef *usbd);
 
 #ifdef __cplusplus
 }

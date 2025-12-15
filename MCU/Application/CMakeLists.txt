@@ -8,7 +8,7 @@ add_executable(HFLinkAPP
 target_include_directories(HFLinkAPP PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_options(HFLinkAPP PRIVATE -T "${CMAKE_CURRENT_LIST_DIR}/GOWIN_M1_APP.ld")
 
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+if (("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo"))
     target_compile_definitions(HFLinkAPP PRIVATE DEBUG)
     target_link_libraries(HFLinkAPP PRIVATE m SEGGER_RTT GOWIN_M1)
 else()

@@ -6,6 +6,7 @@
     <Device name="GW5A-25A" pn="GW5A-LV25MG121NES">gw5a25a-000</Device>
     <FileList>
         <File path="src/AHB_USBDevice.v" type="file.verilog" enable="1"/>
+        <File path="src/fifo_sc_top/fifo_sc_top.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_empu_m1/gowin_empu_m1.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_pll/gowin_pll.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_pll/gowin_pll_mod.v" type="file.verilog" enable="1"/>
@@ -14,6 +15,6 @@
         <File path="src/usb_device_controller/usb_device_controller.v" type="file.verilog" enable="1"/>
         <File path="src/HFLink.cst" type="file.cst" enable="1"/>
         <File path="src/timming.sdc" type="file.sdc" enable="1"/>
-        <File path="src/HFLink.rao" type="file.gao" enable="0"/>
+        <File path="src/HFLink.rao" type="file.gao" enable="1"/>
     </FileList>
 </Project>

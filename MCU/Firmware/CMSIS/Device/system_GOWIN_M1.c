@@ -89,5 +89,5 @@ __WEAK void SystemInit(void)
         *(uint32_t *)(__bss_start__ + i) = 0;
     }
 
-    __enable_irq();
+    // __enable_irq();
 }

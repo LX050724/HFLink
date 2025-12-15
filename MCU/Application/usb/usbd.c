@@ -1,5 +1,6 @@
 #include "DAP_config.h"
 #include "GOWIN_M1.h"
+#include "GOWIN_M1_usbd.h"
 #include "SEGGER_RTT.h"
 #include "usb_cdc.h"
 #include "usb_def.h"
@@ -146,12 +147,17 @@ const uint8_t USBD_BinaryObjectStoreDescriptor[] = {
 
 char serial_number_dynamic[36] = "00000000000000000123456789ABCDEF"; // Dynamic serial number
 
-char *string_descriptors[] = {
-    (char[]){ 0x09, 0x04 },             /* Langid */
-    "undefined",                        /* Manufacturer */
-    "HFLink CMSIS-DAP",              /* Product */
-    "00000000000000000123456789ABCDEF", /* Serial Number */
-    "HFLink WebUSB",
+typedef struct {
+    const char *str;
+    uint8_t len;
+} USBD_desc_str_t;
+
+USBD_desc_str_t string_descriptors[] = {
+    {"\x09\x04", 2},
+    {"undefined", 9},
+    {"HFLink CMSIS-DAP", 16},
+    {"00000000000000000123456789ABCDEF", 33}, 
+    // {"HFLink WebUSB", 13},
 };
 
 static const uint8_t device_quality_descriptor[] = {
@@ -178,6 +184,14 @@ static const uint8_t config_descriptor_fs[] = {
     USB_ENDPOINT_DESCRIPTOR_INIT(DAP_OUT_EP, USB_ENDPOINT_TYPE_BULK, USB_BULK_EP_MPS_FS, 0x00),
 };
 
+static const uint8_t other_speed_config_descriptor[] = {
+    USB_CONFIG_DESCRIPTOR_INIT(USB_CONFIG_SIZE, INTF_NUM, 0x01, USB_CONFIG_BUS_POWERED, USBD_MAX_POWER),
+    CDC_ACM_DESCRIPTOR_INIT(0, CDC_INT_EP, CDC_OUT_EP, CDC_IN_EP, USB_BULK_EP_MPS_HS, 0x00),
+    USB_INTERFACE_DESCRIPTOR_INIT(2, 0x00, 0x02, 0xff, 0xff, 0x00, 0x00),
+    USB_ENDPOINT_DESCRIPTOR_INIT(DAP_IN_EP, USB_ENDPOINT_TYPE_BULK, USB_BULK_EP_MPS_HS, 0x00),
+    USB_ENDPOINT_DESCRIPTOR_INIT(DAP_OUT_EP, USB_ENDPOINT_TYPE_BULK, USB_BULK_EP_MPS_HS, 0x00),
+};
+
 // clang-format on
 
 static inline uint16_t usbd_calc_descaddr(volatile uint8_t *addr)
@@ -185,87 +199,111 @@ static inline uint16_t usbd_calc_descaddr(volatile uint8_t *addr)
     return (uintptr_t)addr - USBD_BASE;
 }
 
-static void __memcpy8(volatile uint8_t *desc, const uint8_t *src, size_t len)
-{
-    for (size_t i = 0; i < len; i++)
-        desc[i] = src[i];
-}
+uint8_t xxx[0x12];
 
-static uint8_t desc_make_str(volatile uint8_t **desc, const char *str)
+void usbd_get_descriptor(USBD_TypeDef *usbd, uint16_t value)
 {
-    uint8_t total_len = 2;
-    volatile uint8_t *w_ptr = *desc;
-    *w_ptr++ = 0;
-    *w_ptr++ = USB_DESCRIPTOR_TYPE_STRING;
-    while (*str != 0)
+    uint8_t type = HI_BYTE(value);
+    uint8_t index = LO_BYTE(value);
+    xxx[type]++;
+    switch (type)
     {
-        *w_ptr++ = *str++;
-        *w_ptr++ = 0;
-        total_len += 2;
+    case USB_DESCRIPTOR_TYPE_DEVICE:
+        usbd_ep_write_buffer(usbd, 0, device_descriptor, sizeof(device_descriptor));
+        break;
+    case USB_DESCRIPTOR_TYPE_CONFIGURATION:
+        if (usbd_get_speed(usbd))
+            usbd_ep_write_buffer(usbd, 0, config_descriptor_hs, sizeof(config_descriptor_hs));
+        else
+            usbd_ep_write_buffer(usbd, 0, config_descriptor_fs, sizeof(config_descriptor_fs));
+        break;
+    case USB_DESCRIPTOR_TYPE_STRING:
+        if (index == USB_STRING_LANGID_INDEX)
+        {
+            usbd_ep_write_data(usbd, 0, 4);
+            usbd_ep_write_data(usbd, 0, USB_DESCRIPTOR_TYPE_STRING);
+            usbd_ep_write_data(usbd, 0, string_descriptors[0].str[0]);
+            usbd_ep_write_data(usbd, 0, string_descriptors[0].str[1]);
+        }
+        else if (index < sizeof(string_descriptors) / sizeof(string_descriptors[0]))
+        {
+            uint8_t len = string_descriptors[index].len;
+            const char *str_ptr = string_descriptors[index].str;
+            usbd_ep_write_data(usbd, 0, len * 2 + 2);
+            usbd_ep_write_data(usbd, 0, USB_DESCRIPTOR_TYPE_STRING);
+            for (uint8_t i = 0; i < len; i++)
+            {
+                usbd_ep_write_data(usbd, 0, str_ptr[i]);
+                usbd_ep_write_data(usbd, 0, 0);
+            }
+        }
+        break;
+    case USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER:
+        usbd_ep_write_buffer(usbd, 0, device_quality_descriptor, sizeof(device_quality_descriptor));
+        break;
+    case USB_DESCRIPTOR_TYPE_OTHER_SPEED:
+        usbd_ep_write_buffer(usbd, 0, other_speed_config_descriptor, sizeof(other_speed_config_descriptor));
+        break;
+    case USB_DESCRIPTOR_TYPE_BINARY_OBJECT_STORE:
+        usbd_ep_write_buffer(usbd, 0, USBD_BinaryObjectStoreDescriptor, sizeof(USBD_BinaryObjectStoreDescriptor));
+        break;
+    default:
+        break;
     }
-    (*desc)[0] = total_len;
-    *desc += total_len;
-    return total_len;
+
+    usbd_ep_read_data(usbd, 0);
+    usbd_ep_read_data(usbd, 0);
+    usbd_ep_read_data(usbd, 0);
+    usbd_ep_read_data(usbd, 0);
 }
 
-void usbd_init_desc()
+void usbd_std_device_req_handler(USBD_TypeDef *usbd)
 {
-    volatile uint8_t *w_ptr = &USBD->DESC_DATA[0];
-    USBD->DESC_DEV_LEN = sizeof(device_descriptor);
-    USBD->DESC_DEV_ADDR = usbd_calc_descaddr(w_ptr);
-    __memcpy8((uint8_t *)w_ptr, device_descriptor, sizeof(device_descriptor));
-    w_ptr += sizeof(device_descriptor);
-    *w_ptr++ = 0;
-    *w_ptr++ = 0;
+    uint8_t requset = usbd_ep_read_data(usbd, 0);
+    uint16_t value = usbd_ep_read_data(usbd, 0);
+    value |= (uint16_t)usbd_ep_read_data(usbd, 0) << 8;
 
-    USBD->DESC_QUAL_LEN = sizeof(device_quality_descriptor);
-    USBD->DESC_QUAL_ADDR = usbd_calc_descaddr(w_ptr);
-    __memcpy8((uint8_t *)w_ptr, device_quality_descriptor, sizeof(device_quality_descriptor));
-    w_ptr += sizeof(device_quality_descriptor);
-    *w_ptr++ = 0;
-    *w_ptr++ = 0;
-
-    USBD->DESC_FSCFG_LEN = sizeof(config_descriptor_fs);
-    USBD->DESC_FSCFG_ADDR = usbd_calc_descaddr(w_ptr);
-    __memcpy8((uint8_t *)w_ptr, config_descriptor_fs, sizeof(config_descriptor_fs));
-    w_ptr += sizeof(config_descriptor_fs);
-
-    USBD->DESC_HSCFG_LEN = sizeof(config_descriptor_hs);
-    USBD->DESC_HSCFG_ADDR = usbd_calc_descaddr(w_ptr);
-    __memcpy8((uint8_t *)w_ptr, config_descriptor_hs, sizeof(config_descriptor_hs));
-    w_ptr += sizeof(config_descriptor_hs);
-
-    USBD->DESC_OSCFG_ADDR = usbd_calc_descaddr(w_ptr);
-    *w_ptr++ = 0x07;
-
-    USBD->DESC_STRLANG_ADDR = usbd_calc_descaddr(w_ptr);
-    *w_ptr++ = 0x04;
-    *w_ptr++ = 0x03;
-    *w_ptr++ = 0x09;
-    *w_ptr++ = 0x04;
-
-    USBD->DESC_HIDRPT_LEN = 0;
-    USBD->DESC_HIDRPT_ADDR = 0;
-
-    USBD->DESC_BOS_ADDR = 0;
-    USBD->DESC_BOS_LEN = 0;
-
-    // USBD->DESC_BOS_ADDR = usbd_calc_descaddr(w_ptr);
-    // USBD->DESC_BOS_LEN = sizeof(USBD_BinaryObjectStoreDescriptor);
-    // __memcpy8((uint8_t *)w_ptr, USBD_BinaryObjectStoreDescriptor, sizeof(USBD_BinaryObjectStoreDescriptor));
-    // w_ptr += sizeof(USBD_BinaryObjectStoreDescriptor);
-
-    USBD->DESC_STRVENDOR_ADDR = usbd_calc_descaddr(w_ptr);
-    USBD->DESC_STRVENDOR_LEN = desc_make_str(&w_ptr, string_descriptors[1]);
-    USBD->DESC_STRPORDUCT_ADDR = usbd_calc_descaddr(w_ptr);
-    USBD->DESC_STRPORDUCT_LEN = desc_make_str(&w_ptr, string_descriptors[2]);
-    USBD->DESC_STRERTIAL_ADDR = usbd_calc_descaddr(w_ptr);
-    USBD->DESC_STRERTIAL_LEN = desc_make_str(&w_ptr, string_descriptors[3]);
-
-    USBD->DESC_HASSTR = 1;
+    switch (requset)
+    {
+    case USB_REQUEST_GET_DESCRIPTOR:
+        usbd_get_descriptor(usbd, value);
+        break;
+    }
 }
 
-void usbd_enable()
+void usbd_standard_request_handler(USBD_TypeDef *usbd, uint8_t requset_type)
 {
-    USBD->CR |= USBD_CR_EN;
+    switch (requset_type & USB_REQUEST_RECIPIENT_DEVICE)
+    {
+    case USB_REQUEST_RECIPIENT_DEVICE:
+        usbd_std_device_req_handler(usbd);
+        break;
+    }
+}
+
+void usbd_class_request_handler(USBD_TypeDef *usbd, uint8_t requset_type)
+{
+}
+
+void usbd_vendor_request_handler(USBD_TypeDef *usbd, uint8_t requset_type)
+{
+}
+
+void usbd_ep0_rx_irq_handler(USBD_TypeDef *usbd)
+{
+    uint8_t requset_type = usbd_ep_read_data(usbd, 0);
+    switch (requset_type & USB_REQUEST_TYPE_MASK)
+    {
+    case USB_REQUEST_STANDARD:
+        usbd_standard_request_handler(usbd, requset_type);
+        break;
+    case USB_REQUEST_CLASS:
+        usbd_class_request_handler(usbd, requset_type);
+        break;
+    case USB_REQUEST_VENDOR:
+        usbd_vendor_request_handler(usbd, requset_type);
+        break;
+    default:
+        break;
+    }
 }

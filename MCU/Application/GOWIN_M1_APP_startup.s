@@ -1,5 +1,5 @@
 .syntax unified
-.cpu cortex-m1
+.cpu cortex-m0
 .fpu softvfp
 .thumb
 

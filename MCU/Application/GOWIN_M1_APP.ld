@@ -6,7 +6,7 @@ MEMORY
 {
     ITCM (rx) :    ORIGIN = 0x00000000, LENGTH = 32K
     RAM (rwx) :    ORIGIN = 0x20000000, LENGTH = 32K
-    EXFLASH (rx) : ORIGIN = 0x4D400000, LENGTH = 4080K
+    /* EXFLASH (rx) : ORIGIN = 0x4D400000, LENGTH = 4M-16K */
 }
 
 __itcm_start__ = 0;
