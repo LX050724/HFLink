@@ -147,7 +147,11 @@ module AHB_USBDevice #(
 
     reg [31:0] usb_ctrl_reg;
     wire USB_CR_EN = usb_ctrl_reg[0];
-    wire USB_EP0_RX_INT_EN = usb_ctrl_reg[31];
+    wire USB_SEND_Z = usb_ctrl_reg[1];
+
+    wire USB_EPOUT_INT_EN = usb_ctrl_reg[31];
+    wire USB_EPIN_INT_EN = usb_ctrl_reg[30];
+    wire USB_SETUP_INT_EN = usb_ctrl_reg[29];
     always @(posedge hclk or negedge hresetn) begin
         if (!hresetn) begin
             usb_ctrl_reg <= 0;
@@ -257,7 +261,7 @@ module AHB_USBDevice #(
                                   .txdat_i(usb_txdat),
                                   .txval_i(usb_txval),
                                   .txdat_len_i(usb_txdat_len),
-                                  .txiso_pid_i(4'b0011),
+                                  .txiso_pid_i(4'b1011),
                                   .txcork_i(usb_txcork),
                                   .txpop_o(usb_txpop),
                                   .txact_o(usb_txact),
@@ -345,22 +349,17 @@ module AHB_USBDevice #(
     reg [7:0] usb_requst_type;
     reg [7:0] usb_requst;
     reg [1:0] ep0_check_status;
-    reg usb_ep0_rx_int_sig;
-    reg usb_setup_store;
 
     always @(posedge hclk or posedge usb_link_rst) begin
         if (usb_link_rst) begin
             ep0_check_status <= 2'd0;
             usb_requst_type <= 8'd0;
             usb_requst <= 8'd0;
-            usb_ep0_rx_int_sig <= 1'd0;
-            usb_setup_store <= 1'd0;
         end
         else begin
             if (ep0_rx_val) begin
                 case (ep0_check_status)
                     0: begin
-                        usb_setup_store <= setup_active;
                         usb_requst_type <= endpt0_dat;
                         ep0_check_status <= 2'd1;
                     end
@@ -373,16 +372,49 @@ module AHB_USBDevice #(
                 endcase
             end
             else begin
-                if (ep0_check_status)
-                    usb_ep0_rx_int_sig <= 1'd1;
-
-                if (usb_ep0_rx_int_sig && ep0_rx_fifo_empty)
-                    usb_ep0_rx_int_sig <= 1'd0;
                 ep0_check_status <= 2'd0;
             end
         end
     end
 
+    reg usb_epout_int_sig;
+    reg usb_epin_int_sig;
+    reg usb_setup_int_sig;
+    reg [3:0] usb_sel_ep_store;
+    reg usb_rxact_store;
+    reg usb_setup_store;
+    always @(posedge hclk or posedge usb_link_rst) begin
+        if (usb_link_rst) begin
+            usb_setup_int_sig <= 1'd0;
+            usb_setup_store <= 1'd0;
+            usb_epout_int_sig <= 1'd0;
+            usb_rxact_store <= 1'd0;
+            usb_sel_ep_store <= 4'd0;
+        end else begin
+            // posedge rxact 锁存端点选择寄存器
+            if (!usb_rxact_store && usb_rxact)
+                usb_sel_ep_store <= endpt_sel;
+            // negedge rxact 触发OUT中断
+            if (usb_rxact_store && !usb_rxact)
+                usb_epout_int_sig <= 1'd1;
+            // negedge setup 触发SETUP中断
+            if (usb_setup_store && !setup_active)
+                usb_setup_int_sig <= 1'd1;
+
+            usb_rxact_store <= usb_rxact;
+            usb_setup_store <= setup_active;
+
+            // 写入SR清除中断标志
+            if (write_en && addr[6:2] == 5'd0) begin                
+                if (hwdatas[31])
+                    usb_epout_int_sig <= 1'd0;
+                if (hwdatas[30])
+                    usb_epin_int_sig <= 1'd0;
+                if (hwdatas[29])
+                    usb_setup_int_sig <= 1'd0;
+            end
+        end
+    end
 
     wire ep0_tx_fifo_empty;
     wire ep0_tx_fifo_full;
@@ -520,8 +552,11 @@ module AHB_USBDevice #(
             case (addr[6:2])
                 5'd0:
                     hrdatas = {
-                        usb_ep0_rx_int_sig,
-                        27'd0,
+                        usb_epout_int_sig,
+                        usb_epin_int_sig,
+                        usb_setup_int_sig,
+                        21'd0,
+                        usb_sel_ep_store,
                         usb_setup_store,
                         usb_status_hispeed,
                         usb_status_suspend,
@@ -557,5 +592,7 @@ module AHB_USBDevice #(
     end
 
     // 中断信号
-    assign intr = (USB_EP0_RX_INT_EN & usb_ep0_rx_int_sig);
+    assign intr = (USB_EPOUT_INT_EN & usb_epout_int_sig) ||
+                  (USB_EPIN_INT_EN & usb_epin_int_sig) ||
+                  (USB_SETUP_INT_EN & usb_setup_int_sig);
 endmodule

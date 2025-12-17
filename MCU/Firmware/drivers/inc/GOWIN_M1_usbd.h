@@ -48,6 +48,11 @@ static inline uint32_t usbd_is_active_flag(USBD_TypeDef *usbd, uint32_t it)
     return !!(usbd->SR & it);
 }
 
+static inline void usbd_clear_flag(USBD_TypeDef *usbd, uint32_t flag)
+{
+    usbd->SR = flag;
+}
+
 static inline void usbd_enable_it(USBD_TypeDef *usbd, uint32_t it)
 {
     usbd->CR |= it;

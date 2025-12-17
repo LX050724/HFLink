@@ -92,7 +92,7 @@ int main()
     change_mode_qspi_flash();
 
     usbd_enable(USBD);
-    usbd_enable_it(USBD, USBD_CR_IT_EP0RXNE);
+    usbd_enable_it(USBD, USBD_SR_IT_SETUP | USBD_CR_IT_EP0RXNE);
 
     NVIC_EnableIRQ(EXTINT_0_IRQn);
     print("CR:%08x\n", USBD->CR);
@@ -102,11 +102,24 @@ int main()
     }
 }
 
+uint16_t xxxx[16];
+uint8_t xi;
+
 void EXTINT_0_Handler(void)
 {
-    if (usbd_is_active_flag(USBD, USBD_SR_IT_EP0RXNE))
+    uint32_t usbd_sr = USBD->SR;
+    usbd_clear_flag(USBD, usbd_sr & 0xF0000000);
+
+    if (usbd_sr & USBD_SR_IT_SETUP)
     {
+        xxxx[0]++;
         usbd_ep0_rx_irq_handler(USBD);
         usbd_ep_readall(USBD, 0, rbuff, sizeof(rbuff));
+    }
+    
+    if (usbd_sr & USBD_SR_IT_EPOUT)
+    {
+        xxxx[1]++;
+
     }
 }

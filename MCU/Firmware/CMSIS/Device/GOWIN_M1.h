@@ -458,7 +458,7 @@ typedef struct
 /*--------------------------------------AHB_USBDevice--------------------------------------*/
 typedef struct
 {
-    __I uint32_t SR;
+    __IO uint32_t SR;
     __IO uint32_t CR;
     __I uint32_t EP_RFFE;
     __I uint32_t EP_TFFE;
@@ -730,7 +730,9 @@ typedef struct
 #define USBD_SR_SUSPEND     ((uint32_t) 0x00000002)
 #define USBD_SR_HISPEED     ((uint32_t) 0x00000004)
 #define USBD_SR_SETUP       ((uint32_t) 0x00000008)
-#define USBD_SR_IT_EP0RXNE  ((uint32_t) 0x80000000)
+#define USBD_SR_IT_EPOUT    ((uint32_t) 0x80000000)
+#define USBD_SR_IT_EPIN     ((uint32_t) 0x40000000)
+#define USBD_SR_IT_SETUP    ((uint32_t) 0x20000000)
 
 
 #define USBD_CR_EN          ((uint32_t) 0x00000001)
