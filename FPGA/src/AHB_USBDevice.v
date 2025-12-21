@@ -1,6 +1,4 @@
 module AHB_USBDevice #(
-        parameter USB_REG_NUM = 16,
-        parameter USB_DESC_RAM_LEN = 1024,
         parameter ADDRWIDTH = 12
     ) (
         input  wire                  hclk,       // clock
@@ -30,6 +28,55 @@ module AHB_USBDevice #(
         output usb_ulpi_stp,
         output usb_nrst
     );
+
+    localparam [ADDRWIDTH-1:0] USB_SR_ADDR               = 12'h000;
+    localparam [ADDRWIDTH-1:0] USB_CR_ADDR               = 12'h004;
+    localparam [ADDRWIDTH-1:0] USB_FIFO_RX_FLAG_ADDR     = 12'h008;
+    localparam [ADDRWIDTH-1:0] USB_FIFO_TX_FLAG_ADDR     = 12'h00C;
+    localparam [ADDRWIDTH-1:0] USB_EP0_FIFO_ADDR         = 12'h010;
+    localparam [ADDRWIDTH-1:0] USB_EP1_FIFO_ADDR         = 12'h014;
+    localparam [ADDRWIDTH-1:0] USB_EP2_FIFO_ADDR         = 12'h018;
+    localparam [ADDRWIDTH-1:0] USB_EP3_FIFO_ADDR         = 12'h01C;
+    localparam [ADDRWIDTH-1:0] USB_EP4_FIFO_ADDR         = 12'h020;
+    localparam [ADDRWIDTH-1:0] USB_EP5_FIFO_ADDR         = 12'h024;
+    localparam [ADDRWIDTH-1:0] USB_EP6_FIFO_ADDR         = 12'h028;
+    localparam [ADDRWIDTH-1:0] USB_EP7_FIFO_ADDR         = 12'h02C;
+    localparam [ADDRWIDTH-1:0] USB_EP8_FIFO_ADDR         = 12'h030;
+    localparam [ADDRWIDTH-1:0] USB_EP9_FIFO_ADDR         = 12'h034;
+    localparam [ADDRWIDTH-1:0] USB_EP10_FIFO_ADDR        = 12'h038;
+    localparam [ADDRWIDTH-1:0] USB_EP11_FIFO_ADDR        = 12'h03C;
+    localparam [ADDRWIDTH-1:0] USB_EP12_FIFO_ADDR        = 12'h040;
+    localparam [ADDRWIDTH-1:0] USB_EP13_FIFO_ADDR        = 12'h044;
+    localparam [ADDRWIDTH-1:0] USB_EP14_FIFO_ADDR        = 12'h048;
+    localparam [ADDRWIDTH-1:0] USB_EP15_FIFO_ADDR        = 12'h04C;
+
+    localparam [ADDRWIDTH-1:0] USB_EP0_FIFO_NUM_ADDR     = 12'h050;
+    localparam [ADDRWIDTH-1:0] USB_EP1_FIFO_NUM_ADDR     = 12'h054;
+    localparam [ADDRWIDTH-1:0] USB_EP2_FIFO_NUM_ADDR     = 12'h058;
+    localparam [ADDRWIDTH-1:0] USB_EP3_FIFO_NUM_ADDR     = 12'h05C;
+    localparam [ADDRWIDTH-1:0] USB_EP4_FIFO_NUM_ADDR     = 12'h060;
+    localparam [ADDRWIDTH-1:0] USB_EP5_FIFO_NUM_ADDR     = 12'h064;
+    localparam [ADDRWIDTH-1:0] USB_EP6_FIFO_NUM_ADDR     = 12'h068;
+    localparam [ADDRWIDTH-1:0] USB_EP7_FIFO_NUM_ADDR     = 12'h06C;
+    localparam [ADDRWIDTH-1:0] USB_EP8_FIFO_NUM_ADDR     = 12'h070;
+    localparam [ADDRWIDTH-1:0] USB_EP9_FIFO_NUM_ADDR     = 12'h074;
+    localparam [ADDRWIDTH-1:0] USB_EP10_FIFO_NUM_ADDR    = 12'h078;
+    localparam [ADDRWIDTH-1:0] USB_EP11_FIFO_NUM_ADDR    = 12'h07C;
+    localparam [ADDRWIDTH-1:0] USB_EP12_FIFO_NUM_ADDR    = 12'h080;
+    localparam [ADDRWIDTH-1:0] USB_EP13_FIFO_NUM_ADDR    = 12'h084;
+    localparam [ADDRWIDTH-1:0] USB_EP14_FIFO_NUM_ADDR    = 12'h088;
+    localparam [ADDRWIDTH-1:0] USB_EP15_FIFO_NUM_ADDR    = 12'h08C;
+
+    localparam [ADDRWIDTH-1:0] USB_DESC_TAB_BASE_ADDR    = 12'h100; // size:256
+    localparam [ADDRWIDTH-1:0] USB_DESC_ROM_BASE_ADDR    = 12'h800; // size:2048
+
+    function addr_equ;
+        input [ADDRWIDTH-1:0] addr;
+        input [ADDRWIDTH-1:0] taddr;
+        begin
+            addr_equ = addr[ADDRWIDTH-1:2] == taddr[ADDRWIDTH-1:2];
+        end
+    endfunction
 
     // ----------------------------------------
     // Internal wires declarations
@@ -133,7 +180,7 @@ module AHB_USBDevice #(
     // Outputs
     //-----------------------------------------------------------
     // For simplify the timing, the master and slave signals are connected directly, execpt data bus.
-    wire [ADDRWIDTH-1:0] addr        = addr_reg[ADDRWIDTH-1:0];
+    wire [ADDRWIDTH-1:0] addr = addr_reg[ADDRWIDTH-1:0];
     wire read_en     = read_en_reg;
     wire write_en    = write_en_reg;
     wire [31:0] wdata       = hwdatas;
@@ -146,18 +193,54 @@ module AHB_USBDevice #(
     //----------------------------------------------------------
 
     reg [31:0] usb_ctrl_reg;
+    reg [31:0] USB_REGS[10:0];
+
     wire USB_CR_EN = usb_ctrl_reg[0];
     wire USB_SEND_Z = usb_ctrl_reg[1];
 
     wire USB_EPOUT_INT_EN = usb_ctrl_reg[31];
     wire USB_EPIN_INT_EN = usb_ctrl_reg[30];
     wire USB_SETUP_INT_EN = usb_ctrl_reg[29];
+
+    wire [15:0] USB_DESC_DEV_LEN = USB_REGS[0][15:0];
+    wire [15:0] USB_DESC_DEV_ADDR = USB_REGS[0][31:16];
+
+    wire [15:0] USB_DESC_QUAL_LEN = USB_REGS[1][15:0];
+    wire [15:0] USB_DESC_QUAL_ADDR = USB_REGS[1][31:16];
+
+    wire [15:0] USB_DESC_FSCFG_LEN = USB_REGS[2][15:0];
+    wire [15:0] USB_DESC_FSCFG_ADDR = USB_REGS[2][31:16];
+
+    wire [15:0] USB_DESC_HSCFG_LEN = USB_REGS[3][15:0];
+    wire [15:0] USB_DESC_HSCFG_ADDR = USB_REGS[3][31:16];
+
+    wire [15:0] USB_DESC_STRLANG_ADDR = USB_REGS[4][15:0];
+    wire [15:0] USB_DESC_OSCFG_ADDR = USB_REGS[4][31:16];
+
+    wire [15:0] USB_DESC_HIDRPT_LEN = USB_REGS[5][15:0];
+    wire [15:0] USB_DESC_HIDRPT_ADDR = USB_REGS[5][31:16];
+
+    wire [15:0] USB_DESC_BOS_LEN = USB_REGS[6][15:0];
+    wire [15:0] USB_DESC_BOS_ADDR = USB_REGS[6][31:16];
+
+    wire [15:0] USB_DESC_STRVENDOR_LEN = USB_REGS[7][15:0];
+    wire [15:0] USB_DESC_STRVENDOR_ADDR = USB_REGS[7][31:16];
+
+    wire [15:0] USB_DESC_STRPRODUCT_LEN = USB_REGS[8][15:0];
+    wire [15:0] USB_DESC_STRPRODUCT_ADDR = USB_REGS[8][31:16];
+
+    wire [15:0] USB_DESC_STRSERIAL_LEN = USB_REGS[9][15:0];
+    wire [15:0] USB_DESC_STRSERIAL_ADDR = USB_REGS[9][31:16];
+
+    wire USB_DESC_HASSTR = USB_REGS[10][0:0];
+
+
     always @(posedge hclk or negedge hresetn) begin
         if (!hresetn) begin
             usb_ctrl_reg <= 0;
         end
         else begin
-            if (write_en && (addr[6:2] == 5'd1)) begin
+            if (write_en && addr_equ(addr, USB_CR_ADDR)) begin
                 if (byte_strobe_reg[0])
                     usb_ctrl_reg[0 +: 8] <= hwdatas[0 +: 8];
                 if (byte_strobe_reg[1])
@@ -166,6 +249,30 @@ module AHB_USBDevice #(
                     usb_ctrl_reg[16 +: 8] <= hwdatas[16 +: 8];
                 if (byte_strobe_reg[3])
                     usb_ctrl_reg[24 +: 8] <= hwdatas[24 +: 8];
+            end
+        end
+    end
+
+    integer i;
+
+    always @(posedge hclk or negedge hresetn) begin
+        if (!hresetn) begin
+            for (i = 0; i < 11; i=i+1) begin
+                USB_REGS[i] <= 32'd0;
+            end
+        end
+        else begin
+            if (write_en && addr[ADDRWIDTH-1:8] == 4'b1) begin
+                if (addr[7:2] < 6'd11) begin
+                    if (byte_strobe_reg[0])
+                        USB_REGS[addr[5:2]][0 +: 8] <= hwdatas[0 +: 8];
+                    if (byte_strobe_reg[1])
+                        USB_REGS[addr[5:2]][8 +: 8] <= hwdatas[8 +: 8];
+                    if (byte_strobe_reg[2])
+                        USB_REGS[addr[5:2]][16 +: 8] <= hwdatas[16 +: 8];
+                    if (byte_strobe_reg[3])
+                        USB_REGS[addr[5:2]][24 +: 8] <= hwdatas[24 +: 8];
+                end
             end
         end
     end
@@ -181,9 +288,43 @@ module AHB_USBDevice #(
     //     end
     // end
 
+    reg [10:0] desc_rom_ada;
+    reg desc_rom_wrea;
+    wire [7:0] desc_rom_dina = hwdatas[7:0];
+    wire [7:0] desc_rom_douta;
+    wire [10:0] desc_rom_adb;
+    wire [7:0] desc_rom_doutb;
+    Gowin_DPB usb_desc_ram (
+                  .clka(hclk), //input clka
+                  .cea(1'b1), //input cea
+                  .ocea(1'b1), //input ocea
+                  .ada(desc_rom_ada), //input [10:0] ada
+                  .wrea(desc_rom_wrea), //input wrea
+                  .dina(desc_rom_dina), //input [7:0] dina
+                  .douta(desc_rom_douta), //output [7:0] douta
+                  .reseta(~hresetn), //input reseta
 
 
+                  .clkb(~hclk), //input clkb
+                  .ceb(1'b1), //input ceb
+                  .oceb(1'b1), //input oceb
+                  .adb(desc_rom_adb), //input [10:0] adb
+                  .wreb(1'b0), //input wreb
+                  .dinb(8'h00), //input [7:0] dinb
+                  .doutb(desc_rom_doutb), //output [7:0] doutb
+                  .resetb(~USB_CR_EN) //input resetb
+              );
 
+    always @(*) begin
+        if (write_en && addr[ADDRWIDTH-1] == 1'b1) begin
+            desc_rom_ada = addr[10:0];
+            desc_rom_wrea = ~USB_CR_EN;
+        end
+        else begin
+            desc_rom_ada = haddrs[10:0];
+            desc_rom_wrea = 1'b0;
+        end
+    end
     //-----------------------------------------------------------
     // USB logic
     //----------------------------------------------------------
@@ -261,7 +402,7 @@ module AHB_USBDevice #(
                                   .txdat_i(usb_txdat),
                                   .txval_i(usb_txval),
                                   .txdat_len_i(usb_txdat_len),
-                                  .txiso_pid_i(4'b1011),
+                                  .txiso_pid_i(4'b0011),
                                   .txcork_i(usb_txcork),
                                   .txpop_o(usb_txpop),
                                   .txact_o(usb_txact),
@@ -280,29 +421,29 @@ module AHB_USBDevice #(
                                   .inf_sel_o(inf_sel),
                                   .inf_set_o(inf_set),
 
-                                  .descrom_rdata_i(8'd0),
-                                  .descrom_raddr_o(),
-                                  .desc_dev_addr_i(16'd0),
-                                  .desc_dev_len_i(16'd0),
-                                  .desc_qual_addr_i(16'd0),
-                                  .desc_qual_len_i(16'd0),
-                                  .desc_fscfg_addr_i(16'd0),
-                                  .desc_fscfg_len_i(16'd0),
-                                  .desc_hscfg_addr_i(16'd0),
-                                  .desc_hscfg_len_i(16'd0),
-                                  .desc_oscfg_addr_i(16'd0),
-                                  .desc_hidrpt_addr_i(16'd0),
-                                  .desc_hidrpt_len_i(16'd0),
-                                  .desc_bos_addr_i(16'd0),
-                                  .desc_bos_len_i(16'd0),
-                                  .desc_strlang_addr_i(16'd0),
-                                  .desc_strvendor_addr_i(16'd0),
-                                  .desc_strvendor_len_i(16'd0),
-                                  .desc_strproduct_addr_i(16'd0),
-                                  .desc_strproduct_len_i(16'd0),
-                                  .desc_strserial_addr_i(16'd0),
-                                  .desc_strserial_len_i(16'd0),
-                                  .desc_have_strings_i(1'd0),
+                                  .descrom_rdata_i(desc_rom_doutb),
+                                  .descrom_raddr_o(desc_rom_adb),
+                                  .desc_dev_addr_i(USB_DESC_DEV_ADDR),
+                                  .desc_dev_len_i(USB_DESC_DEV_LEN),
+                                  .desc_qual_addr_i(USB_DESC_QUAL_ADDR),
+                                  .desc_qual_len_i(USB_DESC_QUAL_LEN),
+                                  .desc_fscfg_addr_i(USB_DESC_FSCFG_ADDR),
+                                  .desc_fscfg_len_i(USB_DESC_FSCFG_LEN),
+                                  .desc_hscfg_addr_i(USB_DESC_HSCFG_ADDR),
+                                  .desc_hscfg_len_i(USB_DESC_HSCFG_LEN),
+                                  .desc_oscfg_addr_i(USB_DESC_OSCFG_ADDR),
+                                  .desc_hidrpt_addr_i(USB_DESC_HIDRPT_ADDR),
+                                  .desc_hidrpt_len_i(USB_DESC_HIDRPT_LEN),
+                                  .desc_bos_addr_i(USB_DESC_BOS_ADDR),
+                                  .desc_bos_len_i(USB_DESC_BOS_LEN),
+                                  .desc_strlang_addr_i(USB_DESC_STRLANG_ADDR),
+                                  .desc_strvendor_addr_i(USB_DESC_STRVENDOR_ADDR),
+                                  .desc_strvendor_len_i(USB_DESC_STRVENDOR_LEN),
+                                  .desc_strproduct_addr_i(USB_DESC_STRPRODUCT_ADDR),
+                                  .desc_strproduct_len_i(USB_DESC_STRPRODUCT_LEN),
+                                  .desc_strserial_addr_i(USB_DESC_STRSERIAL_ADDR),
+                                  .desc_strserial_len_i(USB_DESC_STRSERIAL_LEN),
+                                  .desc_have_strings_i(USB_DESC_HASSTR),
 
                                   .ulpi_nxt_i(usb_ulpi_nxt),
                                   .ulpi_dir_i(usb_ulpi_dir),
@@ -337,7 +478,7 @@ module AHB_USBDevice #(
                     .WrEn(ep0_rx_val), //input WrEn
                     .Data(usb_rxdat), //input [7:0] Data
 
-                    .RdEn(read_en && (addr[6:2] == 5'd4)), //input RdEn
+                    .RdEn(read_en && addr_equ(addr, USB_EP0_FIFO_ADDR)), //input RdEn
                     .Q(ep0_rx_fifo_rdata), //output [7:0] Q
 
                     .Wnum(ep0_rx_fifo_num), //output [9:0] Wnum
@@ -345,42 +486,11 @@ module AHB_USBDevice #(
                     .Full(ep0_rx_fifo_full) //output Full
                 );
 
-    // 记录USB ep0请求类型，std请求仅处理GET_DESCRIPTOR(80,06)
-    reg [7:0] usb_requst_type;
-    reg [7:0] usb_requst;
-    reg [1:0] ep0_check_status;
-
-    always @(posedge hclk or posedge usb_link_rst) begin
-        if (usb_link_rst) begin
-            ep0_check_status <= 2'd0;
-            usb_requst_type <= 8'd0;
-            usb_requst <= 8'd0;
-        end
-        else begin
-            if (ep0_rx_val) begin
-                case (ep0_check_status)
-                    0: begin
-                        usb_requst_type <= endpt0_dat;
-                        ep0_check_status <= 2'd1;
-                    end
-                    1: begin
-                        usb_requst <= endpt0_dat;
-                        ep0_check_status <= 2'd2;
-                    end
-                    default:
-                        ep0_check_status <= 2'd2;
-                endcase
-            end
-            else begin
-                ep0_check_status <= 2'd0;
-            end
-        end
-    end
-
     reg usb_epout_int_sig;
     reg usb_epin_int_sig;
     reg usb_setup_int_sig;
     reg [3:0] usb_sel_ep_store;
+    reg usb_txact_store;
     reg usb_rxact_store;
     reg usb_setup_store;
     always @(posedge hclk or posedge usb_link_rst) begin
@@ -388,12 +498,17 @@ module AHB_USBDevice #(
             usb_setup_int_sig <= 1'd0;
             usb_setup_store <= 1'd0;
             usb_epout_int_sig <= 1'd0;
+            usb_txact_store <= 1'd0;
             usb_rxact_store <= 1'd0;
             usb_sel_ep_store <= 4'd0;
-        end else begin
+        end
+        else begin
             // posedge rxact 锁存端点选择寄存器
             if (!usb_rxact_store && usb_rxact)
                 usb_sel_ep_store <= endpt_sel;
+            // negedge txact 触发IN中断
+            if (usb_txact_store && !usb_txact)
+                usb_epin_int_sig <= 1'd1;
             // negedge rxact 触发OUT中断
             if (usb_rxact_store && !usb_rxact)
                 usb_epout_int_sig <= 1'd1;
@@ -402,10 +517,11 @@ module AHB_USBDevice #(
                 usb_setup_int_sig <= 1'd1;
 
             usb_rxact_store <= usb_rxact;
+            usb_txact_store <= usb_txact;
             usb_setup_store <= setup_active;
 
             // 写入SR清除中断标志
-            if (write_en && addr[6:2] == 5'd0) begin                
+            if (write_en && addr_equ(addr, USB_SR_ADDR)) begin
                 if (hwdatas[31])
                     usb_epout_int_sig <= 1'd0;
                 if (hwdatas[30])
@@ -426,7 +542,7 @@ module AHB_USBDevice #(
                     .Clk(hclk), //input Clk
                     .Reset(usb_link_rst), //input Reset
 
-                    .WrEn(write_en && (addr[6:2] == 5'd4)), //input WrEn
+                    .WrEn(write_en && addr_equ(addr, USB_EP0_FIFO_ADDR)), //input WrEn
                     .Data(hwdatas[7:0]), //input [7:0] Data
 
                     .Q(endpt0_dat), //output [7:0] Q
@@ -545,46 +661,57 @@ module AHB_USBDevice #(
     // 19 76: EP15 FIFO X
     // 20 80: EP0 TXNUM RXNUM
 
-
-
     always @(*) begin
         if (read_en) begin
-            case (addr[6:2])
-                5'd0:
-                    hrdatas = {
-                        usb_epout_int_sig,
-                        usb_epin_int_sig,
-                        usb_setup_int_sig,
-                        21'd0,
-                        usb_sel_ep_store,
-                        usb_setup_store,
-                        usb_status_hispeed,
-                        usb_status_suspend,
-                        usb_status_online
-                    };
-                5'd1:
-                    hrdatas = usb_ctrl_reg;
-                5'd2:
-                    hrdatas = {
-                        15'd0,
-                        ep0_rx_fifo_full,
-                        15'd0,
-                        ep0_rx_fifo_empty
-                    };
-                5'd3:
-                    hrdatas = {
-                        15'd0,
-                        ep0_tx_fifo_full,
-                        15'd0,
-                        ep0_tx_fifo_empty
-                    };
-                5'd4:
-                    hrdatas = ep0_rx_fifo_rdata;
-                5'd20:
-                    hrdatas = {4'd0, ep0_tx_fifo_num, 4'd0, ep0_rx_fifo_num};
-                default:
+            if (addr[ADDRWIDTH-1] == 1'b1) begin
+                hrdatas = {4{desc_rom_douta}};
+            end
+            else if (addr[ADDRWIDTH-1:8] == 4'b1) begin
+                if (addr[7:2] < 6'd11)
+                    hrdatas = USB_REGS[addr[5:2]];
+                else
                     hrdatas = {32{1'bx}};
-            endcase
+            end
+            else begin
+                // REGS
+                case (addr[7:2])
+                    USB_SR_ADDR[7:2]:
+                        hrdatas = {
+                            usb_epout_int_sig,
+                            usb_epin_int_sig,
+                            usb_setup_int_sig,
+                            21'd0,
+                            usb_sel_ep_store,
+                            usb_setup_store,
+                            usb_status_hispeed,
+                            usb_status_suspend,
+                            usb_status_online
+                        };
+                    USB_CR_ADDR[7:2]:
+                        hrdatas = usb_ctrl_reg;
+                    USB_FIFO_RX_FLAG_ADDR[7:2]:
+                        hrdatas = {
+                            15'd0,
+                            ep0_rx_fifo_full,
+                            15'd0,
+                            ep0_rx_fifo_empty
+                        };
+                    USB_FIFO_TX_FLAG_ADDR[7:2]:
+                        hrdatas = {
+                            15'd0,
+                            ep0_tx_fifo_full,
+                            15'd0,
+                            ep0_tx_fifo_empty
+                        };
+                    USB_EP0_FIFO_ADDR[7:2]:
+                        hrdatas = ep0_rx_fifo_rdata;
+                    USB_EP0_FIFO_NUM_ADDR[7:2]:
+                        hrdatas = {4'd0, ep0_tx_fifo_num, 4'd0, ep0_rx_fifo_num};
+                    default:
+
+                        hrdatas = {32{1'bx}};
+                endcase
+            end
         end
         else begin
             hrdatas = {32{1'bx}};
@@ -593,6 +720,6 @@ module AHB_USBDevice #(
 
     // 中断信号
     assign intr = (USB_EPOUT_INT_EN & usb_epout_int_sig) ||
-                  (USB_EPIN_INT_EN & usb_epin_int_sig) ||
-                  (USB_SETUP_INT_EN & usb_setup_int_sig);
+           (USB_EPIN_INT_EN & usb_epin_int_sig) ||
+           (USB_SETUP_INT_EN & usb_setup_int_sig);
 endmodule

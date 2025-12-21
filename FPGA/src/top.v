@@ -158,7 +158,7 @@ module HFLink_TOP(
                       .hclk(clkout0),
                       .hresetn(AHB1HRESET),
                       .hsels(AHB1HSEL),
-                      .haddrs(AHB1HADDR[31:0]),
+                      .haddrs(AHB1HADDR[11:0]),
                       .htranss(AHB1HTRANS),
                       .hsizes(AHB1HSIZE),
                       .hwrites(AHB1HWRITE),

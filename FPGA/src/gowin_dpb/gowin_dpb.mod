@@ -1,0 +1,24 @@
+-series GW5A
+-device GW5A-25
+-device_version A
+-package MBGA121N
+-part_number GW5A-LV25MG121NES
+
+
+-mod_name Gowin_DPB
+-file_name gowin_dpb
+-path D:/source/tang25K/HFLink/FPGA/src/gowin_dpb/
+-type RAM_DP
+-file_type vlg
+-bram_b true
+-dev_type GW5A-25A
+-depth_0 2048
+-depth_1 2048
+-width_0 8
+-width_1 8
+-read_mode_0 bypass
+-read_mode_1 bypass
+-write_mode_0 write-through
+-write_mode_1 write-through
+-speed false
+-reset_mode sync

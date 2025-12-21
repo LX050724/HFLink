@@ -467,6 +467,33 @@ typedef struct
         __I uint16_t RN;
         __I uint16_t TN;
     } EP_FIFONUM[16];
+    __I uint32_t RESERVED0[28];
+    struct {
+      __IO uint16_t DEV_LEN;
+      __IO uint16_t DEV_ADDR;
+      __IO uint16_t QUAL_LEN;
+      __IO uint16_t QUAL_ADDR;
+      __IO uint16_t FSCFG_LEN;
+      __IO uint16_t FSCFG_ADDR;
+      __IO uint16_t HSCFG_LEN;
+      __IO uint16_t HSCFG_ADDR;
+      __IO uint16_t STRLANG_ADDR;
+      __IO uint16_t OSCFG_ADDR;
+      __IO uint16_t HIDRPT_LEN;
+      __IO uint16_t HIDRPT_ADDR;
+      __IO uint16_t BOS_LEN;
+      __IO uint16_t BOS_ADDR;
+      __IO uint16_t STRVENDOR_LEN;
+      __IO uint16_t STRVENDOR_ADDR;
+      __IO uint16_t STRPRODUCT_LEN;
+      __IO uint16_t STRPRODUCT_ADDR;
+      __IO uint16_t STRSERIAL_LEN;
+      __IO uint16_t STRSERIAL_ADDR;
+      __IO uint16_t HASSTR;
+      __I uint16_t RESERVED0;
+    } DESC;
+    __I uint32_t RESERVED1[437];
+    __IO uint8_t DESC_DATA[2048];
 } USBD_TypeDef;
 
 /* --------  End of section using anonymous unions and disabling warnings  -------- */
@@ -736,7 +763,9 @@ typedef struct
 
 
 #define USBD_CR_EN          ((uint32_t) 0x00000001)
-#define USBD_CR_IT_EP0RXNE  ((uint32_t) 0x80000000)
+#define USBD_CR_IT_EPOUT    ((uint32_t) 0x80000000)
+#define USBD_CR_IT_EPIN     ((uint32_t) 0x40000000)
+#define USBD_CR_IT_SETUP    ((uint32_t) 0x20000000)
 
 #define USBD_EP_RFFE_EP0E    (1U << 0)
 #define USBD_EP_RFFE_EP1E    (1U << 1)

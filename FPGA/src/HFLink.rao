@@ -2,18 +2,8 @@
 <GAO_CONFIG>
     <Version>3.0</Version>
     <Mode>Standard</Mode>
-    <AoCore index="0" sample_clock="AHB1HCLK" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="HFLink_TOP" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
+    <AoCore index="0" sample_clock="AHB1HCLK" trig_type="0" storage_depth="4096" window_num="1" capture_amount="4096" implementation="0" trigger_pos="0" module_name="HFLink_TOP" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
         <SignalList>
-            <Bus capture_enable="true" name="u_usb0/usb_txdat[7:0]">
-                <Signal>u_usb0/usb_txdat[7]</Signal>
-                <Signal>u_usb0/usb_txdat[6]</Signal>
-                <Signal>u_usb0/usb_txdat[5]</Signal>
-                <Signal>u_usb0/usb_txdat[4]</Signal>
-                <Signal>u_usb0/usb_txdat[3]</Signal>
-                <Signal>u_usb0/usb_txdat[2]</Signal>
-                <Signal>u_usb0/usb_txdat[1]</Signal>
-                <Signal>u_usb0/usb_txdat[0]</Signal>
-            </Bus>
             <Bus capture_enable="true" name="u_usb0/usb_txdat_len[11:0]">
                 <Signal>u_usb0/usb_txdat_len[11]</Signal>
                 <Signal>u_usb0/usb_txdat_len[10]</Signal>
@@ -55,118 +45,6 @@
             <Signal capture_enable="true">u_usb0/usb_rxpktval</Signal>
             <Signal capture_enable="true">u_usb0/setup_active</Signal>
             <Signal capture_enable="true">u_usb0/usb_sof</Signal>
-            <Bus capture_enable="true" name="u_usb0/haddrs[11:0]">
-                <Signal>u_usb0/haddrs[11]</Signal>
-                <Signal>u_usb0/haddrs[10]</Signal>
-                <Signal>u_usb0/haddrs[9]</Signal>
-                <Signal>u_usb0/haddrs[8]</Signal>
-                <Signal>u_usb0/haddrs[7]</Signal>
-                <Signal>u_usb0/haddrs[6]</Signal>
-                <Signal>u_usb0/haddrs[5]</Signal>
-                <Signal>u_usb0/haddrs[4]</Signal>
-                <Signal>u_usb0/haddrs[3]</Signal>
-                <Signal>u_usb0/haddrs[2]</Signal>
-                <Signal>u_usb0/haddrs[1]</Signal>
-                <Signal>u_usb0/haddrs[0]</Signal>
-            </Bus>
-            <Bus capture_enable="true" name="u_usb0/htranss[1:0]">
-                <Signal>u_usb0/htranss[1]</Signal>
-                <Signal>u_usb0/htranss[0]</Signal>
-            </Bus>
-            <Bus capture_enable="true" name="u_usb0/hsizes[2:0]">
-                <Signal>u_usb0/hsizes[2]</Signal>
-                <Signal>u_usb0/hsizes[1]</Signal>
-                <Signal>u_usb0/hsizes[0]</Signal>
-            </Bus>
-            <Bus capture_enable="true" name="u_usb0/hwdatas[31:0]">
-                <Signal>u_usb0/hwdatas[31]</Signal>
-                <Signal>u_usb0/hwdatas[30]</Signal>
-                <Signal>u_usb0/hwdatas[29]</Signal>
-                <Signal>u_usb0/hwdatas[28]</Signal>
-                <Signal>u_usb0/hwdatas[27]</Signal>
-                <Signal>u_usb0/hwdatas[26]</Signal>
-                <Signal>u_usb0/hwdatas[25]</Signal>
-                <Signal>u_usb0/hwdatas[24]</Signal>
-                <Signal>u_usb0/hwdatas[23]</Signal>
-                <Signal>u_usb0/hwdatas[22]</Signal>
-                <Signal>u_usb0/hwdatas[21]</Signal>
-                <Signal>u_usb0/hwdatas[20]</Signal>
-                <Signal>u_usb0/hwdatas[19]</Signal>
-                <Signal>u_usb0/hwdatas[18]</Signal>
-                <Signal>u_usb0/hwdatas[17]</Signal>
-                <Signal>u_usb0/hwdatas[16]</Signal>
-                <Signal>u_usb0/hwdatas[15]</Signal>
-                <Signal>u_usb0/hwdatas[14]</Signal>
-                <Signal>u_usb0/hwdatas[13]</Signal>
-                <Signal>u_usb0/hwdatas[12]</Signal>
-                <Signal>u_usb0/hwdatas[11]</Signal>
-                <Signal>u_usb0/hwdatas[10]</Signal>
-                <Signal>u_usb0/hwdatas[9]</Signal>
-                <Signal>u_usb0/hwdatas[8]</Signal>
-                <Signal>u_usb0/hwdatas[7]</Signal>
-                <Signal>u_usb0/hwdatas[6]</Signal>
-                <Signal>u_usb0/hwdatas[5]</Signal>
-                <Signal>u_usb0/hwdatas[4]</Signal>
-                <Signal>u_usb0/hwdatas[3]</Signal>
-                <Signal>u_usb0/hwdatas[2]</Signal>
-                <Signal>u_usb0/hwdatas[1]</Signal>
-                <Signal>u_usb0/hwdatas[0]</Signal>
-            </Bus>
-            <Bus capture_enable="true" name="u_usb0/hrdatas[31:0]">
-                <Signal>u_usb0/hrdatas[31]</Signal>
-                <Signal>u_usb0/hrdatas[30]</Signal>
-                <Signal>u_usb0/hrdatas[29]</Signal>
-                <Signal>u_usb0/hrdatas[28]</Signal>
-                <Signal>u_usb0/hrdatas[27]</Signal>
-                <Signal>u_usb0/hrdatas[26]</Signal>
-                <Signal>u_usb0/hrdatas[25]</Signal>
-                <Signal>u_usb0/hrdatas[24]</Signal>
-                <Signal>u_usb0/hrdatas[23]</Signal>
-                <Signal>u_usb0/hrdatas[22]</Signal>
-                <Signal>u_usb0/hrdatas[21]</Signal>
-                <Signal>u_usb0/hrdatas[20]</Signal>
-                <Signal>u_usb0/hrdatas[19]</Signal>
-                <Signal>u_usb0/hrdatas[18]</Signal>
-                <Signal>u_usb0/hrdatas[17]</Signal>
-                <Signal>u_usb0/hrdatas[16]</Signal>
-                <Signal>u_usb0/hrdatas[15]</Signal>
-                <Signal>u_usb0/hrdatas[14]</Signal>
-                <Signal>u_usb0/hrdatas[13]</Signal>
-                <Signal>u_usb0/hrdatas[12]</Signal>
-                <Signal>u_usb0/hrdatas[11]</Signal>
-                <Signal>u_usb0/hrdatas[10]</Signal>
-                <Signal>u_usb0/hrdatas[9]</Signal>
-                <Signal>u_usb0/hrdatas[8]</Signal>
-                <Signal>u_usb0/hrdatas[7]</Signal>
-                <Signal>u_usb0/hrdatas[6]</Signal>
-                <Signal>u_usb0/hrdatas[5]</Signal>
-                <Signal>u_usb0/hrdatas[4]</Signal>
-                <Signal>u_usb0/hrdatas[3]</Signal>
-                <Signal>u_usb0/hrdatas[2]</Signal>
-                <Signal>u_usb0/hrdatas[1]</Signal>
-                <Signal>u_usb0/hrdatas[0]</Signal>
-            </Bus>
-            <Signal capture_enable="true">u_usb0/read_en</Signal>
-            <Signal capture_enable="true">u_usb0/hsels</Signal>
-            <Signal capture_enable="true">u_usb0/hwrites</Signal>
-            <Signal capture_enable="true">u_usb0/hreadys</Signal>
-            <Signal capture_enable="true">u_usb0/hreadyouts</Signal>
-            <Signal capture_enable="true">u_usb0/hresps</Signal>
-            <Bus capture_enable="true" name="u_usb0/addr[11:0]">
-                <Signal>u_usb0/addr[11]</Signal>
-                <Signal>u_usb0/addr[10]</Signal>
-                <Signal>u_usb0/addr[9]</Signal>
-                <Signal>u_usb0/addr[8]</Signal>
-                <Signal>u_usb0/addr[7]</Signal>
-                <Signal>u_usb0/addr[6]</Signal>
-                <Signal>u_usb0/addr[5]</Signal>
-                <Signal>u_usb0/addr[4]</Signal>
-                <Signal>u_usb0/addr[3]</Signal>
-                <Signal>u_usb0/addr[2]</Signal>
-                <Signal>u_usb0/addr[1]</Signal>
-                <Signal>u_usb0/addr[0]</Signal>
-            </Bus>
-            <Signal capture_enable="true">u_usb0/usb_ep0_rx_int_sig</Signal>
             <Bus capture_enable="true" name="u_usb0/endpt0_dat[7:0]">
                 <Signal>u_usb0/endpt0_dat[7]</Signal>
                 <Signal>u_usb0/endpt0_dat[6]</Signal>
@@ -191,6 +69,9 @@
                 <Signal>u_usb0/ep0_tx_fifo_num[1]</Signal>
                 <Signal>u_usb0/ep0_tx_fifo_num[0]</Signal>
             </Bus>
+            <Signal capture_enable="true">u_usb0/usb_epout_int_sig</Signal>
+            <Signal capture_enable="true">u_usb0/usb_epin_int_sig</Signal>
+            <Signal capture_enable="true">u_usb0/usb_setup_int_sig</Signal>
         </SignalList>
         <Triggers>
             <Trigger index="0">
@@ -222,28 +103,12 @@
             </Trigger>
             <Trigger index="3">
                 <SignalList>
-                    <Signal>u_usb0/ep0_tx_fifo_empty</Signal>
+                    <Signal>u_usb0/usb_epout_int_sig</Signal>
+                    <Signal>u_usb0/usb_epin_int_sig</Signal>
+                    <Signal>u_usb0/usb_setup_int_sig</Signal>
                 </SignalList>
             </Trigger>
-            <Trigger index="4">
-                <SignalList>
-                    <Bus restorename="u_usb0/addr[11:0]">
-                        <Signal>u_usb0/addr[11]</Signal>
-                        <Signal>u_usb0/addr[10]</Signal>
-                        <Signal>u_usb0/addr[9]</Signal>
-                        <Signal>u_usb0/addr[8]</Signal>
-                        <Signal>u_usb0/addr[7]</Signal>
-                        <Signal>u_usb0/addr[6]</Signal>
-                        <Signal>u_usb0/addr[5]</Signal>
-                        <Signal>u_usb0/addr[4]</Signal>
-                        <Signal>u_usb0/addr[3]</Signal>
-                        <Signal>u_usb0/addr[2]</Signal>
-                        <Signal>u_usb0/addr[1]</Signal>
-                        <Signal>u_usb0/addr[0]</Signal>
-                    </Bus>
-                    <Signal>u_usb0/write_en</Signal>
-                </SignalList>
-            </Trigger>
+            <Trigger index="4"/>
             <Trigger index="5"/>
             <Trigger index="6"/>
             <Trigger index="7"/>
@@ -260,8 +125,8 @@
             <MatchUnit index="0" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="1" value1="0" trigger="0"/>
             <MatchUnit index="1" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="10000" value1="00000" trigger="1"/>
             <MatchUnit index="2" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="10000" value1="00000" trigger="2"/>
-            <MatchUnit index="3" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="0" value1="0" trigger="3"/>
-            <MatchUnit index="4" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="0000000100001" value1="0000000000000" trigger="4"/>
+            <MatchUnit index="3" enabled="1" match_type="1" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="XRX" value1="000" trigger="3"/>
+            <MatchUnit index="4" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="0000000100001" value1="0000000000000" trigger="4"/>
             <MatchUnit index="5" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
             <MatchUnit index="6" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
             <MatchUnit index="7" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
@@ -279,8 +144,7 @@
             <Expression>M1</Expression>
             <Expression>M2</Expression>
             <Expression>M3</Expression>
-            <Expression>M4</Expression>
         </Expressions>
     </AoCore>
-    <GAO_ID>1101111011111101</GAO_ID>
+    <GAO_ID>1100101111110110</GAO_ID>
 </GAO_CONFIG>
