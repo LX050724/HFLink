@@ -26,7 +26,19 @@ module AHB_USBDevice #(
         input usb_ulpi_nxt,
         input usb_ulpi_dir,
         output usb_ulpi_stp,
-        output usb_nrst
+        output usb_nrst,
+
+        // 数据AxisStream
+        input winusb_in_tvalid,
+        input [7:0] winusb_in_tdata,
+        input winusb_out_tready,
+        output winusb_out_tvalid,
+        output [7:0] winusb_out_tdata,
+        input cdc_in_tvalid,
+        input [7:0] cdc_in_tdata,
+        input cdc_out_tready,
+        output cdc_out_tvalid,
+        output [7:0] cdc_out_tdata
     );
 
     localparam [ADDRWIDTH-1:0] USB_SR_ADDR               = 12'h000;
@@ -568,69 +580,58 @@ module AHB_USBDevice #(
     assign endpt0_txval = !ep0_tx_fifo_empty;
 
 
-    // usb_fifo usb_fifo_u (
-    //              .i_clk(hclk),
-    //              .i_reset(usb_link_rst),
-    //              .i_usb_endpt(endpt_sel),
-    //              .i_usb_rxact(usb_rxact),
-    //              .i_usb_rxval(usb_rxval),
-    //              .i_usb_rxpktval(usb_rxpktval),
-    //              .i_usb_rxdat(usb_rxdat),
-    //              .o_usb_rxrdy(ep_usb_rxrdy),
-    //              .i_usb_txact(usb_txact),
-    //              .i_usb_txpop(usb_txpop),
-    //              .i_usb_txpktfin(usb_txpktfin),
-    //              .o_usb_txcork(ep_usb_txcork),
-    //              .o_usb_txlen(ep_usb_txlen),
-    //              .o_usb_txdat(ep_usb_txdat),
+    usb_fifo usb_fifo_u (
+                 .i_clk(hclk),
+                 .i_reset(usb_link_rst),
+                 .i_usb_endpt(endpt_sel),
+                 .i_usb_rxact(usb_rxact),
+                 .i_usb_rxval(usb_rxval),
+                 .i_usb_rxpktval(usb_rxpktval),
+                 .i_usb_rxdat(usb_rxdat),
+                 .o_usb_rxrdy(ep_usb_rxrdy),
+                 .i_usb_txact(usb_txact),
+                 .i_usb_txpop(usb_txpop),
+                 .i_usb_txpktfin(usb_txpktfin),
+                 .o_usb_txcork(ep_usb_txcork),
+                 .o_usb_txlen(ep_usb_txlen),
+                 .o_usb_txdat(ep_usb_txdat),
 
-    //              // ACM DIN
-    //              .i_ep1_tx_clk(hclk),
-    //              .i_ep1_tx_max(TRANS_MAX),
-    //              // .i_ep1_tx_dval(),
-    //              // .i_ep1_tx_data(),
+                 // WinUSB IN
+                 .i_ep1_tx_clk(hclk),
+                 .i_ep1_tx_max(TRANS_MAX),
+                 .i_ep1_tx_dval(winusb_in_tvalid),
+                 .i_ep1_tx_data(winusb_in_tdata),
 
-    //              // ACM DOUT
-    //              .i_ep2_rx_clk(hclk),
-    //              .i_ep2_rx_rdy(TRANS_MAX),
-    //              // .o_ep2_rx_dval(),
-    //              // .o_ep2_rx_data(),
+                 // WinUSB OUT
+                 .i_ep2_rx_clk(hclk),
+                 .i_ep2_rx_rdy(winusb_out_tready),
+                 .o_ep2_rx_dval(winusb_out_tvalid),
+                 .o_ep2_rx_data(winusb_out_tdata),
 
-    //              // WinUSB IN
-    //              .i_ep3_tx_clk(hclk),
-    //              .i_ep3_tx_max(TRANS_MAX),
-    //              .i_ep3_tx_dval(acm_ctrl_tx_dval),
-    //              .i_ep3_tx_data(acm_ctrl_tx_data),
+                 // CDC IN
+                 .i_ep3_tx_clk(hclk),
+                 .i_ep3_tx_max(TRANS_MAX),
+                 .i_ep3_tx_dval(cdc_in_tvalid),
+                 .i_ep3_tx_data(cdc_in_tdata),
 
-    //              // WinUSB OUT
-    //              .i_ep4_rx_clk(hclk)
-    //              // .i_ep4_rx_rdy(),
-    //              // .o_ep4_rx_dval(),
-    //              // .o_ep4_rx_data(),
-    //          );
+                 // CDC OUT
+                 .i_ep4_rx_clk(hclk),
+                 .i_ep4_rx_rdy(cdc_out_tready),
+                 .o_ep4_rx_dval(cdc_out_tvalid),
+                 .o_ep4_rx_data(cdc_out_tdata),
 
-    // /* USB串口配置模块 */
-    // usb_uart_config u_usb_uart_config(
-    //                     .PHY_CLKOUT(hclk),
-    //                     .RESET_IN(usb_link_rst),
-    //                     .setup_active(setup_active),
-    //                     .endpt_sel(endpt_sel),
-    //                     .usb_rxval(usb_rxval),
-    //                     .usb_rxact(usb_rxact),
-    //                     .usb_rxdat(usb_rxdat),
-    //                     .usb_txact(usb_txact),
-    //                     .usb_txpop(usb_txpop),
-    //                     .usb_txdat_len_o(uart_config_txdat_len),
-    //                     .endpt0_dat_o(endpt0_dat),
-    //                     .endpt0_txval_o(endpt0_txval),
+                 //  HID IN
+                 .i_ep8_tx_clk(hclk),
+                 .i_ep8_tx_max(TRANS_MAX),
+                 .i_ep8_tx_dval(),
+                 .i_ep8_tx_data(),
 
-    //                     .uart1_en_o(uart_cfg_en),
-    //                     .uart1_BAUD_RATE_o(uart_cfg_baud_rate),
-    //                     .uart1_PARITY_BIT_o(uart_cfg_parity_bit),
-    //                     .uart1_STOP_BIT_o(uart_cfg_stop_bit),
-    //                     .uart1_DATA_BITS_o(uart_cfg_data_bits)
-    //                 );
-    // defparam u_usb_uart_config.ENDPT0 = ENDPT0;
+                 //  HID OUT
+                 .i_ep9_rx_clk(hclk),
+                 .i_ep9_rx_rdy(),
+                 .o_ep9_rx_dval(),
+                 .o_ep9_rx_data()
+             );
 
     assign usb_nrst = USB_CR_EN & hresetn;
     //assign intr = ~acm_ctrl_rx_rdy;

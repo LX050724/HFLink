@@ -13,13 +13,11 @@ module HFLink_TOP(
         ,inout FLASH_SPI_WPN_io
         ,inout FLASH_SPI_CLK_io
 
-        // ,output _FLASH_SPI_HOLDN_io
-        // ,output _FLASH_SPI_CSN_io
-        // ,output _FLASH_SPI_MISO_io
-        // ,output _FLASH_SPI_MOSI_io
-        // ,output _FLASH_SPI_WPN_io
-        // ,output _FLASH_SPI_CLK_io
-
+        ,output UART_TX
+        ,input  UART_RX
+        ,output UART_DE
+        ,output UART_RTS
+        ,output UART_DTR
 
         ,output usb_clk
         ,output usb_rstn
@@ -30,31 +28,31 @@ module HFLink_TOP(
     );
 
 
-//     wire FLASH_SPI_MISO_in;
-//     wire FLASH_SPI_MOSI_in;
-//     wire FLASH_SPI_HOLDN_in;
-//     wire FLASH_SPI_WPN_in;
-//     wire FLASH_SPI_CSN_in;
-//     wire FLASH_SPI_CLK_in;
-//     wire spi1_clk_out;
-//     wire spi1_csn_out;
-//     wire spi1_mosi_out;
-//     wire spi1_miso_out;
-//     wire spi1_wpn_out;
-//     wire spi1_holdn_out;
-// wire IO_5;
-// wire IO_5_243;
-// wire IO_5_244;
-// wire IO_5_245;
-// wire IO_5_246;
-// wire IO_5_247;
+    //     wire FLASH_SPI_MISO_in;
+    //     wire FLASH_SPI_MOSI_in;
+    //     wire FLASH_SPI_HOLDN_in;
+    //     wire FLASH_SPI_WPN_in;
+    //     wire FLASH_SPI_CSN_in;
+    //     wire FLASH_SPI_CLK_in;
+    //     wire spi1_clk_out;
+    //     wire spi1_csn_out;
+    //     wire spi1_mosi_out;
+    //     wire spi1_miso_out;
+    //     wire spi1_wpn_out;
+    //     wire spi1_holdn_out;
+    // wire IO_5;
+    // wire IO_5_243;
+    // wire IO_5_244;
+    // wire IO_5_245;
+    // wire IO_5_246;
+    // wire IO_5_247;
 
-//     assign _FLASH_SPI_HOLDN_io = IO_5 ? FLASH_SPI_HOLDN_in : spi1_holdn_out;
-//     assign _FLASH_SPI_CSN_io = IO_5_243 ? FLASH_SPI_CSN_in : spi1_csn_out;
-//     assign _FLASH_SPI_MISO_io = IO_5_244 ? FLASH_SPI_MISO_in : spi1_miso_out;
-//     assign _FLASH_SPI_MOSI_io = IO_5_245 ? FLASH_SPI_MOSI_in : spi1_mosi_out;
-//     assign _FLASH_SPI_WPN_io = IO_5_246 ? FLASH_SPI_WPN_in : spi1_wpn_out;
-//     assign _FLASH_SPI_CLK_io = IO_5_247 ? FLASH_SPI_CLK_in : spi1_clk_out;
+    //     assign _FLASH_SPI_HOLDN_io = IO_5 ? FLASH_SPI_HOLDN_in : spi1_holdn_out;
+    //     assign _FLASH_SPI_CSN_io = IO_5_243 ? FLASH_SPI_CSN_in : spi1_csn_out;
+    //     assign _FLASH_SPI_MISO_io = IO_5_244 ? FLASH_SPI_MISO_in : spi1_miso_out;
+    //     assign _FLASH_SPI_MOSI_io = IO_5_245 ? FLASH_SPI_MOSI_in : spi1_mosi_out;
+    //     assign _FLASH_SPI_WPN_io = IO_5_246 ? FLASH_SPI_WPN_in : spi1_wpn_out;
+    //     assign _FLASH_SPI_CLK_io = IO_5_247 ? FLASH_SPI_CLK_in : spi1_clk_out;
 
 
     wire lock;
@@ -65,21 +63,35 @@ module HFLink_TOP(
     assign ready_led = !m1_halt;
 
     wire [31:0] AHB1HRDATA;
-    wire AHB1HREADYOUT;
-    wire [1:0] AHB1HRESP;
-    wire [1:0] AHB1HTRANS;
-    wire [2:0] AHB1HBURST;
-    wire [3:0] AHB1HPROT;
-    wire [2:0] AHB1HSIZE;
-    wire AHB1HWRITE;
-    wire AHB1HREADYMUX;
-    wire [3:0] AHB1HMASTER;
-    wire AHB1HMASTLOCK;
+    wire        AHB1HREADYOUT;
+    wire [ 1:0] AHB1HRESP;
+    wire [ 1:0] AHB1HTRANS;
+    wire [ 2:0] AHB1HBURST;
+    wire [ 3:0] AHB1HPROT;
+    wire [ 2:0] AHB1HSIZE;
+    wire        AHB1HWRITE;
+    wire        AHB1HREADYMUX;
+    wire [ 3:0] AHB1HMASTER;
+    wire        AHB1HMASTLOCK;
     wire [31:0] AHB1HADDR;
     wire [31:0] AHB1HWDATA;
-    wire AHB1HSEL;
-    wire AHB1HCLK;
-    wire AHB1HRESET;
+    wire        AHB1HSEL;
+    wire        AHB1HCLK;
+    wire        AHB1HRESET;
+
+
+    wire [31:0] APB1PADDR;
+    wire        APB1PENABLE;
+    wire        APB1PWRITE;
+    wire [ 3:0] APB1PSTRB;
+    wire [ 2:0] APB1PPROT;
+    wire [31:0] APB1PWDATA;
+    wire        APB1PSEL;
+    wire [31:0] APB1PRDATA;
+    wire        APB1PREADY;
+    wire        APB1PSLVERR;
+    wire        APB1PCLK;
+    wire        APB1PRESET;
 
     Gowin_PLL main_pll(
                   .lock(lock), //output lock
@@ -118,6 +130,20 @@ module HFLink_TOP(
                           .AHB1HCLK(AHB1HCLK), //output AHB1HCLK
                           .AHB1HRESET(AHB1HRESET), //output AHB1HRESET
 
+                          // APB1
+                          .APB1PADDR(APB1PADDR), //output [31:0] APB1PADDR
+                          .APB1PENABLE(APB1PENABLE), //output APB1PENABLE
+                          .APB1PWRITE(APB1PWRITE), //output APB1PWRITE
+                          .APB1PSTRB(APB1PSTRB), //output [3:0] APB1PSTRB
+                          .APB1PPROT(APB1PPROT), //output [2:0] APB1PPROT
+                          .APB1PWDATA(APB1PWDATA), //output [31:0] APB1PWDATA
+                          .APB1PSEL(APB1PSEL), //output APB1PSEL
+                          .APB1PRDATA(APB1PRDATA), //input [31:0] APB1PRDATA
+                          .APB1PREADY(APB1PREADY), //input APB1PREADY
+                          .APB1PSLVERR(APB1PSLVERR), //input APB1PSLVERR
+                          .APB1PCLK(APB1PCLK), //output APB1PCLK
+                          .APB1PRESET(APB1PRESET), //output APB1PRESET
+
                           // EXFLASH
                           .FLASH_SPI_HOLDN(FLASH_SPI_HOLDN_io), //inout FLASH_SPI_HOLDN
                           .FLASH_SPI_CSN(FLASH_SPI_CSN_io), //inout FLASH_SPI_CSN
@@ -126,33 +152,22 @@ module HFLink_TOP(
                           .FLASH_SPI_WPN(FLASH_SPI_WPN_io), //inout FLASH_SPI_WPN
                           .FLASH_SPI_CLK(FLASH_SPI_CLK_io), //inout FLASH_SPI_CLK
 
-
-                            // .FLASH_SPI_MISO_in(FLASH_SPI_MISO_in),
-                            // .FLASH_SPI_MOSI_in(FLASH_SPI_MOSI_in),
-                            // .FLASH_SPI_HOLDN_in(FLASH_SPI_HOLDN_in),
-                            // .FLASH_SPI_WPN_in(FLASH_SPI_WPN_in),
-                            // .FLASH_SPI_CSN_in(FLASH_SPI_CSN_in),
-                            // .FLASH_SPI_CLK_in(FLASH_SPI_CLK_in),
-
-                            // .spi1_clk_out(spi1_clk_out),
-                            // .spi1_csn_out(spi1_csn_out),
-                            // .spi1_mosi_out(spi1_mosi_out),
-                            // .spi1_miso_out(spi1_miso_out),
-                            // .spi1_wpn_out(spi1_wpn_out),
-                            // .spi1_holdn_out(spi1_holdn_out),
-
-                            // .IO_5(IO_5),
-                            // .IO_5_243(IO_5_243),
-                            // .IO_5_244(IO_5_244),
-                            // .IO_5_245(IO_5_245),
-                            // .IO_5_246(IO_5_246),
-                            // .IO_5_247(IO_5_247),
-
                           .EXTINT(intr) //input [3:0] EXTINT
                       );
 
     wire [7:0] usb_ulpi_data_i;
     wire [7:0] usb_ulpi_data_o;
+
+    wire winusb_in_tvalid;
+    wire [7:0] winusb_in_tdata;
+    wire winusb_out_tready;
+    wire winusb_out_tvalid;
+    wire [7:0] winusb_out_tdata;
+    wire cdc_in_tvalid;
+    wire [7:0] cdc_in_tdata;
+    wire cdc_out_tready;
+    wire cdc_out_tvalid;
+    wire [7:0] cdc_out_tdata;
 
     AHB_USBDevice u_usb0 (
                       .hclk(clkout0),
@@ -174,8 +189,20 @@ module HFLink_TOP(
                       .usb_ulpi_nxt(usb_ulpi_nxt),
                       .usb_ulpi_dir(usb_ulpi_dir),
                       .usb_ulpi_stp(usb_ulpi_stp),
-                      .usb_nrst(usb_rstn)
+                      .usb_nrst(usb_rstn),
+
+                      .winusb_in_tvalid(winusb_in_tvalid),
+                      .winusb_in_tdata(winusb_in_tdata),
+                      .winusb_out_tready(winusb_out_tready),
+                      .winusb_out_tvalid(winusb_out_tvalid),
+                      .winusb_out_tdata(winusb_out_tdata),
+                      .cdc_in_tvalid(cdc_in_tvalid),
+                      .cdc_in_tdata(cdc_in_tdata),
+                      .cdc_out_tready(cdc_out_tready),
+                      .cdc_out_tvalid(cdc_out_tvalid),
+                      .cdc_out_tdata(cdc_out_tdata)
                   );
+    assign usb_clk = clkout0;
 
     genvar i;
     generate
@@ -189,81 +216,35 @@ module HFLink_TOP(
         end
     endgenerate
 
-    assign usb_clk = clkout0;
 
-    // wire [31:0] reg_addr;
-    // wire reg_read_en;
-    // wire reg_write_en;
-    // wire [3:0] reg_byte_strobe;
-    // wire [31:0] reg_wdata;
-    // reg [31:0] reg_rdata;
+    APB_Stream_UART apb_stream_uart(
+                        // APB
+                        .PCLK(APB1PCLK),
+                        .PWRITE(APB1PWRITE),
+                        .PSEL(APB1PSEL),
+                        .PENABLE(APB1PENABLE),
+                        .PADDR(APB1PADDR),
+                        .PSTRB(APB1PSTRB),
+                        .PWDATA(APB1PWDATA),
+                        .PRDATA(APB1PRDATA),
+                        .PREADY(APB1PREADY),
+                        .PRESETn(APB1PRESET),
 
-    // reg [31:0] regs[0:15]; // 16 registers for testing
+                        // Data Stream
+                        // .tx_tvalid(cdc_out_tvalid),
+                        // .tx_tready(cdc_out_tready),
+                        // .tx_tdata(cdc_out_tdata),
+                        .tx_tvalid(1'd1),
+                        .tx_tready(),
+                        .tx_tdata(8'b0110_0110),
+                        .rx_valid(cdc_in_tvalid),
+                        .rx_tdata(cdc_in_tdata),
 
-    // cmsdk_ahb_eg_slave_interface  ahb_test(
-    //     .hclk(clkout0),
-    //     .hresetn(AHB1HRESET),
-    //     .hsels(AHB1HSEL),
-    //     .haddrs(AHB1HADDR[31:0]),
-    //     .htranss(AHB1HTRANS),
-    //     .hsizes(AHB1HSIZE),
-    //     .hwrites(AHB1HWRITE),
-    //     .hreadys(AHB1HREADYMUX),
-    //     .hwdatas(AHB1HWDATA),
-    //     .hreadyouts(AHB1HREADYOUT),
-    //     .hresps(), // unused
-    //     .hrdatas(AHB1HRDATA),
-
-
-    //     .addr(reg_addr),
-    //     .read_en(reg_read_en),
-    //     .write_en(reg_write_en),
-    //     .byte_strobe(reg_byte_strobe),
-    //     .wdata(reg_wdata),
-    //     .rdata(reg_rdata)
-    // );
-
-    // always @(posedge clkout0 or negedge AHB1HRESET) begin
-    //     if (!AHB1HRESET) begin
-    //         // reset all registers to 0
-    //         regs[0] <= 32'b0;
-    //         regs[1] <= 32'b0;
-    //         regs[2] <= 32'b0;
-    //         regs[3] <= 32'b0;
-    //         regs[4] <= 32'b0;
-    //         regs[5] <= 32'b0;
-    //         regs[6] <= 32'b0;
-    //         regs[7] <= 32'b0;
-    //         regs[8] <= 32'b0;
-    //         regs[9] <= 32'b0;
-    //         regs[10] <= 32'b0;
-    //         regs[11] <= 32'b0;
-    //         regs[12] <= 32'b0;
-    //         regs[13] <= 32'b0;
-    //         regs[14] <= 32'b0;
-    //         regs[15] <= 32'b0;
-    //     end else if (reg_write_en) begin
-    //         // write to registers with byte strobe
-    //         if (reg_byte_strobe[0])
-    //             regs[reg_addr[5:2]][0 +: 8] <= reg_wdata[0 +: 8];
-    //         if (reg_byte_strobe[1])
-    //             regs[reg_addr[5:2]][8 +: 8] <= reg_wdata[8 +: 8];
-    //         if (reg_byte_strobe[2])
-    //             regs[reg_addr[5:2]][16 +: 8] <= reg_wdata[16 +: 8];
-    //         if (reg_byte_strobe[3])
-    //             regs[reg_addr[5:2]][24 +: 8] <= reg_wdata[24 +: 8];
-    //     end
-    // end
-
-    // always @(*) begin
-    //     if (reg_read_en) begin
-    //         reg_rdata = regs[reg_addr[5:2]];
-    //     end else begin
-    //         reg_rdata = {32{1'bx}};
-    //     end
-    // end
-
-    // assign done_led = regs[0][0];
-    // assign intr = regs[1];
-
+                        // UART IO
+                        .UART_TX(UART_TX),
+                        .UART_RX(UART_RX),
+                        .UART_DE(UART_DE),
+                        .UART_RTS(UART_RTS),
+                        .UART_DTR(UART_DTR)
+                    );
 endmodule

@@ -88,8 +88,8 @@ int main()
     print("SPI_FLASH RxFIFO Depth: %d\n",
           (SPI_FLASH->CONFIG & SPIFLASH_CONF_RX_DEPTH_Msk) >> SPIFLASH_CONF_RX_DEPTH_Pos);
 
-    qspi_flash_chip_reset();
-    change_mode_qspi_flash();
+    // qspi_flash_chip_reset();
+    // change_mode_qspi_flash();
     
     usbd_init_desc();
     usbd_enable(USBD);
@@ -97,6 +97,12 @@ int main()
 
     NVIC_EnableIRQ(EXTINT_0_IRQn);
     print("CR:%08x\n", USBD->CR);
+    
+    uint32_t baud = (SystemCoreClock * 8) / 921600 + 1;
+    baud = (baud >> 1) - 0x10;
+
+    AXIS_UART->BAUD = baud;
+    AXIS_UART->CR = 1;
 
     while (1)
     {

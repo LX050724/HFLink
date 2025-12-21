@@ -1,0 +1,155 @@
+<?xml version="1" encoding="UTF-8"?>
+<GAO_CONFIG>
+    <Version>3.0</Version>
+    <Mode>Standard</Mode>
+    <AoCore index="0" sample_clock="APB1PCLK" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="HFLink_TOP" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
+        <SignalList>
+            <Bus capture_enable="true" name="apb_stream_uart/tx_tdata[7:0]">
+                <Signal>apb_stream_uart/tx_tdata[7]</Signal>
+                <Signal>apb_stream_uart/tx_tdata[6]</Signal>
+                <Signal>apb_stream_uart/tx_tdata[5]</Signal>
+                <Signal>apb_stream_uart/tx_tdata[4]</Signal>
+                <Signal>apb_stream_uart/tx_tdata[3]</Signal>
+                <Signal>apb_stream_uart/tx_tdata[2]</Signal>
+                <Signal>apb_stream_uart/tx_tdata[1]</Signal>
+                <Signal>apb_stream_uart/tx_tdata[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="apb_stream_uart/uart_baud_cnt_i[27:0]">
+                <Signal>apb_stream_uart/uart_baud_cnt_i[27]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[26]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[25]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[24]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[23]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[22]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[21]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[20]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[19]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[18]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[17]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[16]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[15]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[14]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[13]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[12]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[11]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[10]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[9]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[8]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[7]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[6]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[5]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[4]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[3]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[2]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[1]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_i[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="apb_stream_uart/uart_baud_cnt_q[3:0]">
+                <Signal>apb_stream_uart/uart_baud_cnt_q[3]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_q[2]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_q[1]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_q[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="apb_stream_uart/tx_sm[3:0]">
+                <Signal>apb_stream_uart/tx_sm[3]</Signal>
+                <Signal>apb_stream_uart/tx_sm[2]</Signal>
+                <Signal>apb_stream_uart/tx_sm[1]</Signal>
+                <Signal>apb_stream_uart/tx_sm[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="apb_stream_uart/tx_shift_reg[7:0]">
+                <Signal>apb_stream_uart/tx_shift_reg[7]</Signal>
+                <Signal>apb_stream_uart/tx_shift_reg[6]</Signal>
+                <Signal>apb_stream_uart/tx_shift_reg[5]</Signal>
+                <Signal>apb_stream_uart/tx_shift_reg[4]</Signal>
+                <Signal>apb_stream_uart/tx_shift_reg[3]</Signal>
+                <Signal>apb_stream_uart/tx_shift_reg[2]</Signal>
+                <Signal>apb_stream_uart/tx_shift_reg[1]</Signal>
+                <Signal>apb_stream_uart/tx_shift_reg[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">apb_stream_uart/UART_TX</Signal>
+            <Signal capture_enable="true">apb_stream_uart/UART_DE</Signal>
+            <Signal capture_enable="true">apb_stream_uart/uart_baud_clk</Signal>
+            <Signal capture_enable="true">apb_stream_uart/uart_baud_clk_div4</Signal>
+            <Signal capture_enable="true">apb_stream_uart/tx_party_reg</Signal>
+            <Bus capture_enable="true" name="apb_stream_uart/uart_baud_cnt_ixxx[27:0]">
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[27]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[26]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[25]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[24]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[23]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[22]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[21]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[20]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[19]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[18]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[17]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[16]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[15]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[14]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[13]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[12]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[11]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[10]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[9]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[8]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[7]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[6]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[5]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[4]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[3]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[2]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[1]</Signal>
+                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[0]</Signal>
+            </Bus>
+        </SignalList>
+        <Triggers>
+            <Trigger index="0">
+                <SignalList>
+                    <Signal>apb_stream_uart/PSEL</Signal>
+                </SignalList>
+            </Trigger>
+            <Trigger index="1">
+                <SignalList>
+                    <Signal>apb_stream_uart/UART_DE</Signal>
+                </SignalList>
+            </Trigger>
+            <Trigger index="2"/>
+            <Trigger index="3"/>
+            <Trigger index="4"/>
+            <Trigger index="5"/>
+            <Trigger index="6"/>
+            <Trigger index="7"/>
+            <Trigger index="8"/>
+            <Trigger index="9"/>
+            <Trigger index="10"/>
+            <Trigger index="11"/>
+            <Trigger index="12"/>
+            <Trigger index="13"/>
+            <Trigger index="14"/>
+            <Trigger index="15"/>
+        </Triggers>
+        <MatchUnits>
+            <MatchUnit index="0" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="0" value1="0" trigger="0"/>
+            <MatchUnit index="1" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="0" value1="0" trigger="1"/>
+            <MatchUnit index="2" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="3" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="4" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="5" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="6" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="7" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="8" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="9" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="10" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="11" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="12" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="13" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="14" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="15" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+        </MatchUnits>
+        <Expressions type="Dynamic" ex_implementation="1">
+            <Expression>M0</Expression>
+            <Expression>M1</Expression>
+        </Expressions>
+    </AoCore>
+    <GAO_ID>1110011111001000</GAO_ID>
+</GAO_CONFIG>

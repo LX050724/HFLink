@@ -455,7 +455,7 @@ typedef struct
     __I  unsigned int INIT_DONE;            /* Offset: 0x30 (R/ ) PSRAM initialization status register  */
 }PSRAM_TypeDef;
 
-/*--------------------------------------AHB_USBDevice--------------------------------------*/
+/*-------------------------------------- USBD --------------------------------------*/
 typedef struct
 {
     __IO uint32_t SR;
@@ -495,6 +495,12 @@ typedef struct
     __I uint32_t RESERVED1[437];
     __IO uint8_t DESC_DATA[2048];
 } USBD_TypeDef;
+
+/*-------------------------------------- AXIS_UART --------------------------------------*/
+typedef struct {
+  uint32_t CR;
+  uint32_t BAUD;
+} AXIS_UART_TypeDef;
 
 /* --------  End of section using anonymous unions and disabling warnings  -------- */
 #if   defined (__CC_ARM)
@@ -584,6 +590,7 @@ typedef struct
 #define APB_M16           (APB2PERIPH_BASE + 0xF00000)     /* !< APB Master [16] Base Address  */
 
 #define USBD_BASE (AHB_M1)
+#define AXIS_UART_BASE (APB_M1)
 
 #define UART0             ((UART_TypeDef      *) UART0_BASE)
 #define UART1             ((UART_TypeDef      *) UART1_BASE)
@@ -603,6 +610,7 @@ typedef struct
 #define SPI_FLASH         ((SPI_FLASH_RegDef  *) SPI_FLASH_BASE)
 #define PSRAM             ((PSRAM_TypeDef     *) PSRAM_BASE)
 #define USBD              ((USBD_TypeDef      *) USBD_BASE)
+#define AXIS_UART         ((AXIS_UART_TypeDef *) AXIS_UART_BASE)
 
 /* ================================================================================ */
 /* ================  Peripheral Register Bit Definition Section    ================ */

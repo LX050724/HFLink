@@ -6,16 +6,21 @@
     <Device name="GW5A-25A" pn="GW5A-LV25MG121NES">gw5a25a-000</Device>
     <FileList>
         <File path="src/AHB_USBDevice.v" type="file.verilog" enable="1"/>
+        <File path="src/APB_Stream_UART.v" type="file.verilog" enable="1"/>
         <File path="src/fifo_sc_top/fifo_sc_top.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_dpb/gowin_dpb.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_empu_m1/gowin_empu_m1.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_pll/gowin_pll.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_pll/gowin_pll_mod.v" type="file.verilog" enable="1"/>
         <File path="src/pll_init.v" type="file.verilog" enable="1"/>
+        <File path="src/sync_fifo/sync_rx_pkt_fifo.v" type="file.verilog" enable="1"/>
+        <File path="src/sync_fifo/sync_tx_pkt_fifo.v" type="file.verilog" enable="1"/>
+        <File path="src/sync_fifo/usb_fifo.v" type="file.verilog" enable="1"/>
         <File path="src/top.v" type="file.verilog" enable="1"/>
         <File path="src/usb_device_controller/usb_device_controller.v" type="file.verilog" enable="1"/>
         <File path="src/HFLink.cst" type="file.cst" enable="1"/>
         <File path="src/timming.sdc" type="file.sdc" enable="1"/>
         <File path="src/HFLink.rao" type="file.gao" enable="0"/>
+        <File path="src/HFLinkUART.rao" type="file.gao" enable="1"/>
     </FileList>
 </Project>
