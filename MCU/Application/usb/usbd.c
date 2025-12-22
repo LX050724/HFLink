@@ -201,7 +201,6 @@ static const uint8_t config_descriptor_fs[] = {
 #endif
 };
 
-
 // clang-format on
 
 static inline uint16_t usbd_calc_descaddr(volatile uint8_t *addr)
@@ -231,7 +230,6 @@ static uint8_t desc_make_str(volatile uint8_t **desc, const char *str)
     *desc += total_len;
     return total_len;
 }
-
 
 uint16_t desc_strserial_addr;
 uint16_t desc_exstr_addr[3];
@@ -284,7 +282,7 @@ void usbd_init_desc()
     USBD->DESC.STRVENDOR_LEN = desc_make_str(&w_ptr, string_descriptors[1].str);
     USBD->DESC.STRPRODUCT_ADDR = usbd_calc_descaddr(w_ptr);
     USBD->DESC.STRPRODUCT_LEN = desc_make_str(&w_ptr, string_descriptors[2].str);
-    
+
     desc_exstr_addr[0] = usbd_calc_descaddr(w_ptr);
     USBD->DESC.STRSERIAL_ADDR = desc_exstr_addr[0];
     USBD->DESC.STRSERIAL_LEN = desc_make_str(&w_ptr, string_descriptors[3].str);
@@ -293,8 +291,51 @@ void usbd_init_desc()
     desc_exstr_addr[2] = usbd_calc_descaddr(w_ptr);
     desc_make_str(&w_ptr, string_descriptors[5].str);
 
-
     USBD->DESC.HASSTR = 1;
+}
+
+struct cdc_line_coding line_coding;
+void cdc_acm_class_interface_request_handler(USBD_TypeDef *usbd, const struct usb_setup_packet *setup)
+{
+    switch (setup->bRequest)
+    {
+    case CDC_REQUEST_SET_LINE_CODING: {
+        if (usbd_ep_rxfifo_is_empty(usbd, 0))
+            break;
+        usbd_ep_read_buffer(usbd, 0, &line_coding, sizeof(line_coding));
+
+        uint32_t baud = (SystemCoreClock * 8) / line_coding.dwDTERate + 1;
+        baud = (baud >> 1) - 0x10;
+        AXIS_UART->BAUD = baud;
+
+        uint32_t CR = AXIS_UART->CR;
+        CR &= ~0x1e;
+        CR |= (line_coding.bCharFormat & 0x03) << 3;
+        switch (line_coding.bParityType)
+        {
+        case 1:
+            CR |= 0x06;
+            break;
+        case 2:
+            CR |= 0x02;
+            break;
+        default:
+            break;
+        }
+        AXIS_UART->CR = CR;
+        break;
+    }
+    case CDC_REQUEST_GET_LINE_CODING: {
+        usbd_ep_write_buffer(usbd, 0, (uint8_t *)&line_coding, sizeof(line_coding));
+        break;
+    }
+    case CDC_REQUEST_SET_CONTROL_LINE_STATE: {
+        AXIS_UART->CR = (AXIS_UART->CR & 0x3fffffff) | ((setup->wValue & 3) << 30);
+        break;
+    }
+    case CDC_REQUEST_SEND_BREAK:
+        break;
+    }
 }
 
 uint8_t xxx[0x12];
@@ -314,22 +355,12 @@ void usbd_write_ldata(USBD_TypeDef *usbd, const uint8_t *data, size_t len)
     ep0_data_buf_residue -= len;
 }
 
-void usbd_get_descriptor(USBD_TypeDef *usbd, struct usb_setup_packet *setup_packet)
+void usbd_get_descriptor(USBD_TypeDef *usbd, struct usb_setup_packet *setup)
 {
-    uint8_t type = HI_BYTE(setup_packet->wValue);
-    uint8_t index = LO_BYTE(setup_packet->wValue);
-    xxx[type]++;
+    uint8_t type = HI_BYTE(setup->wValue);
+    uint8_t index = LO_BYTE(setup->wValue);
     switch (type)
     {
-    // case USB_DESCRIPTOR_TYPE_DEVICE:
-    //     usbd_ep_write_buffer(usbd, 0, device_descriptor, sizeof(device_descriptor));
-    //     break;
-    // case USB_DESCRIPTOR_TYPE_CONFIGURATION:
-    //     if (usbd_get_speed(usbd))
-    //         usbd_write_ldata(usbd, config_descriptor_hs, sizeof(config_descriptor_hs));
-    //     else
-    //         usbd_write_ldata(usbd, config_descriptor_fs, sizeof(config_descriptor_fs));
-    //     break;
     case USB_DESCRIPTOR_TYPE_STRING:
         if (index > 2 && index < sizeof(string_descriptors) / sizeof(string_descriptors[0]))
         {
@@ -337,52 +368,69 @@ void usbd_get_descriptor(USBD_TypeDef *usbd, struct usb_setup_packet *setup_pack
             usbd->DESC.STRSERIAL_ADDR = desc_exstr_addr[index - 3];
         }
         break;
-    // case USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER:
-    //     usbd_ep_write_buffer(usbd, 0, device_quality_descriptor, sizeof(device_quality_descriptor));
-    //     break;
-    // case USB_DESCRIPTOR_TYPE_OTHER_SPEED:
-    //     usbd_write_ldata(usbd, other_speed_config_descriptor, sizeof(other_speed_config_descriptor));
-    //     break;
-    // case USB_DESCRIPTOR_TYPE_BINARY_OBJECT_STORE:
-    //     usbd_ep_write_buffer(usbd, 0, USBD_BinaryObjectStoreDescriptor, sizeof(USBD_BinaryObjectStoreDescriptor));
-    //     break;
     default:
         break;
     }
-
-    usbd_ep_read_data(usbd, 0);
-    usbd_ep_read_data(usbd, 0);
-    usbd_ep_read_data(usbd, 0);
-    usbd_ep_read_data(usbd, 0);
 }
 
-void usbd_std_device_req_handler(USBD_TypeDef *usbd, struct usb_setup_packet *setup_packet)
+void usbd_std_device_req_handler(USBD_TypeDef *usbd, struct usb_setup_packet *setup)
 {
-    switch (setup_packet->bRequest)
+    switch (setup->bRequest)
     {
     case USB_REQUEST_GET_DESCRIPTOR:
-        usbd_get_descriptor(usbd, setup_packet);
+        usbd_get_descriptor(usbd, setup);
         break;
     }
 }
 
-void usbd_standard_request_handler(USBD_TypeDef *usbd, const struct usb_setup_packet *setup_packet)
+void usbd_std_interface_req_handler(USBD_TypeDef *usbd, struct usb_setup_packet *setup)
 {
-    switch (setup_packet->bmRequestType & USB_REQUEST_RECIPIENT_DEVICE)
+    uint8_t type = HI_BYTE(setup->wValue);
+    uint8_t intf_num = LO_BYTE(setup->wIndex);
+
+    switch (setup->bRequest)
+    {
+
+        // case USB_REQUEST_GET_STATUS:
+        //     break;
+    }
+}
+
+void usbd_standard_request_handler(USBD_TypeDef *usbd, const struct usb_setup_packet *setup)
+{
+    switch (setup->bmRequestType & USB_REQUEST_RECIPIENT_MASK)
     {
     case USB_REQUEST_RECIPIENT_DEVICE:
-        usbd_std_device_req_handler(usbd, setup_packet);
+        usbd_std_device_req_handler(usbd, setup);
+        break;
+    case USB_REQUEST_RECIPIENT_INTERFACE:
+        usbd_std_interface_req_handler(usbd, setup);
+        break;
+    case USB_REQUEST_RECIPIENT_ENDPOINT:
         break;
     }
 }
 
-void usbd_class_request_handler(USBD_TypeDef *usbd, const struct usb_setup_packet *setup_packet)
+void usbd_class_request_handler(USBD_TypeDef *usbd, const struct usb_setup_packet *setup)
 {
+
+    if ((setup->bmRequestType & USB_REQUEST_RECIPIENT_MASK) == USB_REQUEST_RECIPIENT_INTERFACE)
+    {
+        uint8_t intf_num = setup->wIndex;
+        if (intf_num == 1)
+        {
+            // 串口interface
+            cdc_acm_class_interface_request_handler(usbd, setup);
+        }
+    }
+    else if ((setup->bmRequestType & USB_REQUEST_RECIPIENT_MASK) == USB_REQUEST_RECIPIENT_ENDPOINT)
+    {
+    }
 }
 
-void usbd_vendor_request_handler(USBD_TypeDef *usbd, const struct usb_setup_packet *setup_packet)
+void usbd_vendor_request_handler(USBD_TypeDef *usbd, const struct usb_setup_packet *setup)
 {
-    if (setup_packet->bRequest == USBD_WINUSB_VENDOR_CODE && setup_packet->wIndex == WINUSB_REQUEST_GET_DESCRIPTOR_SET)
+    if (setup->bRequest == USBD_WINUSB_VENDOR_CODE && setup->wIndex == WINUSB_REQUEST_GET_DESCRIPTOR_SET)
     {
         usbd_write_ldata(usbd, USBD_WinUSBDescriptorSetDescriptor, sizeof(USBD_WinUSBDescriptorSetDescriptor));
     }
@@ -391,36 +439,44 @@ void usbd_vendor_request_handler(USBD_TypeDef *usbd, const struct usb_setup_pack
     // }
 }
 
+void usbd_setup_request_handler(USBD_TypeDef *usbd, uint32_t it_flag, const struct usb_setup_packet *setup)
+{
+
+    switch (setup->bmRequestType & USB_REQUEST_TYPE_MASK)
+    {
+    case USB_REQUEST_STANDARD:
+        usbd_standard_request_handler(usbd, setup);
+        break;
+    case USB_REQUEST_CLASS:
+        usbd_class_request_handler(usbd, setup);
+        break;
+    case USB_REQUEST_VENDOR:
+        usbd_vendor_request_handler(usbd, setup);
+        break;
+    default:
+        break;
+    }
+    SEGGER_RTT_printf(0, "rt:%x r:%x v:%04x i:%04x l:%d s:%d:%d\n", setup->bmRequestType, setup->bRequest,
+                      setup->wValue, setup->wIndex, setup->wLength, usbd_ep_get_txnum(usbd, 0),
+                      usbd_ep_get_rxnum(usbd, 0));
+}
+
+struct usb_setup_packet setup;
+
 void usbd_ep0_rx_irq_handler(USBD_TypeDef *usbd, uint32_t it_flag)
 {
     if (it_flag & USBD_SR_IT_SETUP)
     {
-        struct usb_setup_packet setup_packet;
-        ((uint8_t *)&setup_packet)[0] = usbd_ep_read_data(usbd, 0);
-        ((uint8_t *)&setup_packet)[1] = usbd_ep_read_data(usbd, 0);
-        ((uint8_t *)&setup_packet)[2] = usbd_ep_read_data(usbd, 0);
-        ((uint8_t *)&setup_packet)[3] = usbd_ep_read_data(usbd, 0);
-        ((uint8_t *)&setup_packet)[4] = usbd_ep_read_data(usbd, 0);
-        ((uint8_t *)&setup_packet)[5] = usbd_ep_read_data(usbd, 0);
-        ((uint8_t *)&setup_packet)[6] = usbd_ep_read_data(usbd, 0);
-        ((uint8_t *)&setup_packet)[7] = usbd_ep_read_data(usbd, 0);
+        ((uint8_t *)&setup)[0] = usbd_ep_read_data(usbd, 0);
+        ((uint8_t *)&setup)[1] = usbd_ep_read_data(usbd, 0);
+        ((uint8_t *)&setup)[2] = usbd_ep_read_data(usbd, 0);
+        ((uint8_t *)&setup)[3] = usbd_ep_read_data(usbd, 0);
+        ((uint8_t *)&setup)[4] = usbd_ep_read_data(usbd, 0);
+        ((uint8_t *)&setup)[5] = usbd_ep_read_data(usbd, 0);
+        ((uint8_t *)&setup)[6] = usbd_ep_read_data(usbd, 0);
+        ((uint8_t *)&setup)[7] = usbd_ep_read_data(usbd, 0);
 
-        switch (setup_packet.bmRequestType & USB_REQUEST_TYPE_MASK)
-        {
-        case USB_REQUEST_STANDARD:
-            usbd_standard_request_handler(usbd, &setup_packet);
-            break;
-        case USB_REQUEST_CLASS:
-            usbd_class_request_handler(usbd, &setup_packet);
-            break;
-        case USB_REQUEST_VENDOR:
-            usbd_vendor_request_handler(usbd, &setup_packet);
-            break;
-        default:
-            break;
-        }
-        // SEGGER_RTT_printf(0, "rt:%x r:%x v:%04x i:%04x l:%d s:%d\n", setup_packet.bmRequestType, setup_packet.bRequest,
-        //                   setup_packet.wValue, setup_packet.wIndex, setup_packet.wLength, usbd_ep_get_txnum(usbd, 0));
+        usbd_setup_request_handler(usbd, it_flag, &setup);
     }
 
     if (it_flag & USBD_SR_IT_EPIN)
@@ -431,6 +487,15 @@ void usbd_ep0_rx_irq_handler(USBD_TypeDef *usbd, uint32_t it_flag)
             usbd_ep_write_buffer(usbd, 0, ep0_data_buf, len);
             ep0_data_buf += len;
             ep0_data_buf_residue -= len;
+        }
+    }
+
+    if (it_flag & USBD_SR_IT_EPOUT)
+    {
+        uint8_t active_ep = (it_flag >> 3) & 0x0f;
+        if (active_ep == 0 && !usbd_ep_rxfifo_is_empty(usbd, 0))
+        {
+            usbd_setup_request_handler(usbd, it_flag, &setup);
         }
     }
 }

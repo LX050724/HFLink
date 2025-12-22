@@ -231,12 +231,12 @@ module HFLink_TOP(
                         .PRESETn(APB1PRESET),
 
                         // Data Stream
-                        // .tx_tvalid(cdc_out_tvalid),
-                        // .tx_tready(cdc_out_tready),
-                        // .tx_tdata(cdc_out_tdata),
-                        .tx_tvalid(1'd1),
-                        .tx_tready(),
-                        .tx_tdata(8'b0110_0110),
+                        .tx_tvalid(cdc_out_tvalid),
+                        .tx_tready(cdc_out_tready),
+                        .tx_tdata(cdc_out_tdata),
+                        // .tx_tvalid(1'd1),
+                        // .tx_tready(),
+                        // .tx_tdata(8'b0110_0110),
                         .rx_valid(cdc_in_tvalid),
                         .rx_tdata(cdc_in_tdata),
 

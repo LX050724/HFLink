@@ -38,8 +38,8 @@ module APB_Stream_UART#(
     wire UART_CR_EN_PARTY = uart_cr_reg[1];   // 校验位使能
     wire UART_CR_PARTY_ODD = uart_cr_reg[2];  // 0:偶校验 1:奇校验
     wire [1:0] UART_CR_STOP_BIT = uart_cr_reg[4:3]; // 停止位长度 0: 1b; 1: 1.5b; other: 2b
-    wire UART_CR_RTS = uart_cr_reg[30];
-    wire UART_CR_DTR = uart_cr_reg[31];
+    wire UART_CR_DTR = uart_cr_reg[30];
+    wire UART_CR_RTS = uart_cr_reg[31];
     wire [27:0] UART_BUAD_DIV_I = uart_baud_reg[4+:28];
     wire [3:0] UART_BUAD_DIV_Q = uart_baud_reg[3:0];
 
@@ -145,6 +145,8 @@ module APB_Stream_UART#(
             tx_data_ready <= 1'd0;
             tx_tready <= 1'd1;
             tx_data_buf <= 8'd0;
+            UART_TX <= 1'd1;
+            UART_DE <= 1'd0;
         end
         else begin
             if (!tx_data_ready) begin
@@ -159,9 +161,9 @@ module APB_Stream_UART#(
             case (tx_sm)
                 0: begin
                     if (tx_data_ready && uart_baud_clk_div4) begin
-                        tx_tready <= 1'd0;
                         tx_party_reg <= 1'd0;
                         tx_shift_reg <= tx_data_buf;
+                        tx_data_ready <= 1'd0;
                         UART_TX <= 1'd0;
                         UART_DE <= 1'd1;
                         tx_sm <= 4'd1;
@@ -181,7 +183,7 @@ module APB_Stream_UART#(
                         // 已发送数据
                         if (UART_CR_EN_PARTY) begin
                             // 支持校验 发送校验位转到发送停止位状态
-                            UART_TX <= UART_CR_PARTY_ODD ? tx_party_reg : ~tx_party_reg;
+                            UART_TX <= UART_CR_PARTY_ODD ? ~tx_party_reg : tx_party_reg;
                             tx_sm <= 4'd10;
                         end
                         else begin
@@ -222,6 +224,10 @@ module APB_Stream_UART#(
                     end
                 end
                 12: begin
+                    if (uart_baud_clk)
+                        tx_sm <= 4'd13;
+                end
+                13: begin
                     if (uart_baud_clk) begin
                         // 已发送1.5b停止位时间
                         if (UART_CR_STOP_BIT == 2'd1) begin
@@ -239,11 +245,15 @@ module APB_Stream_UART#(
                             end
                         end
                         else begin
-                            tx_sm <= 4'd13;
+                            tx_sm <= 4'd14;
                         end
                     end
                 end
-                13: begin
+                14: begin
+                    if (uart_baud_clk)
+                        tx_sm <= 4'd15;
+                end
+                15: begin
                     if (uart_baud_clk) begin
                         // 已发送2b停止位时间
                         if (tx_data_ready) begin

@@ -63,8 +63,14 @@ static inline uint32_t usbd_get_speed(USBD_TypeDef *usbd)
     return usbd->SR & USBD_SR_HISPEED;
 }
 
-uint32_t usbd_ep_readall(USBD_TypeDef *usbd, uint8_t ep_index, uint8_t *buf, size_t bsize);
-uint32_t usbd_ep_write_buffer(USBD_TypeDef *usbd, uint8_t ep_index, const uint8_t *buf, size_t len);
+static inline uint8_t usbd_get_active_ep(USBD_TypeDef *usbd)
+{
+    return (usbd->SR >> 3) & 0xf;
+}
+
+uint32_t usbd_ep_readall(USBD_TypeDef *usbd, uint8_t ep_index, void *buf, uint32_t bsize);
+uint32_t usbd_ep_write_buffer(USBD_TypeDef *usbd, uint8_t ep_index, const void *buf, uint32_t len);
+uint32_t usbd_ep_read_buffer(USBD_TypeDef *usbd, uint8_t ep_index, void *buf, uint32_t len);
 
 #ifdef __cplusplus
 }
