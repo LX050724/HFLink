@@ -19,8 +19,8 @@ module APB_Stream_UART#(
         input [7:0] tx_tdata,
 
         // AXIStream RX
-        output rx_valid,
-        output [7:0] rx_tdata,
+        output reg rx_tvalid,
+        output reg [7:0] rx_tdata,
 
         // UART
         output reg UART_TX,
@@ -43,11 +43,8 @@ module APB_Stream_UART#(
     wire [27:0] UART_BUAD_DIV_I = uart_baud_reg[4+:28];
     wire [3:0] UART_BUAD_DIV_Q = uart_baud_reg[3:0];
 
-    // assign UART_RTS = UART_CR_EN & UART_CR_RTS;
+    assign UART_RTS = UART_CR_EN & UART_CR_RTS;
     assign UART_DTR = UART_CR_EN & UART_CR_DTR;
-
-    assign rx_valid = 1'd0;
-    assign rx_tdata = 8'd0;
 
     /***************************** APB接口 *****************************/
 
@@ -97,7 +94,6 @@ module APB_Stream_UART#(
 
     /***************************** 波特率发生器 *****************************/
     reg [27:0] uart_baud_cnt_i;
-    reg [27:0] uart_baud_cnt_ixxx;
     reg [3:0] uart_baud_cnt_q;
     reg uart_baud_clk_reg;
     wire uart_baud_clk = uart_baud_clk_reg;
@@ -111,14 +107,11 @@ module APB_Stream_UART#(
         else begin
             if (uart_baud_cnt_i == 28'd0) begin
                 uart_baud_clk_reg <= 1'd1;
-                if (uart_baud_cnt_q < UART_BUAD_DIV_Q) begin
+                // 倒序比较均匀注入
+                if ({uart_baud_cnt_q[0], uart_baud_cnt_q[1], uart_baud_cnt_q[2], uart_baud_cnt_q[3]} < UART_BUAD_DIV_Q)
                     uart_baud_cnt_i <= UART_BUAD_DIV_I + 28'd1;
-                    uart_baud_cnt_ixxx <= UART_BUAD_DIV_I + 28'd1;
-                end
-                else begin
+                else
                     uart_baud_cnt_i <= UART_BUAD_DIV_I;
-                    uart_baud_cnt_ixxx <= UART_BUAD_DIV_I;
-                end
                 uart_baud_cnt_q <= uart_baud_cnt_q + 4'd1;
             end
             else begin
@@ -127,8 +120,6 @@ module APB_Stream_UART#(
             end
         end
     end
-
-    assign UART_RTS = uart_baud_clk_div4;
 
     /***************************** 串口发送 *****************************/
     reg [3:0] tx_sm;
@@ -271,6 +262,144 @@ module APB_Stream_UART#(
                     end
                 end
             endcase
+        end
+    end
+
+
+    /***************************** 串口接收 *****************************/
+
+    reg uart_rx0;
+    reg uart_rx1;
+    wire uart_rx = uart_rx1;
+    always @(posedge PCLK or negedge PRESETn) begin
+        if (!PRESETn || !UART_CR_EN) begin
+            uart_rx0 <= 1'd1;
+            uart_rx1 <= 1'd1;
+        end
+        else begin
+            uart_rx0 <= UART_RX;
+            uart_rx1 <= uart_rx0;
+        end
+    end
+
+    reg [3:0] uart_oversimple_shift;
+    reg [1:0] uart_oversimple_cnt;
+    wire [2:0] uart_oversimple_add = uart_oversimple_shift[0] + uart_oversimple_shift[1] + uart_oversimple_shift[2] + uart_oversimple_shift[3];
+    wire uart_oversimple_result = uart_oversimple_add > 3'd2;
+
+    reg rx_find_start;
+    reg [3:0] rx_sm;
+    reg [7:0] rx_data_shift;
+    reg rx_data_valid;
+    wire rx_data_party = (rx_data_shift[0] ^ rx_data_shift[1] ^ rx_data_shift[2] ^ rx_data_shift[3] ^ rx_data_shift[4] ^ rx_data_shift[5] ^ rx_data_shift[6] ^ rx_data_shift[7]);
+
+    always @(posedge PCLK or negedge PRESETn) begin
+        if (!PRESETn || !UART_CR_EN) begin
+            uart_oversimple_shift <= 4'hf;
+            uart_oversimple_cnt <= 2'd0;
+            rx_data_valid <= 1'd0;
+            rx_data_shift <= 8'd0;
+            rx_sm <= 4'd0;
+            rx_tdata <= 8'd0;
+            rx_tvalid <= 1'd0;
+            rx_find_start <= 1'd0;
+        end
+        else begin
+            rx_tvalid <= 1'd0;
+            if (uart_baud_clk) begin
+                uart_oversimple_shift <= {uart_oversimple_shift[2:0], uart_rx};
+                if (rx_sm == 4'd0 && rx_find_start == 1'd0)
+                    uart_oversimple_cnt <= 2'd0;
+                else
+                    uart_oversimple_cnt <= uart_oversimple_cnt + 2'd1;
+
+                case (rx_sm)
+                    0:
+                        if (rx_find_start == 1'd0 && uart_rx == 1'd0) begin
+                            // 找到起始位
+                            uart_oversimple_cnt <= 2'd1;
+                            rx_find_start <= 1'd1;
+                        end else if (uart_oversimple_cnt == 2'b11) begin
+                            if (uart_oversimple_result == 0)
+                                rx_sm <= 1'd1;
+                            rx_find_start <= 1'd0;
+                            uart_oversimple_cnt <= 2'd0;
+                        end
+                    1,2,3,4,5,6,7,8:
+                        if (uart_oversimple_cnt == 2'b11) begin
+                            // 接收数据位
+                            rx_data_shift <= {uart_oversimple_result, rx_data_shift[7:1]};
+                            rx_sm <= rx_sm + 4'd1;
+                        end
+                    9:
+                        if (uart_oversimple_cnt == 2'b11) begin
+                            // 接收停止位/
+                            if (UART_CR_EN_PARTY) begin
+                                // 校验位
+                                rx_data_valid <= (rx_data_party ^ uart_oversimple_result == UART_CR_PARTY_ODD);
+                                rx_sm <= 10;
+                            end
+                            else begin
+                                rx_data_valid <= 1'd1;
+                                // 停止位
+                                if (uart_oversimple_result) begin
+                                    // 正确接收1b时间
+                                    if (UART_CR_STOP_BIT == 2'd0) begin
+                                        rx_tdata <= rx_data_shift;
+                                        rx_tvalid <= 1'd1;
+                                        rx_sm <= 0;
+                                    end
+                                    else begin
+                                        rx_sm <= 11;
+                                    end
+                                end
+                                else begin
+                                    // 错误
+                                    rx_sm <= 0;
+                                end
+                            end
+                        end
+                    10:
+                        if (uart_oversimple_cnt == 2'b11) begin
+                            if (UART_CR_STOP_BIT == 2'd0) begin
+                                if (uart_oversimple_shift[0] | uart_oversimple_shift[1]) begin
+                                    // 正确接收1b时间
+                                    rx_tdata <= rx_data_shift;
+                                    rx_tvalid <= rx_data_valid;
+                                    rx_sm <= 0;
+                                end else begin
+                                    rx_sm <= 11;
+                                end
+                            end
+                            else begin
+                                rx_sm <= 11;
+                            end
+                        end
+                    11:
+                        if (uart_oversimple_cnt == 2'b01) begin
+                            if (UART_CR_STOP_BIT == 2'd1) begin
+                                if (uart_oversimple_shift[0] | uart_oversimple_shift[1]) begin
+                                    // 正确接收1.5b时间
+                                    rx_tdata <= rx_data_shift;
+                                    rx_tvalid <= rx_data_valid;
+                                end
+                                rx_sm <= 0;
+                            end
+                            else begin
+                                rx_sm <= 12;
+                            end
+                        end
+                    12:
+                        if (uart_oversimple_cnt == 2'b11) begin
+                            if (uart_oversimple_shift[0] | uart_oversimple_shift[1]) begin
+                                // 正确接收2b时间
+                                rx_tdata <= rx_data_shift;
+                                rx_tvalid <= rx_data_valid;
+                            end
+                            rx_sm <= 0;
+                        end
+                endcase
+            end
         end
     end
 
