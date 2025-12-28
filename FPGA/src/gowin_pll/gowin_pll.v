@@ -1,6 +1,7 @@
 module Gowin_PLL(
     clkin,
     clkout0,
+    clkout1,
     lock,
     mdclk,
     reset
@@ -9,6 +10,7 @@ module Gowin_PLL(
 
 input clkin;
 output clkout0;
+output clkout1;
 output lock;
 input mdclk;
 input reset;
@@ -22,6 +24,7 @@ wire pll_rst;
 
 
     Gowin_PLL_MOD u_pll(
+        .clkout1(clkout1),
         .clkout0(clkout0),
         .lock(pll_lock),
         .mdrdo(wMdQOut),
@@ -51,7 +54,7 @@ wire pll_rst;
         .MDWDI(8'h0)
     );
     defparam u_pll_init.CLK_PERIOD = 20;
-    defparam u_pll_init.MULTI_FAC = 18;
+    defparam u_pll_init.MULTI_FAC = 24;
 
 
 endmodule

@@ -533,7 +533,7 @@ module AHB_USBDevice #(
             usb_setup_store <= setup_active;
 
             // 写入SR清除中断标志
-            if (write_en && addr_equ(addr, USB_SR_ADDR)) begin
+            if (write_en && addr_equ(addr, USB_SR_ADDR) && byte_strobe_reg[3]) begin
                 if (hwdatas[31])
                     usb_epout_int_sig <= 1'd0;
                 if (hwdatas[30])

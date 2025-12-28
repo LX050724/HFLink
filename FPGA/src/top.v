@@ -27,36 +27,9 @@ module HFLink_TOP(
         ,output usb_ulpi_stp
     );
 
-
-    //     wire FLASH_SPI_MISO_in;
-    //     wire FLASH_SPI_MOSI_in;
-    //     wire FLASH_SPI_HOLDN_in;
-    //     wire FLASH_SPI_WPN_in;
-    //     wire FLASH_SPI_CSN_in;
-    //     wire FLASH_SPI_CLK_in;
-    //     wire spi1_clk_out;
-    //     wire spi1_csn_out;
-    //     wire spi1_mosi_out;
-    //     wire spi1_miso_out;
-    //     wire spi1_wpn_out;
-    //     wire spi1_holdn_out;
-    // wire IO_5;
-    // wire IO_5_243;
-    // wire IO_5_244;
-    // wire IO_5_245;
-    // wire IO_5_246;
-    // wire IO_5_247;
-
-    //     assign _FLASH_SPI_HOLDN_io = IO_5 ? FLASH_SPI_HOLDN_in : spi1_holdn_out;
-    //     assign _FLASH_SPI_CSN_io = IO_5_243 ? FLASH_SPI_CSN_in : spi1_csn_out;
-    //     assign _FLASH_SPI_MISO_io = IO_5_244 ? FLASH_SPI_MISO_in : spi1_miso_out;
-    //     assign _FLASH_SPI_MOSI_io = IO_5_245 ? FLASH_SPI_MOSI_in : spi1_mosi_out;
-    //     assign _FLASH_SPI_WPN_io = IO_5_246 ? FLASH_SPI_WPN_in : spi1_wpn_out;
-    //     assign _FLASH_SPI_CLK_io = IO_5_247 ? FLASH_SPI_CLK_in : spi1_clk_out;
-
-
     wire lock;
     wire clkout0;
+    wire clkout1;
     wire n_reset = !reset;
     wire m1_halt;
     wire [3:0] intr;
@@ -79,6 +52,22 @@ module HFLink_TOP(
     wire        AHB1HCLK;
     wire        AHB1HRESET;
 
+    wire [31:0] AHB2HRDATA;
+    wire        AHB2HREADYOUT;
+    wire [ 1:0] AHB2HRESP;
+    wire [ 1:0] AHB2HTRANS;
+    wire [ 2:0] AHB2HBURST;
+    wire [ 3:0] AHB2HPROT;
+    wire [ 2:0] AHB2HSIZE;
+    wire        AHB2HWRITE;
+    wire        AHB2HREADYMUX;
+    wire [ 3:0] AHB2HMASTER;
+    wire        AHB2HMASTLOCK;
+    wire [31:0] AHB2HADDR;
+    wire [31:0] AHB2HWDATA;
+    wire        AHB2HSEL;
+    wire        AHB2HCLK;
+    wire        AHB2HRESET;
 
     wire [31:0] APB1PADDR;
     wire        APB1PENABLE;
@@ -96,6 +85,7 @@ module HFLink_TOP(
     Gowin_PLL main_pll(
                   .lock(lock), //output lock
                   .clkout0(clkout0), //output clkout0
+                  .clkout1(clkout1), //output clkout1
                   .clkin(clk_osc), //input clkin
                   .mdclk(clk_osc),
                   .reset(reset) //input reset
@@ -112,7 +102,7 @@ module HFLink_TOP(
                           .hwRstn(cm_nreset), //input hwRstn
 
 
-                          // AHB1 0x60000000
+                          // AHB1 0x80000000
                           .AHB1HRDATA(AHB1HRDATA), //input [31:0] AHB1HRDATA
                           .AHB1HREADYOUT(AHB1HREADYOUT), //input AHB1HREADYOUT
                           .AHB1HRESP(AHB1HRESP), //input [1:0] AHB1HRESP
@@ -130,7 +120,25 @@ module HFLink_TOP(
                           .AHB1HCLK(AHB1HCLK), //output AHB1HCLK
                           .AHB1HRESET(AHB1HRESET), //output AHB1HRESET
 
-                          // APB1
+                          // AHB2 0x81000000
+                          .AHB2HRDATA(AHB2HRDATA), //input [31:0] AHB2HRDATA
+                          .AHB2HREADYOUT(AHB2HREADYOUT), //input AHB2HREADYOUT
+                          .AHB2HRESP(AHB2HRESP), //input [1:0] AHB2HRESP
+                          .AHB2HTRANS(AHB2HTRANS), //output [1:0] AHB2HTRANS
+                          .AHB2HBURST(AHB2HBURST), //output [2:0] AHB2HBURST
+                          .AHB2HPROT(AHB2HPROT), //output [3:0] AHB2HPROT
+                          .AHB2HSIZE(AHB2HSIZE), //output [2:0] AHB2HSIZE
+                          .AHB2HWRITE(AHB2HWRITE), //output AHB2HWRITE
+                          .AHB2HREADYMUX(AHB2HREADYMUX), //output AHB2HREADYMUX
+                          .AHB2HMASTER(AHB2HMASTER), //output [3:0] AHB2HMASTER
+                          .AHB2HMASTLOCK(AHB2HMASTLOCK), //output AHB2HMASTLOCK
+                          .AHB2HADDR(AHB2HADDR), //output [31:0] AHB2HADDR
+                          .AHB2HWDATA(AHB2HWDATA), //output [31:0] AHB2HWDATA
+                          .AHB2HSEL(AHB2HSEL), //output AHB2HSEL
+                          .AHB2HCLK(AHB2HCLK), //output AHB2HCLK
+                          .AHB2HRESET(AHB2HRESET), //output AHB2HRESET
+
+                          // APB1 0x60000000
                           .APB1PADDR(APB1PADDR), //output [31:0] APB1PADDR
                           .APB1PENABLE(APB1PENABLE), //output APB1PENABLE
                           .APB1PWRITE(APB1PWRITE), //output APB1PWRITE
@@ -170,7 +178,7 @@ module HFLink_TOP(
     wire [7:0] cdc_out_tdata;
 
     AHB_USBDevice u_usb0 (
-                      .hclk(clkout0),
+                      .hclk(AHB1HCLK),
                       .hresetn(AHB1HRESET),
                       .hsels(AHB1HSEL),
                       .haddrs(AHB1HADDR[11:0]),
@@ -244,4 +252,26 @@ module HFLink_TOP(
                         .UART_RTS(UART_RTS),
                         .UART_DTR(UART_DTR)
                     );
+
+    DAP_Controller dap_controller_inst(
+                       .hclk(AHB2HCLK),
+                       .hresetn(AHB2HRESET),
+                       .hsels(AHB2HSEL),
+                       .haddrs(AHB2HADDR[11:0]),
+                       .htranss(AHB2HTRANS),
+                       .hsizes(AHB2HSIZE),
+                       .hwrites(AHB2HWRITE),
+                       .hreadys(AHB2HREADYMUX),
+                       .hwdatas(AHB2HWDATA),
+                       .hreadyouts(AHB2HREADYOUT),
+                       .hresps(AHB2HRESP[0]),
+                       .hrdatas(AHB2HRDATA),
+
+                       .dap_in_tvalid(winusb_out_tvalid),
+                       .dap_in_tready(winusb_out_tready),
+                       .dap_in_tdata(winusb_out_tdata),
+                       .dat_out_tvalid(winusb_in_tvalid),
+                       .dap_out_tdata(winusb_in_tdata),
+                       .intr(intr[1])
+                   );
 endmodule

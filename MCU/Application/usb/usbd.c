@@ -456,9 +456,9 @@ void usbd_setup_request_handler(USBD_TypeDef *usbd, uint32_t it_flag, const stru
     default:
         break;
     }
-    SEGGER_RTT_printf(0, "rt:%x r:%x v:%04x i:%04x l:%d s:%d:%d\n", setup->bmRequestType, setup->bRequest,
-                      setup->wValue, setup->wIndex, setup->wLength, usbd_ep_get_txnum(usbd, 0),
-                      usbd_ep_get_rxnum(usbd, 0));
+    // SEGGER_RTT_printf(0, "rt:%x r:%x v:%04x i:%04x l:%d s:%d:%d\n", setup->bmRequestType, setup->bRequest,
+    //                   setup->wValue, setup->wIndex, setup->wLength, usbd_ep_get_txnum(usbd, 0),
+    //                   usbd_ep_get_rxnum(usbd, 0));
 }
 
 struct usb_setup_packet setup;

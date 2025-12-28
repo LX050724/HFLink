@@ -69,6 +69,11 @@ int main()
     SysTick->VAL = 0;
     SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 
+    NVIC_EnableIRQ(EXTINT_1_IRQn);
+    DAP->CR = 0x80000001;
+    DAP->TIMESTAMP = 0;
+    print("DAP->TIME %08x\n", DAP->TIMESTAMP);
+
     // NVIC_SetPriority(UserInterrupt0_IRQn, 4);
     // NVIC_EnableIRQ(UserInterrupt0_IRQn);
 
@@ -87,7 +92,7 @@ int main()
           (SPI_FLASH->CONFIG & SPIFLASH_CONF_TX_DEPTH_Msk) >> SPIFLASH_CONF_TX_DEPTH_Pos);
     print("SPI_FLASH RxFIFO Depth: %d\n",
           (SPI_FLASH->CONFIG & SPIFLASH_CONF_RX_DEPTH_Msk) >> SPIFLASH_CONF_RX_DEPTH_Pos);
-
+    print("DAP->TIME %08x\n", DAP->TIMESTAMP);
     // qspi_flash_chip_reset();
     // change_mode_qspi_flash();
     
@@ -120,3 +125,37 @@ void EXTINT_0_Handler(void)
     usbd_ep0_rx_irq_handler(USBD, usbd_sr);
     usbd_ep_readall(USBD, 0, rbuff, sizeof(rbuff));
 }
+
+void send_str(const char *s)
+{
+    int n = strlen(s);
+    *((uint8_t *)&DAP->DR) = 0x00;
+    *((uint8_t *)&DAP->DR) = n + 1;
+    for (int i = 0; i <= n; i++)
+        *((uint8_t *)&DAP->DR) = s[i];
+}
+
+void EXTINT_1_Handler(void)
+{
+    switch (DAP->CURCMD) {
+        case 0x00: {
+            uint8_t ID = *((uint8_t *)&DAP->DR);
+            print("DAP_Info %02x\n", ID);
+            switch (ID) {
+                case 0x01:
+                    send_str("HFLink");
+                    break;
+                case 0x02:
+                    send_str("HFLink CMSIS-DAP");
+                    break;
+                case 0x03:
+                    send_str("12345678");
+                    break;
+            }
+            break;
+        }
+    
+    }
+    DAP->SR = 0x80000000;
+}
+

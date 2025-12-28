@@ -50,13 +50,6 @@ void SysTick_Handler(void)
     delay_decrement();
 }
 
-
-
-void EXTINT_1_Handler()
-{
-
-}
-
 void EXTINT_2_Handler()
 {
 

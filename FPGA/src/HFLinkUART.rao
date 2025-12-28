@@ -71,35 +71,39 @@
             <Signal capture_enable="true">apb_stream_uart/uart_baud_clk</Signal>
             <Signal capture_enable="true">apb_stream_uart/uart_baud_clk_div4</Signal>
             <Signal capture_enable="true">apb_stream_uart/tx_party_reg</Signal>
-            <Bus capture_enable="true" name="apb_stream_uart/uart_baud_cnt_ixxx[27:0]">
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[27]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[26]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[25]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[24]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[23]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[22]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[21]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[20]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[19]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[18]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[17]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[16]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[15]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[14]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[13]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[12]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[11]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[10]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[9]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[8]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[7]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[6]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[5]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[4]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[3]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[2]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[1]</Signal>
-                <Signal>apb_stream_uart/uart_baud_cnt_ixxx[0]</Signal>
+            <Bus capture_enable="true" name="apb_stream_uart/uart_oversimple_cnt[1:0]">
+                <Signal>apb_stream_uart/uart_oversimple_cnt[1]</Signal>
+                <Signal>apb_stream_uart/uart_oversimple_cnt[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="apb_stream_uart/rx_sm[3:0]">
+                <Signal>apb_stream_uart/rx_sm[3]</Signal>
+                <Signal>apb_stream_uart/rx_sm[2]</Signal>
+                <Signal>apb_stream_uart/rx_sm[1]</Signal>
+                <Signal>apb_stream_uart/rx_sm[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">apb_stream_uart/rx_data_party</Signal>
+            <Signal capture_enable="true">apb_stream_uart/uart_oversimple_result</Signal>
+            <Bus capture_enable="true" name="apb_stream_uart/rx_tdata[7:0]">
+                <Signal>apb_stream_uart/rx_tdata[7]</Signal>
+                <Signal>apb_stream_uart/rx_tdata[6]</Signal>
+                <Signal>apb_stream_uart/rx_tdata[5]</Signal>
+                <Signal>apb_stream_uart/rx_tdata[4]</Signal>
+                <Signal>apb_stream_uart/rx_tdata[3]</Signal>
+                <Signal>apb_stream_uart/rx_tdata[2]</Signal>
+                <Signal>apb_stream_uart/rx_tdata[1]</Signal>
+                <Signal>apb_stream_uart/rx_tdata[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">apb_stream_uart/rx_tvalid</Signal>
+            <Signal capture_enable="true">apb_stream_uart/rx_find_start</Signal>
+            <Bus capture_enable="true" name="apb_stream_uart/rx_data_shift[7:0]">
+                <Signal>apb_stream_uart/rx_data_shift[7]</Signal>
+                <Signal>apb_stream_uart/rx_data_shift[6]</Signal>
+                <Signal>apb_stream_uart/rx_data_shift[5]</Signal>
+                <Signal>apb_stream_uart/rx_data_shift[4]</Signal>
+                <Signal>apb_stream_uart/rx_data_shift[3]</Signal>
+                <Signal>apb_stream_uart/rx_data_shift[2]</Signal>
+                <Signal>apb_stream_uart/rx_data_shift[1]</Signal>
+                <Signal>apb_stream_uart/rx_data_shift[0]</Signal>
             </Bus>
         </SignalList>
         <Triggers>
@@ -130,7 +134,7 @@
         </Triggers>
         <MatchUnits>
             <MatchUnit index="0" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="0" value1="0" trigger="0"/>
-            <MatchUnit index="1" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="0" value1="0" trigger="1"/>
+            <MatchUnit index="1" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="1" value1="0" trigger="1"/>
             <MatchUnit index="2" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
             <MatchUnit index="3" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
             <MatchUnit index="4" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
@@ -151,5 +155,5 @@
             <Expression>M1</Expression>
         </Expressions>
     </AoCore>
-    <GAO_ID>1110011111001000</GAO_ID>
+    <GAO_ID>0101001111011100</GAO_ID>
 </GAO_CONFIG>

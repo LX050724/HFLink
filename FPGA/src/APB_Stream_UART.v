@@ -403,5 +403,5 @@ module APB_Stream_UART#(
         end
     end
 
-endmodule;
+endmodule
 

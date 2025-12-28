@@ -502,6 +502,15 @@ typedef struct {
   uint32_t BAUD;
 } AXIS_UART_TypeDef;
 
+/*-------------------------------------- DAP_Controller --------------------------------------*/
+typedef struct {
+  __IO uint32_t CR;
+  __IO uint32_t TIMESTAMP;
+  __IO uint32_t SR;
+  __IO uint32_t DR;
+  __I uint32_t CURCMD;
+} DAP_TypeDef;
+
 /* --------  End of section using anonymous unions and disabling warnings  -------- */
 #if   defined (__CC_ARM)
   #pragma pop
@@ -590,6 +599,7 @@ typedef struct {
 #define APB_M16           (APB2PERIPH_BASE + 0xF00000)     /* !< APB Master [16] Base Address  */
 
 #define USBD_BASE (AHB_M1)
+#define DAP_BASE (AHB_M2)
 #define AXIS_UART_BASE (APB_M1)
 
 #define UART0             ((UART_TypeDef      *) UART0_BASE)
@@ -610,6 +620,7 @@ typedef struct {
 #define SPI_FLASH         ((SPI_FLASH_RegDef  *) SPI_FLASH_BASE)
 #define PSRAM             ((PSRAM_TypeDef     *) PSRAM_BASE)
 #define USBD              ((USBD_TypeDef      *) USBD_BASE)
+#define DAP               ((DAP_TypeDef       *) DAP_BASE)
 #define AXIS_UART         ((AXIS_UART_TypeDef *) AXIS_UART_BASE)
 
 /* ================================================================================ */
