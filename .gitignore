@@ -7,3 +7,8 @@ FPGA/impl/gwsynthesis
 FPGA/impl/pnr
 *.jdebug
 *.jdebug.user
+*/.venv/
+*/__pycache__/
+FPGA/terosHDL
+.vscode/
+FPGA/HFLink.gprj.user

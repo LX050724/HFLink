@@ -608,6 +608,12 @@ module AHB_USBDevice #(
                  .o_ep2_rx_dval(winusb_out_tvalid),
                  .o_ep2_rx_data(winusb_out_tdata),
 
+                 // SWO IN
+                 .i_ep6_rx_clk(hclk),
+                 .i_ep6_rx_rdy(1'd0),
+                 .o_ep6_rx_dval(),
+                 .o_ep6_rx_data(),
+
                  // CDC IN
                  .i_ep3_tx_clk(hclk),
                  .i_ep3_tx_max(TRANS_MAX),
@@ -618,19 +624,19 @@ module AHB_USBDevice #(
                  .i_ep4_rx_clk(hclk),
                  .i_ep4_rx_rdy(cdc_out_tready),
                  .o_ep4_rx_dval(cdc_out_tvalid),
-                 .o_ep4_rx_data(cdc_out_tdata),
+                 .o_ep4_rx_data(cdc_out_tdata)
 
                  //  HID IN
-                 .i_ep8_tx_clk(hclk),
-                 .i_ep8_tx_max(TRANS_MAX),
-                 .i_ep8_tx_dval(),
-                 .i_ep8_tx_data(),
+                //  .i_ep8_tx_clk(hclk),
+                //  .i_ep8_tx_max(TRANS_MAX),
+                //  .i_ep8_tx_dval(),
+                //  .i_ep8_tx_data(),
 
                  //  HID OUT
-                 .i_ep9_rx_clk(hclk),
-                 .i_ep9_rx_rdy(),
-                 .o_ep9_rx_dval(),
-                 .o_ep9_rx_data()
+                //  .i_ep9_rx_clk(hclk),
+                //  .i_ep9_rx_rdy(),
+                //  .o_ep9_rx_dval(),
+                //  .o_ep9_rx_data()
              );
 
     assign usb_nrst = USB_CR_EN & hresetn;

@@ -5,7 +5,7 @@
 //Part Number: GW5A-LV25MG121NES
 //Device: GW5A-25
 //Device Version: A
-//Created Time: Sat Dec 20 00:28:15 2025
+//Created Time: Mon Dec 29 01:42:52 2025
 
 module Gowin_DPB (douta, doutb, clka, ocea, cea, reseta, wrea, clkb, oceb, ceb, resetb, wreb, ada, dina, adb, dinb);
 
@@ -61,6 +61,6 @@ defparam dpb_inst_0.BIT_WIDTH_0 = 8;
 defparam dpb_inst_0.BIT_WIDTH_1 = 8;
 defparam dpb_inst_0.BLK_SEL_0 = 3'b000;
 defparam dpb_inst_0.BLK_SEL_1 = 3'b000;
-defparam dpb_inst_0.RESET_MODE = "SYNC";
+defparam dpb_inst_0.RESET_MODE = "ASYNC";
 
 endmodule //Gowin_DPB

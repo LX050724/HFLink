@@ -4,87 +4,21 @@
     <Mode>Standard</Mode>
     <AoCore index="0" sample_clock="AHB2HCLK" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="HFLink_TOP" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
         <SignalList>
-            <Bus capture_enable="true" name="dap_controller_inst/clk_timer[31:0]">
-                <Signal>dap_controller_inst/clk_timer[31]</Signal>
-                <Signal>dap_controller_inst/clk_timer[30]</Signal>
-                <Signal>dap_controller_inst/clk_timer[29]</Signal>
-                <Signal>dap_controller_inst/clk_timer[28]</Signal>
-                <Signal>dap_controller_inst/clk_timer[27]</Signal>
-                <Signal>dap_controller_inst/clk_timer[26]</Signal>
-                <Signal>dap_controller_inst/clk_timer[25]</Signal>
-                <Signal>dap_controller_inst/clk_timer[24]</Signal>
-                <Signal>dap_controller_inst/clk_timer[23]</Signal>
-                <Signal>dap_controller_inst/clk_timer[22]</Signal>
-                <Signal>dap_controller_inst/clk_timer[21]</Signal>
-                <Signal>dap_controller_inst/clk_timer[20]</Signal>
-                <Signal>dap_controller_inst/clk_timer[19]</Signal>
-                <Signal>dap_controller_inst/clk_timer[18]</Signal>
-                <Signal>dap_controller_inst/clk_timer[17]</Signal>
-                <Signal>dap_controller_inst/clk_timer[16]</Signal>
-                <Signal>dap_controller_inst/clk_timer[15]</Signal>
-                <Signal>dap_controller_inst/clk_timer[14]</Signal>
-                <Signal>dap_controller_inst/clk_timer[13]</Signal>
-                <Signal>dap_controller_inst/clk_timer[12]</Signal>
-                <Signal>dap_controller_inst/clk_timer[11]</Signal>
-                <Signal>dap_controller_inst/clk_timer[10]</Signal>
-                <Signal>dap_controller_inst/clk_timer[9]</Signal>
-                <Signal>dap_controller_inst/clk_timer[8]</Signal>
-                <Signal>dap_controller_inst/clk_timer[7]</Signal>
-                <Signal>dap_controller_inst/clk_timer[6]</Signal>
-                <Signal>dap_controller_inst/clk_timer[5]</Signal>
-                <Signal>dap_controller_inst/clk_timer[4]</Signal>
-                <Signal>dap_controller_inst/clk_timer[3]</Signal>
-                <Signal>dap_controller_inst/clk_timer[2]</Signal>
-                <Signal>dap_controller_inst/clk_timer[1]</Signal>
-                <Signal>dap_controller_inst/clk_timer[0]</Signal>
+            <Signal capture_enable="true">dap_controller_inst/us_tick</Signal>
+            <Bus capture_enable="true" name="dap_controller_inst/dap_sm[1:0]">
+                <Signal>dap_controller_inst/dap_sm[1]</Signal>
+                <Signal>dap_controller_inst/dap_sm[0]</Signal>
             </Bus>
-            <Bus capture_enable="true" name="dap_controller_inst/us_timer[31:0]">
-                <Signal>dap_controller_inst/us_timer[31]</Signal>
-                <Signal>dap_controller_inst/us_timer[30]</Signal>
-                <Signal>dap_controller_inst/us_timer[29]</Signal>
-                <Signal>dap_controller_inst/us_timer[28]</Signal>
-                <Signal>dap_controller_inst/us_timer[27]</Signal>
-                <Signal>dap_controller_inst/us_timer[26]</Signal>
-                <Signal>dap_controller_inst/us_timer[25]</Signal>
-                <Signal>dap_controller_inst/us_timer[24]</Signal>
-                <Signal>dap_controller_inst/us_timer[23]</Signal>
-                <Signal>dap_controller_inst/us_timer[22]</Signal>
-                <Signal>dap_controller_inst/us_timer[21]</Signal>
-                <Signal>dap_controller_inst/us_timer[20]</Signal>
-                <Signal>dap_controller_inst/us_timer[19]</Signal>
-                <Signal>dap_controller_inst/us_timer[18]</Signal>
-                <Signal>dap_controller_inst/us_timer[17]</Signal>
-                <Signal>dap_controller_inst/us_timer[16]</Signal>
-                <Signal>dap_controller_inst/us_timer[15]</Signal>
-                <Signal>dap_controller_inst/us_timer[14]</Signal>
-                <Signal>dap_controller_inst/us_timer[13]</Signal>
-                <Signal>dap_controller_inst/us_timer[12]</Signal>
-                <Signal>dap_controller_inst/us_timer[11]</Signal>
-                <Signal>dap_controller_inst/us_timer[10]</Signal>
-                <Signal>dap_controller_inst/us_timer[9]</Signal>
-                <Signal>dap_controller_inst/us_timer[8]</Signal>
-                <Signal>dap_controller_inst/us_timer[7]</Signal>
-                <Signal>dap_controller_inst/us_timer[6]</Signal>
-                <Signal>dap_controller_inst/us_timer[5]</Signal>
-                <Signal>dap_controller_inst/us_timer[4]</Signal>
-                <Signal>dap_controller_inst/us_timer[3]</Signal>
-                <Signal>dap_controller_inst/us_timer[2]</Signal>
-                <Signal>dap_controller_inst/us_timer[1]</Signal>
-                <Signal>dap_controller_inst/us_timer[0]</Signal>
+            <Bus capture_enable="true" name="dap_controller_inst/num_cmd[7:0]">
+                <Signal>dap_controller_inst/num_cmd[7]</Signal>
+                <Signal>dap_controller_inst/num_cmd[6]</Signal>
+                <Signal>dap_controller_inst/num_cmd[5]</Signal>
+                <Signal>dap_controller_inst/num_cmd[4]</Signal>
+                <Signal>dap_controller_inst/num_cmd[3]</Signal>
+                <Signal>dap_controller_inst/num_cmd[2]</Signal>
+                <Signal>dap_controller_inst/num_cmd[1]</Signal>
+                <Signal>dap_controller_inst/num_cmd[0]</Signal>
             </Bus>
-            <Bus capture_enable="true" name="dap_controller_inst/us_timer_div[5:0]">
-                <Signal>dap_controller_inst/us_timer_div[5]</Signal>
-                <Signal>dap_controller_inst/us_timer_div[4]</Signal>
-                <Signal>dap_controller_inst/us_timer_div[3]</Signal>
-                <Signal>dap_controller_inst/us_timer_div[2]</Signal>
-                <Signal>dap_controller_inst/us_timer_div[1]</Signal>
-                <Signal>dap_controller_inst/us_timer_div[0]</Signal>
-            </Bus>
-            <Bus capture_enable="true" name="dap_controller_inst/cmd_decoder_reslut[1:0]">
-                <Signal>dap_controller_inst/cmd_decoder_reslut[1]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[0]</Signal>
-            </Bus>
-            <Signal capture_enable="true">dap_controller_inst/mcu_helper_intr</Signal>
             <Bus capture_enable="true" name="dap_controller_inst/processing_cmd[7:0]">
                 <Signal>dap_controller_inst/processing_cmd[7]</Signal>
                 <Signal>dap_controller_inst/processing_cmd[6]</Signal>
@@ -95,13 +29,85 @@
                 <Signal>dap_controller_inst/processing_cmd[1]</Signal>
                 <Signal>dap_controller_inst/processing_cmd[0]</Signal>
             </Bus>
-            <Signal capture_enable="true">dap_controller_inst/fist_decoder_tready</Signal>
+            <Bus capture_enable="true" name="dap_controller_inst/cmd_decoder_reslut[11:0]">
+                <Signal>dap_controller_inst/cmd_decoder_reslut[11]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[10]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[9]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[8]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[7]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[6]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[5]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[4]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[3]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[2]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[1]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="dap_controller_inst/worker_start_flags[11:1]">
+                <Signal>dap_controller_inst/worker_start_flags[11]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[10]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[9]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[8]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[7]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[6]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[5]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[4]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[3]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[2]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[1]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="dap_controller_inst/worker_done_flags[11:1]">
+                <Signal>dap_controller_inst/worker_done_flags[1]</Signal>
+            </Bus>
+            <Signal capture_enable="true">dap_controller_inst/dap_out_fifo_inst/WrEn</Signal>
+            <Signal capture_enable="true">dap_controller_inst/dap_out_fifo_inst/RdEn</Signal>
+            <Signal capture_enable="true">dap_controller_inst/dap_out_fifo_inst/Empty</Signal>
+            <Bus capture_enable="true" name="dap_controller_inst/dap_in_tdata[7:0]">
+                <Signal>dap_controller_inst/dap_in_tdata[7]</Signal>
+                <Signal>dap_controller_inst/dap_in_tdata[6]</Signal>
+                <Signal>dap_controller_inst/dap_in_tdata[5]</Signal>
+                <Signal>dap_controller_inst/dap_in_tdata[4]</Signal>
+                <Signal>dap_controller_inst/dap_in_tdata[3]</Signal>
+                <Signal>dap_controller_inst/dap_in_tdata[2]</Signal>
+                <Signal>dap_controller_inst/dap_in_tdata[1]</Signal>
+                <Signal>dap_controller_inst/dap_in_tdata[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">dap_controller_inst/dap_in_tvalid</Signal>
+            <Signal capture_enable="true">dap_controller_inst/dap_in_tready</Signal>
+            <Signal capture_enable="true">dap_controller_inst/dap_out_tvalid</Signal>
+            <Bus capture_enable="true" name="dap_controller_inst/dap_out_tdata[7:0]">
+                <Signal>dap_controller_inst/dap_out_tdata[7]</Signal>
+                <Signal>dap_controller_inst/dap_out_tdata[6]</Signal>
+                <Signal>dap_controller_inst/dap_out_tdata[5]</Signal>
+                <Signal>dap_controller_inst/dap_out_tdata[4]</Signal>
+                <Signal>dap_controller_inst/dap_out_tdata[3]</Signal>
+                <Signal>dap_controller_inst/dap_out_tdata[2]</Signal>
+                <Signal>dap_controller_inst/dap_out_tdata[1]</Signal>
+                <Signal>dap_controller_inst/dap_out_tdata[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="dap_controller_inst/DAP_Delay_Worker_inst/delay_time[15:0]">
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[15]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[14]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[13]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[12]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[11]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[10]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[9]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[8]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[7]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[6]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[5]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[4]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[3]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[2]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[1]</Signal>
+                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[0]</Signal>
+            </Bus>
         </SignalList>
         <Triggers>
             <Trigger index="0">
                 <SignalList>
-                    <Signal>Cortex_M1/AHB2HSEL</Signal>
-                    <Signal>dap_controller_inst/dap_in_tready</Signal>
+                    <Signal>dap_controller_inst/dap_out_tvalid</Signal>
                 </SignalList>
             </Trigger>
             <Trigger index="1">
@@ -109,7 +115,11 @@
                     <Signal>dap_controller_inst/intr</Signal>
                 </SignalList>
             </Trigger>
-            <Trigger index="2"/>
+            <Trigger index="2">
+                <SignalList>
+                    <Signal>dap_controller_inst/dap_in_tvalid</Signal>
+                </SignalList>
+            </Trigger>
             <Trigger index="3"/>
             <Trigger index="4"/>
             <Trigger index="5"/>
@@ -125,9 +135,9 @@
             <Trigger index="15"/>
         </Triggers>
         <MatchUnits>
-            <MatchUnit index="0" enabled="1" match_type="1" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="R0" value1="00" trigger="0"/>
+            <MatchUnit index="0" enabled="1" match_type="1" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="R" value1="0" trigger="0"/>
             <MatchUnit index="1" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="1" value1="0" trigger="1"/>
-            <MatchUnit index="2" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="2" enabled="1" match_type="1" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="R" value1="0" trigger="2"/>
             <MatchUnit index="3" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
             <MatchUnit index="4" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
             <MatchUnit index="5" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
@@ -145,7 +155,9 @@
         <Expressions type="Dynamic" ex_implementation="1">
             <Expression>M0</Expression>
             <Expression>M1</Expression>
+            <Expression>M2</Expression>
+            <Expression>M0|M2</Expression>
         </Expressions>
     </AoCore>
-    <GAO_ID>1001011010001101</GAO_ID>
+    <GAO_ID>0001111010110000</GAO_ID>
 </GAO_CONFIG>

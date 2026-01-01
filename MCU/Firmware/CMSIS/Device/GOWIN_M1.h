@@ -1007,6 +1007,24 @@ typedef struct {
 #define SPIFLASH_CONF_RX_DEPTH_1         (2UL << SPIFLASH_CONF_RX_DEPTH_Pos)
 
 
+/******************************************************************************/
+/*                                  AXIS UART                                 */
+/******************************************************************************/
+#define AXISUART_CR_EN        ((uint32_t) 0x00000001)
+#define AXISUART_CR_PARTY_EN  ((uint32_t) 0x00000002)
+#define AXISUART_CR_PARTY_ODD ((uint32_t) 0x00000004)
+
+#define AXISUART_CR_STOP_BIT_Pos (3)
+#define AXISUART_CR_STOP_BIT_Msk (3UL << AXISUART_CR_STOP_BIT_Pos)
+#define AXISUART_CR_STOP_BIT_1     (0UL << AXISUART_CR_STOP_BIT_Pos)
+#define AXISUART_CR_STOP_BIT_1_5   (1UL << AXISUART_CR_STOP_BIT_Pos)
+#define AXISUART_CR_STOP_BIT_2     (2UL << AXISUART_CR_STOP_BIT_Pos)
+
+#define AXISUART_CR_DTR_Pos (30)
+#define AXISUART_CR_DTR ((uint32_t) 0x40000000)
+
+#define AXISUART_CR_RTS_Pos (31)
+#define AXISUART_CR_RTS ((uint32_t) 0x80000000)
 
 
 

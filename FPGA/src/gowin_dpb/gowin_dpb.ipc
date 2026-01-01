@@ -7,15 +7,15 @@ type=ram_dpb
 version=1.0
 
 [Config]
-Area=true
+Area=false
 BYTE_SIZE=0
 DEPTH_A=2048
 DEPTH_B=2048
 LANG=0
 READ_A=0
 READ_B=0
-RESET_MODE=true
-Speed=false
+RESET_MODE=false
+Speed=true
 WIDTH_A=8
 WIDTH_B=8
 WRITE_A=1

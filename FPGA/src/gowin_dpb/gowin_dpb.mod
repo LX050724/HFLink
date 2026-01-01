@@ -20,5 +20,5 @@
 -read_mode_1 bypass
 -write_mode_0 write-through
 -write_mode_1 write-through
--speed false
--reset_mode sync
+-speed true
+-reset_mode async

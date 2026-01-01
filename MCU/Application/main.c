@@ -1,10 +1,11 @@
 #include "GOWIN_M1.h"
+#include "GOWIN_M1_axisuart.h"
 #include "GOWIN_M1_usbd.h"
 #include "core_cm1.h"
 #include <stdint.h>
 #include <string.h>
 
-#include "usb/usbd.h"
+#include "usb/usbd_core.h"
 #include <GOWIN_M1_qspi_flash.h>
 
 #ifdef DEBUG
@@ -74,10 +75,6 @@ int main()
     DAP->TIMESTAMP = 0;
     print("DAP->TIME %08x\n", DAP->TIMESTAMP);
 
-    // NVIC_SetPriority(UserInterrupt0_IRQn, 4);
-    // NVIC_EnableIRQ(UserInterrupt0_IRQn);
-
-    // spi_flash_init();
 
     qspi_flash_init();
     // qspi_flash_Enable();
@@ -103,11 +100,8 @@ int main()
     NVIC_EnableIRQ(EXTINT_0_IRQn);
     print("CR:%08x\n", USBD->CR);
     
-    uint32_t baud = (SystemCoreClock * 8) / 921600 + 1;
-    baud = (baud >> 1) - 0x10;
-
-    AXIS_UART->BAUD = baud;
-    AXIS_UART->CR = 1;
+    axisuart_set_baud(AXIS_UART, 115200);
+    axisuart_enable(AXIS_UART);
 
     while (1)
     {
@@ -129,7 +123,6 @@ void EXTINT_0_Handler(void)
 void send_str(const char *s)
 {
     int n = strlen(s);
-    *((uint8_t *)&DAP->DR) = 0x00;
     *((uint8_t *)&DAP->DR) = n + 1;
     for (int i = 0; i <= n; i++)
         *((uint8_t *)&DAP->DR) = s[i];

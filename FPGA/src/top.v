@@ -210,7 +210,7 @@ module HFLink_TOP(
                       .cdc_out_tvalid(cdc_out_tvalid),
                       .cdc_out_tdata(cdc_out_tdata)
                   );
-    assign usb_clk = clkout0;
+    assign usb_clk = AHB1HCLK;
 
     genvar i;
     generate
@@ -270,7 +270,7 @@ module HFLink_TOP(
                        .dap_in_tvalid(winusb_out_tvalid),
                        .dap_in_tready(winusb_out_tready),
                        .dap_in_tdata(winusb_out_tdata),
-                       .dat_out_tvalid(winusb_in_tvalid),
+                       .dap_out_tvalid(winusb_in_tvalid),
                        .dap_out_tdata(winusb_in_tdata),
                        .intr(intr[1])
                    );

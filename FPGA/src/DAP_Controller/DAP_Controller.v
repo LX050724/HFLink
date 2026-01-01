@@ -27,8 +27,8 @@ module DAP_Controller #(
         output wire dap_in_tready,
         input wire [7:0] dap_in_tdata,
 
-        output reg dat_out_tvalid,
-        output reg [7:0] dap_out_tdata,
+        output wire dap_out_tvalid,
+        output wire [7:0] dap_out_tdata,
 
         output wire TCK_SWCLK,
         output wire TDI,
@@ -217,64 +217,171 @@ module DAP_Controller #(
         end
     end
 
+    reg [7:0] dap_out_fifo_wdata;
+    wire [7:0] dap_out_fifo_rdata;
+    reg dap_out_fifo_WrEn;
+    reg dap_out_fifo_RdEn;
+    wire dap_out_fifo_empty;
 
-    wire delay_done;
+    fifo_sc_top dap_out_fifo_inst (
+                    .Data(dap_out_fifo_wdata), //input [7:0] Data
+                    .Clk(hclk), //input Clk
+                    .WrEn(dap_out_fifo_WrEn), //input WrEn
+                    .RdEn(dap_out_fifo_RdEn), //input RdEn
+                    .Reset(!hresetn), //input Reset
+                    .Wnum(), //output [11:0] Wnum
+                    .Q(dap_out_tdata), //output [7:0] Q
+                    .Empty(dap_out_fifo_empty), //output Empty
+                    .Full() //output Full
+                );
 
-
-    reg [7:0] processing_cmd;   // 当前处理的命令
-    reg mcu_helper_intr;        // mcu介入中断信号
-    reg fist_decoder_tready;    // 一阶段解码器读就绪
 
     // 一阶段解码器，命令字转换独热码
-    reg [31:0] cmd_decoder_reslut;
-
+    reg [`CMD_REG_WIDTH-1:0] cmd_decoder_reslut;
+    wire [7:0] decode_cmd;
     always @(*) begin
-        cmd_decoder_reslut = 32'd0;
-        casez (processing_cmd)
-            8'b0000_00??, 8'b100?_????:
-                cmd_decoder_reslut = `CMD_MCU_HELPER;
+        cmd_decoder_reslut = 12'd1;
+        casez (decode_cmd)
+            // ID_DAP_Transfer
+            8'h05:
+                cmd_decoder_reslut = `CMD_TRANSFER;
+            // ID_DAP_TransferBlock
+            8'h06:
+                cmd_decoder_reslut = `CMD_TRANSFER_BLOCK;
+            // ID_DAP_TransferAbort
+            8'h07:
+                cmd_decoder_reslut = `CMD_TRANSFER_ABORT;
+            // ID_DAP_WriteABORT
+            8'h08:
+                cmd_decoder_reslut = `CMD_WRITE_ABORT;
+            // ID_DAP_Delay
             8'h09:
                 cmd_decoder_reslut = `CMD_DELAY;
+            // ID_DAP_SWJ_Pins
+            8'h10:
+                cmd_decoder_reslut = `CMD_SWJ_PINS;
+            // ID_DAP_SWJ_Sequence
+            8'h12:
+                cmd_decoder_reslut = `CMD_SWJ_SEQUENCE;
+            // ID_DAP_SWD_Sequence
+            8'h1D:
+                cmd_decoder_reslut = `CMD_SWD_SEQUENCE;
+            // ID_DAP_JTAG_Sequence
+            8'h14:
+                cmd_decoder_reslut = `CMD_JTAG_SEQUENCE;
+            // ID_DAP_JTAG_IDCODE
+            8'h16:
+                cmd_decoder_reslut = `CMD_JTAG_IDCODE;
+            // ID_DAP_QueueCommands
+            // ID_DAP_ExecuteCommands
+            8'h7E, 8'h7F:
+                cmd_decoder_reslut = `CMD_EXEC_CMD;
+            // ID_DAP_Info
+            // ID_DAP_HostStatus
+            // ID_DAP_Connect
+            // ID_DAP_Disconnect
+            // ID_DAP_TransferConfigure
+            // ID_DAP_ResetTarget
+            // ID_DAP_SWJ_Clock
+            // ID_DAP_SWD_Configure
+            // ID_DAP_JTAG_Configure
+            // ID_DAP_SWO_Transport
+            // ID_DAP_SWO_Mode
+            // ID_DAP_SWO_Baudrate
+            // ID_DAP_SWO_Control
+            // ID_DAP_SWO_Status
+            // ID_DAP_SWO_ExtendedStatus
+            // ID_DAP_SWO_Data
+            // ID_DAP_UART_Transport
+            // ID_DAP_UART_Configure
+            // ID_DAP_UART_Control
+            // ID_DAP_UART_Status
+            // ID_DAP_UART_Transfer
+            // ID_DAP_Vendor*
+            default:
+                cmd_decoder_reslut = `CMD_MCU_HELPER;
         endcase
     end
 
+    reg [7:0] processing_cmd;   // 当前处理的命令
+    reg mcu_helper_intr;        // mcu介入中断信号
+    reg [1:0] dap_sm;
+    reg [7:0] num_cmd;
+    wire fist_decoder_tready = (dap_sm == 2'd0 || dap_sm == 2'd1);    // 一阶段解码器读就绪
+    wire [`CMD_REG_WIDTH-1:1] worker_start_flags = (dap_sm == 2'd2) ? cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] : `CMD_REG_WIDTH'd0;
+    wire [`CMD_REG_WIDTH-1:1] worker_done_flags;
+    wire [`CMD_REG_WIDTH-1:1] worker_dap_in_tready;
+    wire [`CMD_REG_WIDTH-1:1] worker_dap_out_tready;
+    wire [7:0] worker_dap_out_tdata [`CMD_REG_WIDTH-1:1];
+
+    // 根据状态选择解码信号
+    assign decode_cmd = (dap_sm == 2'd0) ? dap_in_tdata : processing_cmd;
 
     always @(posedge hclk or negedge hresetn) begin
         if (!hresetn || !DAP_CR_EN) begin
-            fist_decoder_tready <= 1'd1;
             mcu_helper_intr <= 1'd0;
             processing_cmd <= 8'd0;
+            dap_out_fifo_RdEn <= 1'd0;
+            dap_sm <= 2'd0;
+            num_cmd <= 8'd0;
         end
         else begin
-
-            // 读取命令
-            if (fist_decoder_tready && dap_in_tvalid) begin
-                processing_cmd <= dap_in_tdata;
-                fist_decoder_tready <= 1'd0;
-                casez (cmd_decoder_reslut)
-                    `CMD_MCU_HELPER:
-                        mcu_helper_intr <= 1'd1;
-                endcase
-            end
-
-            // 判断忙标志
-            if (!fist_decoder_tready) begin
-                casez (cmd_decoder_reslut)
-                    `CMD_MCU_HELPER:
-                        // SR.INT 写1清除中断标志
-                        if (write_en && addr_equ(addr, DAP_SR_ADDR) && byte_strobe_reg[3]) begin
-                            if (hwdatas[31]) begin
-                                mcu_helper_intr <= 1'd0;
-                                fist_decoder_tready <= 1'd1;
-                            end
+            case (dap_sm)
+                2'd0: begin // 读第一字节
+                    // 读取命令
+                    if (dap_in_tvalid) begin
+                        processing_cmd <= dap_in_tdata;
+                        if (cmd_decoder_reslut[`CMD_MCU_HELPER_SHIFT]) begin
+                            mcu_helper_intr <= 1'd1;
+                            dap_sm <= 2'd2;
                         end
-                    `CMD_DELAY:
-                        if (delay_done)
-                            fist_decoder_tready <= 1'd1;
-                    default:
-                        fist_decoder_tready <= 1'd1;
-                endcase
-            end
+                        else if (cmd_decoder_reslut[`CMD_EXEC_CMD_SHIFT]) begin
+                            dap_sm <= 2'd1;
+                        end
+                        else begin
+                            dap_sm <= 2'd2;
+                        end
+                    end
+                end
+                2'd1: begin
+                    // 读取numcmd
+                    if (dap_in_tvalid) begin
+                        num_cmd <= dap_in_tdata;
+                        dap_sm <= 2'd0;
+                    end
+                end
+                2'd2: begin // 等待处理完成
+                    // 判断忙标志
+                    if (cmd_decoder_reslut[`CMD_MCU_HELPER_SHIFT]) begin
+                        if (write_en && addr_equ(addr, DAP_SR_ADDR) && byte_strobe_reg[3] && hwdatas[31]) begin
+                            mcu_helper_intr <= 1'd0;
+                            dap_sm <= 2'd3;
+                        end
+                    end
+                    else if (cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] & worker_done_flags[`CMD_REG_WIDTH-1:1]) begin
+                        dap_sm <= 2'd3;
+                    end
+                end
+                2'd3: begin
+                    // 没有num_cmd或最后一个处理完
+                    if (num_cmd == 8'd0 || num_cmd == 8'd1) begin
+                        num_cmd <= 8'd0;
+                        // 输出fifo
+                        if (dap_out_fifo_empty) begin
+                            dap_out_fifo_RdEn <= 1'd0;
+                            dap_sm <= 2'd0;
+                        end
+                        else begin
+                            dap_out_fifo_RdEn <= 1'd1;
+                        end
+                    end
+                    else begin
+                        // 命令数量递减，反回读命令状态
+                        num_cmd <= num_cmd - 8'd1;
+                        dap_sm <= 2'd0;
+                    end
+                end
+            endcase
         end
     end
 
@@ -302,48 +409,52 @@ module DAP_Controller #(
         end
     end
 
-    wire write_dr_en = write_en && addr_equ(addr, DAP_DR_ADDR);
-
-
-
-    wire delay_in_tready;
-    wire delay_out_tvalid;
-    wire [7:0] delay_out_tdata;
-    DAP_Delay_Worker  DAP_Delay_Worker_inst (
+    DAP_Delay_Worker DAP_Delay_Worker_inst (
                           .hclk(hclk),
                           .us_tick(us_tick),
                           .en(DAP_CR_EN),
-                          .start(cmd_decoder_reslut[`CMD_DELAY_SHIFT]),
+
+                          .start(worker_start_flags[`CMD_DELAY_SHIFT]),
+                          .done(worker_done_flags[`CMD_DELAY_SHIFT]),
                           .dap_in_tvalid(dap_in_tvalid),
-                          .dap_in_tready(delay_in_tready),
+                          .dap_in_tready(worker_dap_in_tready[`CMD_DELAY_SHIFT]),
                           .dap_in_tdata(dap_in_tdata),
-                          .dat_out_tvalid(delay_out_tvalid),
-                          .dap_out_tdata(delay_out_tdata),
-                          .done(delay_done)
+                          .dap_out_tvalid(worker_dap_out_tready[`CMD_DELAY_SHIFT]),
+                          .dap_out_tdata(worker_dap_out_tdata[`CMD_DELAY_SHIFT])
                       );
 
-    assign dap_in_tready = (DAP_CR_EN & fist_decoder_tready) | delay_in_tready;
+    assign dap_in_tready = DAP_CR_EN & (
+               fist_decoder_tready | ((cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] & worker_dap_in_tready[`CMD_REG_WIDTH-1:1]) ? 1'd1 : 1'd0));
 
     // 输出管道路由
     always @(*) begin
-        if (write_dr_en) begin
-            dat_out_tvalid = 1'd1;
-            dap_out_tdata = hwdatas[7:0];
+        if (write_en && addr_equ(addr, DAP_DR_ADDR) && byte_strobe[0]) begin
+            // MCU写入优先级最高
+            dap_out_fifo_WrEn = 1'd1;
+            dap_out_fifo_wdata = hwdatas[7:0];
+        end
+        else if (fist_decoder_tready) begin
+            // DAP顶层控制器读取数据直接写入fifo
+            dap_out_fifo_WrEn = DAP_CR_EN & dap_in_tvalid;
+            dap_out_fifo_wdata = dap_in_tdata;
         end
         else begin
+            // 命令处理转接到各个worker
             casez (cmd_decoder_reslut)
                 `CMD_DELAY: begin
-                    dat_out_tvalid = delay_out_tvalid;
-                    dap_out_tdata  = delay_out_tdata;
+                    dap_out_fifo_WrEn = worker_dap_out_tready[`CMD_DELAY_SHIFT];
+                    dap_out_fifo_wdata  = worker_dap_out_tdata[`CMD_DELAY_SHIFT];
                 end
                 default: begin
-                    dat_out_tvalid = 1'd0;
-                    dap_out_tdata = 8'd0;
+                    dap_out_fifo_WrEn = 1'd0;
+                    dap_out_fifo_wdata = 8'd0;
                 end
             endcase
         end
     end
 
+
     assign intr = DAP_INT_EN & (mcu_helper_intr);
+    assign dap_out_tvalid = dap_out_fifo_RdEn ? !dap_out_fifo_empty : 1'd0;
 
 endmodule

@@ -1,14 +1,15 @@
 #include "DAP_config.h"
 #include "GOWIN_M1.h"
+#include "GOWIN_M1_axisuart.h"
 #include "GOWIN_M1_usbd.h"
 #include "SEGGER_RTT.h"
 #include "usb_cdc.h"
 #include "usb_def.h"
 #include "usb_util.h"
-#include "usbd.h"
+#include "usbd_core.h"
 #include <string.h>
 
-#define CMSIS_DAP_INTERFACE_SIZE (9 + 7 + 7)
+#define CMSIS_DAP_INTERFACE_SIZE (9 + 7 + 7 + 7)
 #define CUSTOM_HID_LEN (9 + 9 + 7 + 7)
 
 #define HIDRAW_INTERVAL 4
@@ -171,9 +172,10 @@ static const uint8_t device_descriptor[18] = {
 
 static const uint8_t config_descriptor_hs[] = {
     USB_CONFIG_DESCRIPTOR_INIT(USB_CONFIG_SIZE, INTF_NUM, 0x01, USB_CONFIG_BUS_POWERED, USBD_MAX_POWER),
-    USB_INTERFACE_DESCRIPTOR_INIT(0x00, 0x00, 0x02, 0xff, 0x00, 0x00, 0x04),
+    USB_INTERFACE_DESCRIPTOR_INIT(0x00, 0x00, 0x03, 0xff, 0x00, 0x00, 0x04),
     USB_ENDPOINT_DESCRIPTOR_INIT(DAP_OUT_EP, USB_ENDPOINT_TYPE_BULK, USB_BULK_EP_MPS_HS, 0x00),
     USB_ENDPOINT_DESCRIPTOR_INIT(DAP_IN_EP, USB_ENDPOINT_TYPE_BULK, USB_BULK_EP_MPS_HS, 0x00),
+    USB_ENDPOINT_DESCRIPTOR_INIT(DAP_SWO_EP, USB_ENDPOINT_TYPE_BULK, USB_BULK_EP_MPS_HS, 0x00),
     CDC_ACM_DESCRIPTOR_INIT(0x01, CDC_INT_EP, CDC_OUT_EP, CDC_IN_EP, USB_BULK_EP_MPS_HS, 0x05),
         
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
@@ -187,9 +189,10 @@ static const uint8_t config_descriptor_hs[] = {
 
 static const uint8_t config_descriptor_fs[] = {
     USB_CONFIG_DESCRIPTOR_INIT(USB_CONFIG_SIZE, INTF_NUM, 0x01, USB_CONFIG_BUS_POWERED, USBD_MAX_POWER),
-    USB_INTERFACE_DESCRIPTOR_INIT(0x00, 0x00, 0x02, 0xff, 0x00, 0x00, 0x04),
+    USB_INTERFACE_DESCRIPTOR_INIT(0x00, 0x00, 0x03, 0xff, 0x00, 0x00, 0x04),
     USB_ENDPOINT_DESCRIPTOR_INIT(DAP_OUT_EP, USB_ENDPOINT_TYPE_BULK, USB_BULK_EP_MPS_FS, 0x00),
     USB_ENDPOINT_DESCRIPTOR_INIT(DAP_IN_EP, USB_ENDPOINT_TYPE_BULK, USB_BULK_EP_MPS_FS, 0x00),
+    USB_ENDPOINT_DESCRIPTOR_INIT(DAP_SWO_EP, USB_ENDPOINT_TYPE_BULK, USB_BULK_EP_MPS_FS, 0x00),
     CDC_ACM_DESCRIPTOR_INIT(0x01, CDC_INT_EP, CDC_OUT_EP, CDC_IN_EP, USB_BULK_EP_MPS_FS, 0x05),
 
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
@@ -297,32 +300,33 @@ void usbd_init_desc()
 struct cdc_line_coding line_coding;
 void cdc_acm_class_interface_request_handler(USBD_TypeDef *usbd, const struct usb_setup_packet *setup)
 {
+
     switch (setup->bRequest)
     {
     case CDC_REQUEST_SET_LINE_CODING: {
         if (usbd_ep_rxfifo_is_empty(usbd, 0))
             break;
         usbd_ep_read_buffer(usbd, 0, &line_coding, sizeof(line_coding));
-
-        uint32_t baud = (SystemCoreClock * 8) / line_coding.dwDTERate + 1;
-        baud = (baud >> 1) - 0x10;
-        AXIS_UART->BAUD = baud;
-
-        uint32_t CR = AXIS_UART->CR;
-        CR &= ~0x1e;
-        CR |= (line_coding.bCharFormat & 0x03) << 3;
-        switch (line_coding.bParityType)
-        {
-        case 1:
-            CR |= 0x06;
-            break;
-        case 2:
-            CR |= 0x02;
-            break;
-        default:
-            break;
-        }
-        AXIS_UART->CR = CR;
+        /*******************************************************************************/
+        /* Line Coding Structure                                                       */
+        /*-----------------------------------------------------------------------------*/
+        /* Offset | Field       | Size | Value  | Description                          */
+        /* 0      | dwDTERate   |   4  | Number |Data terminal rate, in bits per second*/
+        /* 4      | bCharFormat |   1  | Number | Stop bits                            */
+        /*                                        0 - 1 Stop bit                       */
+        /*                                        1 - 1.5 Stop bits                    */
+        /*                                        2 - 2 Stop bits                      */
+        /* 5      | bParityType |  1   | Number | Parity                               */
+        /*                                        0 - None                             */
+        /*                                        1 - Odd                              */
+        /*                                        2 - Even                             */
+        /*                                        3 - Mark                             */
+        /*                                        4 - Space                            */
+        /* 6      | bDataBits  |   1   | Number Data bits (5, 6, 7, 8 or 16).          */
+        /*******************************************************************************/
+        axisuart_set_baud(AXIS_UART, line_coding.dwDTERate);
+        axisuart_set_party(AXIS_UART, line_coding.bParityType);
+        axisuart_set_stop_bit(AXIS_UART, line_coding.bCharFormat);
         break;
     }
     case CDC_REQUEST_GET_LINE_CODING: {
@@ -330,7 +334,8 @@ void cdc_acm_class_interface_request_handler(USBD_TypeDef *usbd, const struct us
         break;
     }
     case CDC_REQUEST_SET_CONTROL_LINE_STATE: {
-        AXIS_UART->CR = (AXIS_UART->CR & 0x3fffffff) | ((setup->wValue & 3) << 30);
+        axisuart_set_dtr(AXIS_UART, setup->wValue & 0x0001);
+        axisuart_set_rts(AXIS_UART, setup->wValue & 0x0002);
         break;
     }
     case CDC_REQUEST_SEND_BREAK:

@@ -3,7 +3,7 @@ add_executable(HFLinkAPP
     GOWIN_M1_APP_startup.s
     main.c
     GOWIN_M1_it.c
-    usb/usbd.c
+    usb/usbd_core.c
 )
 target_include_directories(HFLinkAPP PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_options(HFLinkAPP PRIVATE -T "${CMAKE_CURRENT_LIST_DIR}/GOWIN_M1_APP.ld")

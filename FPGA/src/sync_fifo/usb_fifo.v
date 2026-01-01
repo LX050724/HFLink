@@ -20,7 +20,7 @@
 //`define    EP5_IN_EN
 //`define    EP6_IN_EN
 //`define    EP7_IN_EN
-`define    EP8_IN_EN
+// `define    EP8_IN_EN
 //`define    EP9_IN_EN
 //`define    EP10_IN_EN
 //`define    EP11_IN_EN
@@ -33,46 +33,46 @@
 //`define    EP3_OUT_EN
 `define    EP4_OUT_EN
 //`define    EP5_OUT_EN
-//`define    EP6_OUT_EN
+`define    EP6_OUT_EN
 //`define    EP7_OUT_EN
 //`define    EP8_OUT_EN
-`define    EP9_OUT_EN
+// `define    EP9_OUT_EN
 //`define    EP10_OUT_EN
 //`define    EP11_OUT_EN
 //`define    EP12_OUT_EN
 //`define    EP13_OUT_EN
 //`define    EP14_OUT_EN
 //`define    EP15_OUT_EN
-`define     EP1_IN_BUF_ASIZE     4'd12
-`define     EP2_IN_BUF_ASIZE     4'd12
-`define     EP3_IN_BUF_ASIZE     4'd12
-`define     EP4_IN_BUF_ASIZE     4'd12
-`define     EP5_IN_BUF_ASIZE     4'd12
-`define     EP6_IN_BUF_ASIZE     4'd12
-`define     EP7_IN_BUF_ASIZE     4'd12
-`define     EP8_IN_BUF_ASIZE     4'd12
-`define     EP9_IN_BUF_ASIZE     4'd12
-`define     EP10_IN_BUF_ASIZE    4'd12
-`define     EP11_IN_BUF_ASIZE    4'd12
-`define     EP12_IN_BUF_ASIZE    4'd12
-`define     EP13_IN_BUF_ASIZE    4'd12
-`define     EP14_IN_BUF_ASIZE    4'd12
-`define     EP15_IN_BUF_ASIZE    4'd12
-`define     EP1_OUT_BUF_ASIZE    4'd12
-`define     EP2_OUT_BUF_ASIZE    4'd12
-`define     EP3_OUT_BUF_ASIZE    4'd12
-`define     EP4_OUT_BUF_ASIZE    4'd12
-`define     EP5_OUT_BUF_ASIZE    4'd12
-`define     EP6_OUT_BUF_ASIZE    4'd12
-`define     EP7_OUT_BUF_ASIZE    4'd12
-`define     EP8_OUT_BUF_ASIZE    4'd12
-`define     EP9_OUT_BUF_ASIZE    4'd12
-`define     EP10_OUT_BUF_ASIZE   4'd12
-`define     EP11_OUT_BUF_ASIZE   4'd12
-`define     EP12_OUT_BUF_ASIZE   4'd12
-`define     EP13_OUT_BUF_ASIZE   4'd12
-`define     EP14_OUT_BUF_ASIZE   4'd12
-`define     EP15_OUT_BUF_ASIZE   4'd12
+`define     EP1_IN_BUF_ASIZE     4'd11
+`define     EP2_IN_BUF_ASIZE     4'd11
+`define     EP3_IN_BUF_ASIZE     4'd11
+`define     EP4_IN_BUF_ASIZE     4'd11
+`define     EP5_IN_BUF_ASIZE     4'd11
+`define     EP6_IN_BUF_ASIZE     4'd11
+`define     EP7_IN_BUF_ASIZE     4'd11
+`define     EP8_IN_BUF_ASIZE     4'd11
+`define     EP9_IN_BUF_ASIZE     4'd11
+`define     EP10_IN_BUF_ASIZE    4'd11
+`define     EP11_IN_BUF_ASIZE    4'd11
+`define     EP12_IN_BUF_ASIZE    4'd11
+`define     EP13_IN_BUF_ASIZE    4'd11
+`define     EP14_IN_BUF_ASIZE    4'd11
+`define     EP15_IN_BUF_ASIZE    4'd11
+`define     EP1_OUT_BUF_ASIZE    4'd11
+`define     EP2_OUT_BUF_ASIZE    4'd11
+`define     EP3_OUT_BUF_ASIZE    4'd11
+`define     EP4_OUT_BUF_ASIZE    4'd11
+`define     EP5_OUT_BUF_ASIZE    4'd11
+`define     EP6_OUT_BUF_ASIZE    4'd11
+`define     EP7_OUT_BUF_ASIZE    4'd11
+`define     EP8_OUT_BUF_ASIZE    4'd11
+`define     EP9_OUT_BUF_ASIZE    4'd11
+`define     EP10_OUT_BUF_ASIZE   4'd11
+`define     EP11_OUT_BUF_ASIZE   4'd11
+`define     EP12_OUT_BUF_ASIZE   4'd11
+`define     EP13_OUT_BUF_ASIZE   4'd11
+`define     EP14_OUT_BUF_ASIZE   4'd11
+`define     EP15_OUT_BUF_ASIZE   4'd11
 `define     EP1_OUT_BUF_AFULL    13'd2048
 `define     EP2_OUT_BUF_AFULL    13'd2048
 `define     EP3_OUT_BUF_AFULL    13'd2048
