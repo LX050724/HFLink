@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "dap/dap.h"
 #include "usb/usbd_core.h"
 #include <GOWIN_M1_qspi_flash.h>
 
@@ -130,25 +131,6 @@ void send_str(const char *s)
 
 void EXTINT_1_Handler(void)
 {
-    switch (DAP->CURCMD) {
-        case 0x00: {
-            uint8_t ID = *((uint8_t *)&DAP->DR);
-            print("DAP_Info %02x\n", ID);
-            switch (ID) {
-                case 0x01:
-                    send_str("HFLink");
-                    break;
-                case 0x02:
-                    send_str("HFLink CMSIS-DAP");
-                    break;
-                case 0x03:
-                    send_str("12345678");
-                    break;
-            }
-            break;
-        }
-    
-    }
-    DAP->SR = 0x80000000;
+    dap_irq_handler(DAP);
 }
 

@@ -13,7 +13,7 @@
 //                     
 //----------------------------------------------------------------------
 //===========================================
-`define    EP1_IN_EN
+// `define    EP1_IN_EN
 // `define    EP2_IN_EN
 `define    EP3_IN_EN
 //`define    EP4_IN_EN
@@ -59,7 +59,7 @@
 `define     EP14_IN_BUF_ASIZE    4'd11
 `define     EP15_IN_BUF_ASIZE    4'd11
 `define     EP1_OUT_BUF_ASIZE    4'd11
-`define     EP2_OUT_BUF_ASIZE    4'd11
+`define     EP2_OUT_BUF_ASIZE    4'd12
 `define     EP3_OUT_BUF_ASIZE    4'd11
 `define     EP4_OUT_BUF_ASIZE    4'd11
 `define     EP5_OUT_BUF_ASIZE    4'd11
@@ -74,7 +74,7 @@
 `define     EP14_OUT_BUF_ASIZE   4'd11
 `define     EP15_OUT_BUF_ASIZE   4'd11
 `define     EP1_OUT_BUF_AFULL    13'd2048
-`define     EP2_OUT_BUF_AFULL    13'd2048
+`define     EP2_OUT_BUF_AFULL    13'd4096
 `define     EP3_OUT_BUF_AFULL    13'd2048
 `define     EP4_OUT_BUF_AFULL    13'd2048
 `define     EP5_OUT_BUF_AFULL    13'd2048

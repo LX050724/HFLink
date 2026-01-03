@@ -360,7 +360,7 @@ void usbd_write_ldata(USBD_TypeDef *usbd, const uint8_t *data, size_t len)
     ep0_data_buf_residue -= len;
 }
 
-void usbd_get_descriptor(USBD_TypeDef *usbd, struct usb_setup_packet *setup)
+void usbd_get_descriptor(USBD_TypeDef *usbd, const struct usb_setup_packet *setup)
 {
     uint8_t type = HI_BYTE(setup->wValue);
     uint8_t index = LO_BYTE(setup->wValue);
@@ -378,7 +378,7 @@ void usbd_get_descriptor(USBD_TypeDef *usbd, struct usb_setup_packet *setup)
     }
 }
 
-void usbd_std_device_req_handler(USBD_TypeDef *usbd, struct usb_setup_packet *setup)
+void usbd_std_device_req_handler(USBD_TypeDef *usbd, const struct usb_setup_packet *setup)
 {
     switch (setup->bRequest)
     {
@@ -388,7 +388,7 @@ void usbd_std_device_req_handler(USBD_TypeDef *usbd, struct usb_setup_packet *se
     }
 }
 
-void usbd_std_interface_req_handler(USBD_TypeDef *usbd, struct usb_setup_packet *setup)
+void usbd_std_interface_req_handler(USBD_TypeDef *usbd, const struct usb_setup_packet *setup)
 {
     uint8_t type = HI_BYTE(setup->wValue);
     uint8_t intf_num = LO_BYTE(setup->wIndex);

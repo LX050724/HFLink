@@ -4,6 +4,8 @@ add_library(GOWIN_M1 INTERFACE)
 
 target_sources(GOWIN_M1 INTERFACE
     CMSIS/Device/system_GOWIN_M1.c
+    drivers/src/GOWIN_M1_dap.c
+    drivers/src/GOWIN_M1_axisuart.c
     drivers/src/GOWIN_M1_can.c
     drivers/src/GOWIN_M1_ddr3.c
     drivers/src/GOWIN_M1_dualtimer.c

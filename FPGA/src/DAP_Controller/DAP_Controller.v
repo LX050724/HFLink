@@ -17,7 +17,7 @@ module DAP_Controller #(
         input  wire                  hreadys,
         input  wire [31:0]           hwdatas,
 
-        output wire                  hreadyouts,
+        output reg                   hreadyouts,
         output wire                  hresps,
         output reg [31:0]            hrdatas,
 
@@ -29,6 +29,8 @@ module DAP_Controller #(
 
         output wire dap_out_tvalid,
         output wire [7:0] dap_out_tdata,
+        input wire dap_out_tready,
+        output wire [11:0] dap_out_tlen,
 
         output wire TCK_SWCLK,
         output wire TDI,
@@ -146,7 +148,6 @@ module DAP_Controller #(
     wire [31:0] wdata       = hwdatas;
     wire [3:0] byte_strobe = byte_strobe_reg;
 
-    assign hreadyouts  = 1'b1;  // slave always ready
     assign hresps      = 1'b0;  // OKAY response from slave
     //-----------------------------------------------------------
     //Module logic end
@@ -222,6 +223,7 @@ module DAP_Controller #(
     reg dap_out_fifo_WrEn;
     reg dap_out_fifo_RdEn;
     wire dap_out_fifo_empty;
+    wire [11:0] dap_out_fifo_Wnum;
 
     fifo_sc_top dap_out_fifo_inst (
                     .Data(dap_out_fifo_wdata), //input [7:0] Data
@@ -229,7 +231,7 @@ module DAP_Controller #(
                     .WrEn(dap_out_fifo_WrEn), //input WrEn
                     .RdEn(dap_out_fifo_RdEn), //input RdEn
                     .Reset(!hresetn), //input Reset
-                    .Wnum(), //output [11:0] Wnum
+                    .Wnum(dap_out_fifo_Wnum), //output [11:0] Wnum
                     .Q(dap_out_tdata), //output [7:0] Q
                     .Empty(dap_out_fifo_empty), //output Empty
                     .Full() //output Full
@@ -307,12 +309,15 @@ module DAP_Controller #(
     reg mcu_helper_intr;        // mcu介入中断信号
     reg [1:0] dap_sm;
     reg [7:0] num_cmd;
+    reg [11:0] pack_len;
     wire fist_decoder_tready = (dap_sm == 2'd0 || dap_sm == 2'd1);    // 一阶段解码器读就绪
     wire [`CMD_REG_WIDTH-1:1] worker_start_flags = (dap_sm == 2'd2) ? cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] : `CMD_REG_WIDTH'd0;
     wire [`CMD_REG_WIDTH-1:1] worker_done_flags;
     wire [`CMD_REG_WIDTH-1:1] worker_dap_in_tready;
     wire [`CMD_REG_WIDTH-1:1] worker_dap_out_tready;
     wire [7:0] worker_dap_out_tdata [`CMD_REG_WIDTH-1:1];
+    
+    assign dap_out_tlen = pack_len;
 
     // 根据状态选择解码信号
     assign decode_cmd = (dap_sm == 2'd0) ? dap_in_tdata : processing_cmd;
@@ -324,6 +329,7 @@ module DAP_Controller #(
             dap_out_fifo_RdEn <= 1'd0;
             dap_sm <= 2'd0;
             num_cmd <= 8'd0;
+            pack_len <= 12'd0;
         end
         else begin
             case (dap_sm)
@@ -373,6 +379,8 @@ module DAP_Controller #(
                         end
                         else begin
                             dap_out_fifo_RdEn <= 1'd1;
+                            if (dap_out_fifo_RdEn == 1'd0)
+                                pack_len <= dap_out_fifo_Wnum;
                         end
                     end
                     else begin
@@ -390,22 +398,35 @@ module DAP_Controller #(
     always @(*) begin
         if (read_en) begin
             case (addr[ADDRWIDTH-1:2])
-                DAP_CR_ADDR[ADDRWIDTH-1:2]:
+                DAP_CR_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = dap_ctrl_reg;
-                DAP_TIME_ADDR[ADDRWIDTH-1:2]:
+                    hreadyouts = 1'd1;
+                end
+                DAP_TIME_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = clk_timer;
-                DAP_SR_ADDR[ADDRWIDTH-1:2]:
+                    hreadyouts = 1'd1;
+                end
+                DAP_SR_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = {mcu_helper_intr, 30'd0};
-                DAP_DR_ADDR[ADDRWIDTH-1:2]:
+                    hreadyouts = 1'd1;
+                end
+                DAP_DR_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = {4{dap_in_tdata}};
-                DAP_CURCMD_ADDR[ADDRWIDTH-1:2]:
+                    hreadyouts = dap_in_tvalid;
+                end
+                DAP_CURCMD_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = {24'd0, processing_cmd};
-                default:
+                    hreadyouts = 1'd1;
+                end
+                default: begin
                     hrdatas = {32{1'bx}};
+                    hreadyouts = 1'd1;
+                end
             endcase
         end
         else begin
             hrdatas = {32{1'bx}};
+            hreadyouts  = 1'b1;  // slave always ready
         end
     end
 
@@ -423,12 +444,14 @@ module DAP_Controller #(
                           .dap_out_tdata(worker_dap_out_tdata[`CMD_DELAY_SHIFT])
                       );
 
-    assign dap_in_tready = DAP_CR_EN & (
-               fist_decoder_tready | ((cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] & worker_dap_in_tready[`CMD_REG_WIDTH-1:1]) ? 1'd1 : 1'd0));
+    wire worker_tready = ((cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] & worker_dap_in_tready[`CMD_REG_WIDTH-1:1]) ? 1'd1 : 1'd0);
+    wire ahb_read_dr = read_en && (addr == DAP_DR_ADDR);
+    
+    assign dap_in_tready = DAP_CR_EN & (fist_decoder_tready | worker_tready | ahb_read_dr);
 
     // 输出管道路由
     always @(*) begin
-        if (write_en && addr_equ(addr, DAP_DR_ADDR) && byte_strobe[0]) begin
+        if (write_en && (addr == DAP_DR_ADDR) && byte_strobe[0]) begin
             // MCU写入优先级最高
             dap_out_fifo_WrEn = 1'd1;
             dap_out_fifo_wdata = hwdatas[7:0];

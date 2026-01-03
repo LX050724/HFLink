@@ -29,8 +29,10 @@ module AHB_USBDevice #(
         output usb_nrst,
 
         // 数据AxisStream
+        output winusb_in_tready,
         input winusb_in_tvalid,
         input [7:0] winusb_in_tdata,
+        input [11:0] winusb_in_tlen,
         input winusb_out_tready,
         output winusb_out_tvalid,
         output [7:0] winusb_out_tdata,
@@ -580,6 +582,37 @@ module AHB_USBDevice #(
     assign endpt0_txval = !ep0_tx_fifo_empty;
 
 
+    wire fifo_ep_usb_txcork;
+    wire [11:0] fifo_ep_usb_txlen;
+    wire [7:0] fifo_ep_usb_txdat;
+    wire mailbox_ep_usb_txcork;
+    wire [11:0] mailbox_ep_usb_txlen;
+    wire [7:0] mailbox_ep_usb_txdat;
+    wire endpt_sel_ep1 = (endpt_sel == 4'd1);
+
+    assign ep_usb_txcork = endpt_sel_ep1 ? mailbox_ep_usb_txcork : fifo_ep_usb_txcork;
+    assign ep_usb_txlen = endpt_sel_ep1 ? mailbox_ep_usb_txlen : fifo_ep_usb_txlen;
+    assign ep_usb_txdat = endpt_sel_ep1 ? mailbox_ep_usb_txdat : fifo_ep_usb_txdat;
+
+    sync_tx_pkt_mailbox sync_tx_pkt_mailbox_inst(
+                            .clk(hclk),
+                            .resetn(!usb_link_rst),
+
+                            .i_tdata(winusb_in_tdata),
+                            .i_tlen(winusb_in_tlen),
+                            .i_tvalid(winusb_in_tvalid),
+                            .i_tready(winusb_in_tready),
+
+                            .usb_endpt(endpt_sel),
+                            .usb_txact(usb_txact),
+                            .usb_txpop(usb_txpop),
+                            .usb_txpktfin(usb_txpktfin),
+
+                            .usb_txcork(mailbox_ep_usb_txcork),
+                            .usb_txdata(mailbox_ep_usb_txdat),
+                            .usb_txlen(mailbox_ep_usb_txlen)
+                        );
+
     usb_fifo usb_fifo_u (
                  .i_clk(hclk),
                  .i_reset(usb_link_rst),
@@ -592,15 +625,9 @@ module AHB_USBDevice #(
                  .i_usb_txact(usb_txact),
                  .i_usb_txpop(usb_txpop),
                  .i_usb_txpktfin(usb_txpktfin),
-                 .o_usb_txcork(ep_usb_txcork),
-                 .o_usb_txlen(ep_usb_txlen),
-                 .o_usb_txdat(ep_usb_txdat),
-
-                 // WinUSB IN
-                 .i_ep1_tx_clk(hclk),
-                 .i_ep1_tx_max(TRANS_MAX),
-                 .i_ep1_tx_dval(winusb_in_tvalid),
-                 .i_ep1_tx_data(winusb_in_tdata),
+                 .o_usb_txcork(fifo_ep_usb_txcork),
+                 .o_usb_txlen(fifo_ep_usb_txlen),
+                 .o_usb_txdat(fifo_ep_usb_txdat),
 
                  // WinUSB OUT
                  .i_ep2_rx_clk(hclk),
@@ -627,16 +654,16 @@ module AHB_USBDevice #(
                  .o_ep4_rx_data(cdc_out_tdata)
 
                  //  HID IN
-                //  .i_ep8_tx_clk(hclk),
-                //  .i_ep8_tx_max(TRANS_MAX),
-                //  .i_ep8_tx_dval(),
-                //  .i_ep8_tx_data(),
+                 //  .i_ep8_tx_clk(hclk),
+                 //  .i_ep8_tx_max(TRANS_MAX),
+                 //  .i_ep8_tx_dval(),
+                 //  .i_ep8_tx_data(),
 
                  //  HID OUT
-                //  .i_ep9_rx_clk(hclk),
-                //  .i_ep9_rx_rdy(),
-                //  .o_ep9_rx_dval(),
-                //  .o_ep9_rx_data()
+                 //  .i_ep9_rx_clk(hclk),
+                 //  .i_ep9_rx_rdy(),
+                 //  .o_ep9_rx_dval(),
+                 //  .o_ep9_rx_data()
              );
 
     assign usb_nrst = USB_CR_EN & hresetn;

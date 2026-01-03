@@ -166,8 +166,10 @@ module HFLink_TOP(
     wire [7:0] usb_ulpi_data_i;
     wire [7:0] usb_ulpi_data_o;
 
+    wire winusb_in_tready;
     wire winusb_in_tvalid;
     wire [7:0] winusb_in_tdata;
+    wire [11:0] winusb_in_tlen;
     wire winusb_out_tready;
     wire winusb_out_tvalid;
     wire [7:0] winusb_out_tdata;
@@ -199,8 +201,10 @@ module HFLink_TOP(
                       .usb_ulpi_stp(usb_ulpi_stp),
                       .usb_nrst(usb_rstn),
 
+                      .winusb_in_tready(winusb_in_tready),
                       .winusb_in_tvalid(winusb_in_tvalid),
                       .winusb_in_tdata(winusb_in_tdata),
+                      .winusb_in_tlen(winusb_in_tlen),
                       .winusb_out_tready(winusb_out_tready),
                       .winusb_out_tvalid(winusb_out_tvalid),
                       .winusb_out_tdata(winusb_out_tdata),
@@ -272,6 +276,8 @@ module HFLink_TOP(
                        .dap_in_tdata(winusb_out_tdata),
                        .dap_out_tvalid(winusb_in_tvalid),
                        .dap_out_tdata(winusb_in_tdata),
+                       .dap_out_tready(winusb_in_tready),
+                       .dap_out_tlen(winusb_in_tlen),
                        .intr(intr[1])
                    );
 endmodule
