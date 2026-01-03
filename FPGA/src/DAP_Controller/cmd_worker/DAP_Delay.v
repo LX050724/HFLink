@@ -1,4 +1,4 @@
-module DAP_Delay_Worker(
+module DAP_Delay(
         input  hclk,       // clock
         input  us_tick,
         input en,

@@ -509,6 +509,22 @@ typedef struct {
   __IO uint32_t SR;
   __IO uint32_t DR;
   __I uint32_t CURCMD;
+  struct {
+    __IO uint32_t CR;
+    __IO uint16_t DIV;
+    __IO uint16_t DELAY;
+  } BAUD_GEN;
+  uint32_t RESERVED0[1];
+  struct {
+    __IO uint32_t CR;
+    __IO uint32_t DIR;
+    __IO uint32_t DO;
+    __I uint32_t DI;
+    __O uint32_t BS;
+    __O uint32_t BR;
+    __IO uint8_t IDELAY[8];
+    __IO uint8_t ODELAY[8];
+  } GPIO;
 } DAP_TypeDef;
 
 /* --------  End of section using anonymous unions and disabling warnings  -------- */

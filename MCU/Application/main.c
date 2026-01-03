@@ -1,5 +1,6 @@
 #include "GOWIN_M1.h"
 #include "GOWIN_M1_axisuart.h"
+#include "GOWIN_M1_dap.h"
 #include "GOWIN_M1_usbd.h"
 #include "core_cm1.h"
 #include <stdint.h>
@@ -104,8 +105,35 @@ int main()
     axisuart_set_baud(AXIS_UART, 115200);
     axisuart_enable(AXIS_UART);
 
+    dap_baud_set_div(DAP, 10);
+    dap_baud_set_delay(DAP, 0);
+    dap_baud_start(DAP);
+
+    // dap_gpio_enable_directio(DAP, DAP_GPIO_0);
+    // dap_gpio_enable_directio(DAP, DAP_GPIO_1);
+    // dap_gpio_enable_directio(DAP, DAP_GPIO_2);
+    // dap_gpio_enable_directio(DAP, DAP_GPIO_3);
+    
+    // dap_gpio_set_direction(DAP, DAP_GPIO_0, DAP_GPIO_DIR_OUTPUT);
+    // dap_gpio_set_direction(DAP, DAP_GPIO_1, DAP_GPIO_DIR_OUTPUT);
+    // dap_gpio_set_direction(DAP, DAP_GPIO_2, DAP_GPIO_DIR_OUTPUT);
+    // dap_gpio_set_direction(DAP, DAP_GPIO_3, DAP_GPIO_DIR_OUTPUT);
+    
+    // dap_gpio_set_odelay(DAP, DAP_GPIO_0, 128);
+    // dap_gpio_set_odelay(DAP, DAP_GPIO_1, 0);
+    // dap_gpio_set_odelay(DAP, DAP_GPIO_2, 0);
+    // dap_gpio_set_odelay(DAP, DAP_GPIO_3, 0);
+
     while (1)
     {
+        for (int i = 0; i < 2; i++)
+        {
+            dap_gpio_set_pin(DAP, 0xff);
+            delay_1ms(1);
+            dap_gpio_reset_pin(DAP, 0xff);
+            delay_1ms(1);
+        }
+        // DAP->GPIO.ODELAY[0]++;
     }
 }
 

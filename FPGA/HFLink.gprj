@@ -8,7 +8,9 @@
         <File path="src/AHB_USBDevice.v" type="file.verilog" enable="1"/>
         <File path="src/APB_Stream_UART.v" type="file.verilog" enable="1"/>
         <File path="src/DAP_Controller/DAP_Controller.v" type="file.verilog" enable="1"/>
-        <File path="src/DAP_Controller/cmd_worker/DAP_Delay_Worker.v" type="file.verilog" enable="1"/>
+        <File path="src/DAP_Controller/cmd_worker/DAP_Delay.v" type="file.verilog" enable="1"/>
+        <File path="src/DAP_Controller/interface/DAP_BaudGenerator.v" type="file.verilog" enable="1"/>
+        <File path="src/DAP_Controller/interface/DAP_GPIO.v" type="file.verilog" enable="1"/>
         <File path="src/fifo_sc_top/fifo_sc_top.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_dpb/gowin_dpb.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_empu_m1/gowin_empu_m1.v" type="file.verilog" enable="1"/>

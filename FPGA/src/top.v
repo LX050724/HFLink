@@ -25,6 +25,8 @@ module HFLink_TOP(
         ,input usb_ulpi_nxt
         ,input usb_ulpi_dir
         ,output usb_ulpi_stp
+
+        ,inout [3:0] gpio
     );
 
     wire lock;
@@ -270,6 +272,8 @@ module HFLink_TOP(
                        .hreadyouts(AHB2HREADYOUT),
                        .hresps(AHB2HRESP[0]),
                        .hrdatas(AHB2HRDATA),
+                       
+                       .dap_clk(clkout1),
 
                        .dap_in_tvalid(winusb_out_tvalid),
                        .dap_in_tready(winusb_out_tready),
@@ -278,6 +282,8 @@ module HFLink_TOP(
                        .dap_out_tdata(winusb_in_tdata),
                        .dap_out_tready(winusb_in_tready),
                        .dap_out_tlen(winusb_in_tlen),
-                       .intr(intr[1])
+                       .intr(intr[1]),
+
+                       .gpio(gpio)
                    );
 endmodule

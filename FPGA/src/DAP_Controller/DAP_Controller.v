@@ -2,7 +2,8 @@
 
 module DAP_Controller #(
         parameter ADDRWIDTH = 12,
-        parameter [5:0] CLOCK_FREQ_M = 60
+        parameter [5:0] CLOCK_FREQ_M = 60,
+        parameter GPIO_NUM = 4
     ) (
         input  wire                  dap_clk,
         input  wire                  hclk,       // clock
@@ -32,12 +33,7 @@ module DAP_Controller #(
         input wire dap_out_tready,
         output wire [11:0] dap_out_tlen,
 
-        output wire TCK_SWCLK,
-        output wire TDI,
-        output wire TDO,
-        input wire TMS_SWDIO_I,
-        output wire TMS_SWDIO_O,
-        output wire TMS_SWDIO_T
+        inout [GPIO_NUM-1:0] gpio
     );
 
     // ----------------------------------------
@@ -158,6 +154,19 @@ module DAP_Controller #(
     localparam [ADDRWIDTH-1:0] DAP_SR_ADDR               = 12'h008;
     localparam [ADDRWIDTH-1:0] DAP_DR_ADDR               = 12'h00C;
     localparam [ADDRWIDTH-1:0] DAP_CURCMD_ADDR           = 12'h010;
+    localparam [ADDRWIDTH-1:0] DAP_BAUD_CR_ADDR          = 12'h014;
+    localparam [ADDRWIDTH-1:0] DAP_BAUD_TIMING_ADDR      = 12'h018;
+
+    localparam [ADDRWIDTH-1:0] DAP_GPIO_CR_ADDR          = 12'h020;
+    // DAP_GPIO_DIR_ADDR                                 = 12'h024;
+    // DAP_GPIO_DO_ADDR                                  = 12'h028;
+    // DAP_GPIO_DI_ADDR                                  = 12'h02C;
+    // DAP_GPIO_BS_ADDR                                  = 12'h030;
+    // DAP_GPIO_BR_ADDR                                  = 12'h034;
+    // DAP_GPIO_IDELAY_0_3_ADDR                          = 12'h038;
+    // DAP_GPIO_IDELAY_4_7_ADDR                          = 12'h03C;
+    // DAP_GPIO_ODELAY_0_3_ADDR                          = 12'h040;
+    // DAP_GPIO_ODELAY_4_7_ADDR                          = 12'h044;
 
     function addr_equ;
         input [ADDRWIDTH-1:0] addr;
@@ -243,7 +252,7 @@ module DAP_Controller #(
     wire [7:0] decode_cmd;
     always @(*) begin
         cmd_decoder_reslut = 12'd1;
-        casez (decode_cmd)
+        case (decode_cmd)
             // ID_DAP_Transfer
             8'h05:
                 cmd_decoder_reslut = `CMD_TRANSFER;
@@ -316,7 +325,7 @@ module DAP_Controller #(
     wire [`CMD_REG_WIDTH-1:1] worker_dap_in_tready;
     wire [`CMD_REG_WIDTH-1:1] worker_dap_out_tready;
     wire [7:0] worker_dap_out_tdata [`CMD_REG_WIDTH-1:1];
-    
+
     assign dap_out_tlen = pack_len;
 
     // 根据状态选择解码信号
@@ -393,60 +402,23 @@ module DAP_Controller #(
         end
     end
 
+    DAP_Delay DAP_Delay_inst (
+                  .hclk(hclk),
+                  .us_tick(us_tick),
+                  .en(DAP_CR_EN),
 
-
-    always @(*) begin
-        if (read_en) begin
-            case (addr[ADDRWIDTH-1:2])
-                DAP_CR_ADDR[ADDRWIDTH-1:2]: begin
-                    hrdatas = dap_ctrl_reg;
-                    hreadyouts = 1'd1;
-                end
-                DAP_TIME_ADDR[ADDRWIDTH-1:2]: begin
-                    hrdatas = clk_timer;
-                    hreadyouts = 1'd1;
-                end
-                DAP_SR_ADDR[ADDRWIDTH-1:2]: begin
-                    hrdatas = {mcu_helper_intr, 30'd0};
-                    hreadyouts = 1'd1;
-                end
-                DAP_DR_ADDR[ADDRWIDTH-1:2]: begin
-                    hrdatas = {4{dap_in_tdata}};
-                    hreadyouts = dap_in_tvalid;
-                end
-                DAP_CURCMD_ADDR[ADDRWIDTH-1:2]: begin
-                    hrdatas = {24'd0, processing_cmd};
-                    hreadyouts = 1'd1;
-                end
-                default: begin
-                    hrdatas = {32{1'bx}};
-                    hreadyouts = 1'd1;
-                end
-            endcase
-        end
-        else begin
-            hrdatas = {32{1'bx}};
-            hreadyouts  = 1'b1;  // slave always ready
-        end
-    end
-
-    DAP_Delay_Worker DAP_Delay_Worker_inst (
-                          .hclk(hclk),
-                          .us_tick(us_tick),
-                          .en(DAP_CR_EN),
-
-                          .start(worker_start_flags[`CMD_DELAY_SHIFT]),
-                          .done(worker_done_flags[`CMD_DELAY_SHIFT]),
-                          .dap_in_tvalid(dap_in_tvalid),
-                          .dap_in_tready(worker_dap_in_tready[`CMD_DELAY_SHIFT]),
-                          .dap_in_tdata(dap_in_tdata),
-                          .dap_out_tvalid(worker_dap_out_tready[`CMD_DELAY_SHIFT]),
-                          .dap_out_tdata(worker_dap_out_tdata[`CMD_DELAY_SHIFT])
-                      );
+                  .start(worker_start_flags[`CMD_DELAY_SHIFT]),
+                  .done(worker_done_flags[`CMD_DELAY_SHIFT]),
+                  .dap_in_tvalid(dap_in_tvalid),
+                  .dap_in_tready(worker_dap_in_tready[`CMD_DELAY_SHIFT]),
+                  .dap_in_tdata(dap_in_tdata),
+                  .dap_out_tvalid(worker_dap_out_tready[`CMD_DELAY_SHIFT]),
+                  .dap_out_tdata(worker_dap_out_tdata[`CMD_DELAY_SHIFT])
+              );
 
     wire worker_tready = ((cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] & worker_dap_in_tready[`CMD_REG_WIDTH-1:1]) ? 1'd1 : 1'd0);
     wire ahb_read_dr = read_en && (addr == DAP_DR_ADDR);
-    
+
     assign dap_in_tready = DAP_CR_EN & (fist_decoder_tready | worker_tready | ahb_read_dr);
 
     // 输出管道路由
@@ -479,5 +451,114 @@ module DAP_Controller #(
 
     assign intr = DAP_INT_EN & (mcu_helper_intr);
     assign dap_out_tvalid = dap_out_fifo_RdEn ? !dap_out_fifo_empty : 1'd0;
+
+    wire [31:0] baudgenerator_hrdatas;
+    wire sclk_out;
+    wire sclk_pulse;
+    wire sclk_delay_pulse;
+    DAP_BaudGenerator #(
+                          .ADDRWIDTH(ADDRWIDTH),
+                          .BASE_ADDR(DAP_BAUD_CR_ADDR)
+                      ) dap_baudgenerator_inst (
+                          .clk(hclk),
+                          .resetn(hresetn),
+                          .sclk_in(dap_clk),
+                          .ahb_write_en(write_en),
+                          .ahb_addr(addr),
+                          .ahb_rdata(baudgenerator_hrdatas),
+                          .ahb_wdata(hwdatas),
+                          .ahb_byte_strobe(byte_strobe_reg),
+
+                          .sclk_out(sclk_out),
+                          .sclk_pulse(sclk_pulse),
+                          .sclk_delay_pulse(sclk_delay_pulse)
+                      );
+
+
+    wire [31:0] gpio_hrdatas;
+    DAP_GPIO #(
+                 .ADDRWIDTH(ADDRWIDTH),
+                 .BASE_ADDR(DAP_GPIO_CR_ADDR),
+                 .GPIO_NUM(GPIO_NUM)
+             ) dap_gpio_inst (
+                 .clk(hclk),
+                 .resetn(hresetn),
+
+                 .ahb_write_en(write_en),
+                 .ahb_addr(addr),
+                 .ahb_rdata(gpio_hrdatas),
+                 .ahb_wdata(hwdatas),
+                 .ahb_byte_strobe(byte_strobe_reg),
+
+                 .afio0_I(),
+                 .afio0_O({1'd0, sclk_delay_pulse, sclk_pulse, sclk_out}),
+                 .afio0_T(4'd0),
+
+                 //  .afio1_I(),
+                 //  .afio1_O(),
+                 //  .afio1_T(),
+
+                 .gpio(gpio)
+             );
+
+    //  读DR超时计时器
+    reg [3:0] dr_timeout;
+    always @(posedge hclk or negedge hresetn) begin
+        if (!hresetn) begin
+            dr_timeout <= 4'd0;
+        end
+        else begin
+            if (ahb_read_dr && !dap_in_tvalid)
+                dr_timeout <= dr_timeout + 4'd1;
+            else
+                dr_timeout <= 4'd0;
+        end
+    end
+
+    always @(*) begin
+        if (read_en) begin
+            casez (addr[ADDRWIDTH-1:2])
+                DAP_CR_ADDR[ADDRWIDTH-1:2]: begin
+                    hrdatas = dap_ctrl_reg;
+                    hreadyouts = 1'd1;
+                end
+                DAP_TIME_ADDR[ADDRWIDTH-1:2]: begin
+                    hrdatas = clk_timer;
+                    hreadyouts = 1'd1;
+                end
+                DAP_SR_ADDR[ADDRWIDTH-1:2]: begin
+                    hrdatas = {mcu_helper_intr, 30'd0};
+                    hreadyouts = 1'd1;
+                end
+                DAP_DR_ADDR[ADDRWIDTH-1:2]: begin
+                    hrdatas = {4{dap_in_tdata}};
+                    hreadyouts = dap_in_tvalid || (dr_timeout == 4'hf);
+                end
+                DAP_CURCMD_ADDR[ADDRWIDTH-1:2]: begin
+                    hrdatas = {24'd0, processing_cmd};
+                    hreadyouts = 1'd1;
+                end
+                // BAUD GENERATOR RANGE 14 18
+                DAP_BAUD_CR_ADDR[ADDRWIDTH-1:2],
+                DAP_BAUD_TIMING_ADDR[ADDRWIDTH-1:2]: begin
+                    hrdatas = baudgenerator_hrdatas;
+                    hreadyouts = 1'd1;
+                end
+                // GPIO ADDR RANGE 02x 03x 04x
+                (10'b0000_001?_??), (10'b0000_0100_??): begin
+                    hrdatas = gpio_hrdatas;
+                    hreadyouts = 1'd1;
+                end
+                default: begin
+                    hrdatas = {32{1'bx}};
+                    hreadyouts = 1'd1;
+                end
+            endcase
+        end
+        else begin
+            hrdatas = {32{1'bx}};
+            hreadyouts  = 1'b1;  // slave always ready
+        end
+    end
 
 endmodule
