@@ -346,16 +346,15 @@ module DAP_Controller #(
                     // 读取命令
                     if (dap_in_tvalid) begin
                         processing_cmd <= dap_in_tdata;
-                        if (cmd_decoder_reslut[`CMD_MCU_HELPER_SHIFT]) begin
+                        if (cmd_decoder_reslut[`CMD_MCU_HELPER_SHIFT])
                             mcu_helper_intr <= 1'd1;
-                            dap_sm <= 2'd2;
-                        end
-                        else if (cmd_decoder_reslut[`CMD_EXEC_CMD_SHIFT]) begin
+
+                        if (cmd_decoder_reslut[`CMD_TRANSFER_ABORT_SHIFT])
                             dap_sm <= 2'd1;
-                        end
-                        else begin
+                        else if (cmd_decoder_reslut[`CMD_EXEC_CMD_SHIFT])
+                            dap_sm <= 2'd0;
+                        else
                             dap_sm <= 2'd2;
-                        end
                     end
                 end
                 2'd1: begin
@@ -428,8 +427,12 @@ module DAP_Controller #(
             dap_out_fifo_WrEn = 1'd1;
             dap_out_fifo_wdata = hwdatas[7:0];
         end
-        else if (fist_decoder_tready) begin
-            // DAP顶层控制器读取数据直接写入fifo
+        else if (dap_sm == 2'd0) begin
+            // DAP顶层控制器读取数据直接写入fifo, TransferAbort没有返回数据
+            dap_out_fifo_WrEn = DAP_CR_EN & dap_in_tvalid & !cmd_decoder_reslut[`CMD_TRANSFER_ABORT_SHIFT];
+            dap_out_fifo_wdata = dap_in_tdata;
+        end
+        else if (dap_sm == 2'd1) begin
             dap_out_fifo_WrEn = DAP_CR_EN & dap_in_tvalid;
             dap_out_fifo_wdata = dap_in_tdata;
         end
@@ -474,7 +477,7 @@ module DAP_Controller #(
                           .sclk_delay_pulse(sclk_delay_pulse)
                       );
 
-
+    wire [3:0] afio_i;
     wire [31:0] gpio_hrdatas;
     DAP_GPIO #(
                  .ADDRWIDTH(ADDRWIDTH),
@@ -490,8 +493,8 @@ module DAP_Controller #(
                  .ahb_wdata(hwdatas),
                  .ahb_byte_strobe(byte_strobe_reg),
 
-                 .afio0_I(),
-                 .afio0_O({1'd0, sclk_delay_pulse, sclk_pulse, sclk_out}),
+                 .afio0_I(afio_i),
+                 .afio0_O({afio_i[0], sclk_delay_pulse, sclk_pulse, sclk_out}),
                  .afio0_T(4'd0),
 
                  //  .afio1_I(),
