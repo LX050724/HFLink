@@ -4664,6 +4664,12 @@
 		(uuid "4a791481-fae0-4b60-a104-85700cfc1fb1")
 	)
 	(junction
+		(at 267.97 129.54)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "50c41074-ca75-4f1f-8eb5-04566255d483")
+	)
+	(junction
 		(at 245.11 144.78)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -5757,16 +5763,6 @@
 	)
 	(wire
 		(pts
-			(xy 254 124.46) (xy 262.89 124.46)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "632776ed-bbb0-47d9-bb4b-01f7b11c00c5")
-	)
-	(wire
-		(pts
 			(xy 48.26 76.2) (xy 48.26 81.28)
 		)
 		(stroke
@@ -6097,6 +6093,16 @@
 	)
 	(wire
 		(pts
+			(xy 262.89 124.46) (xy 262.89 129.54)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "817c8cd0-59bd-4161-b1c3-5151361f49bb")
+	)
+	(wire
+		(pts
 			(xy 146.05 176.53) (xy 146.05 172.72)
 		)
 		(stroke
@@ -6404,6 +6410,16 @@
 			(type default)
 		)
 		(uuid "a18b7662-7b28-4f01-b3fd-4a3ac7806404")
+	)
+	(wire
+		(pts
+			(xy 262.89 129.54) (xy 267.97 129.54)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a25a22bf-7ea4-47a3-a7aa-d1f3ac09f62c")
 	)
 	(wire
 		(pts
@@ -7206,7 +7222,7 @@
 		(uuid "31bae329-aaf1-4c6f-a10e-f2c2dceb409a")
 	)
 	(label "UART_RX"
-		(at 254 119.38 0)
+		(at 254 121.92 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7446,7 +7462,7 @@
 		(uuid "c4d5bdb7-695d-43c4-aa2c-116cf3517c9a")
 	)
 	(label "UART_TX"
-		(at 254 121.92 0)
+		(at 254 119.38 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -9326,73 +9342,6 @@
 			(project "HFLink_Plus"
 				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
 					(reference "#PWR097")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 254 116.84 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "2d817439-9807-40d8-b6b1-c31f9e122454")
-		(property "Reference" "#PWR0114"
-			(at 247.65 116.84 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 250.19 116.8399 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 254 116.84 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 254 116.84 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 254 116.84 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "51173a32-5de6-42ee-a576-ccd945c9dc36")
-		)
-		(instances
-			(project "HFLink_Plus"
-				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
-					(reference "#PWR0114")
 					(unit 1)
 				)
 			)
@@ -12161,7 +12110,7 @@
 	)
 	(symbol
 		(lib_id "power:+1V0")
-		(at 254 124.46 90)
+		(at 254 116.84 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -12170,7 +12119,7 @@
 		(fields_autoplaced yes)
 		(uuid "79c52b35-0e50-4b24-87cd-9f4b92bcacd2")
 		(property "Reference" "#PWR0115"
-			(at 257.81 124.46 0)
+			(at 257.81 116.84 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12179,7 +12128,7 @@
 			)
 		)
 		(property "Value" "VTREF"
-			(at 250.19 124.4599 90)
+			(at 250.19 116.8399 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12188,7 +12137,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 254 124.46 0)
+			(at 254 116.84 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12197,7 +12146,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 254 124.46 0)
+			(at 254 116.84 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12206,7 +12155,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+1V0\""
-			(at 254 124.46 0)
+			(at 254 116.84 0)
 			(effects
 				(font
 					(size 1.27 1.27)
