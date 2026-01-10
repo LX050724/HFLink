@@ -1,0 +1,9 @@
+(version 1)
+(rule "HV_GND"
+	(constraint clearance (min 0.2mm))
+	(condition "A.hasNetclass('HV') &&  !B.hasNetclass('HV')")
+)
+(rule "SH_GND"
+	(constraint clearance (min 0.2mm))
+	(condition "A.NetName == 'Earth*'")
+)

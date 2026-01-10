@@ -1,0 +1,220 @@
+(footprint "ZH_SM04_1.50mm_Horizontal"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 5.408542 -2.133402 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "e5526ffd-3629-4734-933f-3e7e168a7450")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "ZH_SM04_1.50mm_Horizontal"
+		(at 0 1 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "294230e2-4c31-47f1-acb8-71bf5fb77dad")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "f4e71718-3945-45f4-987f-9c61a3cf8400")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "b0b6e541-1ecb-48ae-9da8-02cede24eaba")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_line
+		(start -4.5 -1.2)
+		(end -4.5 0)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "c2858b5d-92e5-49b7-809c-0b24e2453bcc")
+	)
+	(fp_line
+		(start -4.5 -1.2)
+		(end -3.10177 -1.2)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "e6470608-f7ed-425e-bffb-15c170811267")
+	)
+	(fp_line
+		(start -4.5 3.5)
+		(end -4.5 3.8)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "0df1ae36-3b71-4e46-bd98-d8ef80bc3d48")
+	)
+	(fp_line
+		(start -4.5 3.8)
+		(end 4.5 3.8)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "6262a700-e6fb-4603-9e85-44fd98eab5eb")
+	)
+	(fp_line
+		(start -3.10177 -1.2)
+		(end -3.10177 -2.991037)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "61168089-90ea-4874-b376-45b9f2a5e79c")
+	)
+	(fp_line
+		(start 4.5 -1.2)
+		(end 3.10177 -1.2)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "5b293546-8d2c-4d61-a853-03debe711b41")
+	)
+	(fp_line
+		(start 4.5 -1.2)
+		(end 4.5 0)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "32305145-3e62-41b2-a2fa-0a37a1814f3e")
+	)
+	(fp_line
+		(start 4.5 3.5)
+		(end 4.5 3.8)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "11a14b9b-8baf-48a6-9e2f-03d21c009878")
+	)
+	(fp_rect
+		(start -4.5 -1.988007)
+		(end 4.5 3.8)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "c22dc267-b7e1-4405-b591-913c2be9890d")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 2.5 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "f411657b-bbc9-4cc6-89bf-cb4264c494d3")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd roundrect
+		(at -2.25 -2.05)
+		(size 1 2.3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(thermal_bridge_angle 45)
+		(uuid "dc2d4d61-2ebc-46c1-9ba2-9169c224573e")
+	)
+	(pad "2" smd roundrect
+		(at -0.75 -2.05)
+		(size 1 2.3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(thermal_bridge_angle 45)
+		(uuid "8775ca8c-ddc0-4780-a7dc-ce3992bb893f")
+	)
+	(pad "3" smd roundrect
+		(at 0.75 -2.05)
+		(size 1 2.3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(thermal_bridge_angle 45)
+		(uuid "feec842c-1ca8-4d74-a604-bf586088b6bd")
+	)
+	(pad "4" smd roundrect
+		(at 2.25 -2.05)
+		(size 1 2.3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(thermal_bridge_angle 45)
+		(uuid "10fb9905-4100-42d2-93db-98af749e69e6")
+	)
+	(pad "MP" smd roundrect
+		(at -4.25 1.95)
+		(size 1 2.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(thermal_bridge_angle 45)
+		(uuid "2ddbe1de-86fa-4dbf-8ce6-5abc52db42e8")
+	)
+	(pad "MP" smd roundrect
+		(at 4.25 1.95)
+		(size 1 2.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(thermal_bridge_angle 45)
+		(uuid "3719ffa2-6a15-4155-aab9-d7690923437f")
+	)
+	(embedded_fonts no)
+	(model "${KIPRJMOD}/libs/3D/WAFER-ZH1.5-4PWB.STEP"
+		(offset
+			(xyz 0 2.1 0.15)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 180 0 0)
+		)
+	)
+)

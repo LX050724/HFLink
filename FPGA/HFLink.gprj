@@ -3,7 +3,7 @@
 <Project>
     <Template>FPGA</Template>
     <Version>5</Version>
-    <Device name="GW5A-25A" pn="GW5A-LV25MG121NES">gw5a25a-000</Device>
+    <Device name="GW5A-25A" pn="GW5A-LV25MG121NC1/I0">gw5a25a-002</Device>
     <FileList>
         <File path="src/AHB_USBDevice.v" type="file.verilog" enable="1"/>
         <File path="src/APB_Stream_UART.v" type="file.verilog" enable="1"/>
@@ -26,7 +26,7 @@
         <File path="src/HFLink.cst" type="file.cst" enable="1"/>
         <File path="src/timming.sdc" type="file.sdc" enable="1"/>
         <File path="src/HFLink.rao" type="file.gao" enable="0"/>
-        <File path="src/HFLinkDAP.rao" type="file.gao" enable="1"/>
+        <File path="src/HFLinkDAP.rao" type="file.gao" enable="0"/>
         <File path="src/HFLinkUART.rao" type="file.gao" enable="0"/>
     </FileList>
 </Project>

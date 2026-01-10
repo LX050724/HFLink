@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "Library")(type "KiCad")(uri "D:/source/tang25K/HFLink/Hardware/lib/Library.pretty")(options "")(descr ""))
+)
