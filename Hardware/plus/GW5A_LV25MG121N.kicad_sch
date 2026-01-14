@@ -414,6 +414,509 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Device:LED_RGBA"
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "D"
+				(at 0 9.398 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "LED_RGBA"
+				(at 0 -8.89 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 -1.27 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 -1.27 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "RGB LED, red/green/blue/anode"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "LED RGB diode"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "LED* LED_SMD:* LED_THT:*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "LED_RGBA_0_0"
+				(text "R"
+					(at -1.905 3.81 0)
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(text "G"
+					(at -1.905 -1.27 0)
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(text "B"
+					(at -1.905 -6.35 0)
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(symbol "LED_RGBA_0_1"
+				(polyline
+					(pts
+						(xy -1.27 6.35) (xy -1.27 3.81)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 6.35) (xy -1.27 3.81) (xy -1.27 3.81)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 5.08) (xy -2.54 5.08)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 5.08) (xy 1.27 5.08)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 1.27) (xy -1.27 -1.27)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 1.27) (xy -1.27 -1.27) (xy -1.27 -1.27)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 0) (xy -2.54 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 -3.81) (xy -1.27 -6.35)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 -5.08) (xy -2.54 -5.08)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 -5.08) (xy 1.27 -5.08)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.016 6.35) (xy 0.508 7.874) (xy -0.254 7.874) (xy 0.508 7.874) (xy 0.508 7.112)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.016 1.27) (xy 0.508 2.794) (xy -0.254 2.794) (xy 0.508 2.794) (xy 0.508 2.032)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.016 -3.81) (xy 0.508 -2.286) (xy -0.254 -2.286) (xy 0.508 -2.286) (xy 0.508 -3.048)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 6.35) (xy 1.524 7.874) (xy 0.762 7.874) (xy 1.524 7.874) (xy 1.524 7.112)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 1.27) (xy 1.524 2.794) (xy 0.762 2.794) (xy 1.524 2.794) (xy 1.524 2.032)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 -3.81) (xy 1.524 -2.286) (xy 0.762 -2.286) (xy 1.524 -2.286) (xy 1.524 -3.048)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 6.35) (xy 1.27 3.81) (xy -1.27 5.08) (xy 1.27 6.35)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start 1.27 6.35)
+					(end 1.27 6.35)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start 1.27 3.81)
+					(end 1.27 6.35)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 1.27) (xy 1.27 -1.27) (xy -1.27 0) (xy 1.27 1.27)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start 1.27 1.27)
+					(end 1.27 1.27)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 0) (xy -1.27 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 0) (xy 2.54 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start 1.27 -1.27)
+					(end 1.27 1.27)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 -3.81) (xy 1.27 -6.35) (xy -1.27 -5.08) (xy 1.27 -3.81)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 -5.08) (xy 2.032 -5.08) (xy 2.032 5.08) (xy 1.27 5.08)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 2.032 0)
+					(radius 0.254)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(rectangle
+					(start 2.794 8.382)
+					(end -2.794 -7.62)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "LED_RGBA_1_1"
+				(pin passive line
+					(at -5.08 5.08 0)
+					(length 2.54)
+					(name "RK"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 0 0)
+					(length 2.54)
+					(name "GK"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 -5.08 0)
+					(length 2.54)
+					(name "BK"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 5.08 0 180)
+					(length 2.54)
+					(name "A"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "HPM6280Foc:0402WGF1001TCE"
 			(pin_numbers
 				(hide yes)
@@ -2743,189 +3246,6 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "HPM6280Foc:NCD0603B1"
-			(pin_numbers
-				(hide yes)
-			)
-			(pin_names
-				(offset 1.016)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "D"
-				(at 0 2.54 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "NCD0603B1"
-				(at 0 -2.54 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "LED_SMD:LED_0603_1608Metric"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "https://item.szlcsc.com/datasheet/NCD0603B1/85435.html?spm=sc.it.xds.a___sc.cidn.xh11.zy.n&lcsc_vid=RFRfBVcDE1AKVwFQFlNZVFdVEVVeBlJXT1hWXgUERFUxVlNTR1lYXlBSQ1ZWVztW"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Light emitting diode 蓝色"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "立创编号" "C84266"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "LED diode 蓝色"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "LED* LED_SMD:* LED_THT:*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "NCD0603B1_0_1"
-				(polyline
-					(pts
-						(xy -3.048 -0.762) (xy -4.572 -2.286) (xy -3.81 -2.286) (xy -4.572 -2.286) (xy -4.572 -1.524)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.778 -0.762) (xy -3.302 -2.286) (xy -2.54 -2.286) (xy -3.302 -2.286) (xy -3.302 -1.524)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 0) (xy 1.27 0)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 -1.27) (xy -1.27 1.27)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -1.27) (xy 1.27 1.27) (xy -1.27 0) (xy 1.27 -1.27)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(symbol "NCD0603B1_1_1"
-				(pin passive line
-					(at -3.81 0 0)
-					(length 2.54)
-					(name "K"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 3.81 0 180)
-					(length 2.54)
-					(name "A"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "HPM6280Foc:NCD0603G1"
 			(pin_numbers
 				(hide yes)
@@ -3070,189 +3390,6 @@
 				)
 			)
 			(symbol "NCD0603G1_1_1"
-				(pin passive line
-					(at -3.81 0 0)
-					(length 2.54)
-					(name "K"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 3.81 0 180)
-					(length 2.54)
-					(name "A"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
-		(symbol "HPM6280Foc:NCD0603R1"
-			(pin_numbers
-				(hide yes)
-			)
-			(pin_names
-				(offset 1.016)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "D"
-				(at 0 2.54 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "NCD0603R1"
-				(at 0 -2.54 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "LED_SMD:LED_0603_1608Metric"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "https://item.szlcsc.com/datasheet/NCD0603R1/85432.html?spm=sc.it.xds.a___sc.cidn.xh5.zy.n&lcsc_vid=RFRfBVcDE1AKVwFQFlNZVFdVEVVeBlJXT1hWXgUERFUxVlNTR1lYXlBSQ1ZWVztW"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Light emitting diode 红色"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "立创编号" "C84263"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "LED diode 红色"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "LED* LED_SMD:* LED_THT:*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "NCD0603R1_0_1"
-				(polyline
-					(pts
-						(xy -3.048 -0.762) (xy -4.572 -2.286) (xy -3.81 -2.286) (xy -4.572 -2.286) (xy -4.572 -1.524)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.778 -0.762) (xy -3.302 -2.286) (xy -2.54 -2.286) (xy -3.302 -2.286) (xy -3.302 -1.524)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 0) (xy 1.27 0)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 -1.27) (xy -1.27 1.27)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -1.27) (xy 1.27 1.27) (xy -1.27 0) (xy 1.27 -1.27)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(symbol "NCD0603R1_1_1"
 				(pin passive line
 					(at -3.81 0 0)
 					(length 2.54)
@@ -4497,22 +4634,10 @@
 		(uuid "4fa2bc10-eedb-4f3a-aa10-8ae24b83a2b7")
 	)
 	(junction
-		(at 220.98 106.68)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "5e81b1b5-ff28-4754-9ea8-a28e60d6ffd0")
-	)
-	(junction
 		(at 73.66 69.85)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "64cbd185-3629-4a14-9e8a-d3f8cf55abfe")
-	)
-	(junction
-		(at 220.98 93.98)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "6d25cb72-28a9-4349-80b6-c6b840099e1e")
 	)
 	(junction
 		(at 148.59 90.17)
@@ -4943,16 +5068,6 @@
 		)
 		(uuid "03df7287-f719-4188-a0b9-604faea1c982")
 	)
-	(wire
-		(pts
-			(xy 220.98 118.11) (xy 220.98 106.68)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "04c25fa0-7dea-4761-a909-a74a409ee466")
-	)
 	(polyline
 		(pts
 			(xy 82.55 31.75) (xy 82.55 48.26)
@@ -4975,7 +5090,7 @@
 	)
 	(wire
 		(pts
-			(xy 231.14 106.68) (xy 232.41 106.68)
+			(xy 238.76 106.68) (xy 254 106.68)
 		)
 		(stroke
 			(width 0)
@@ -5062,6 +5177,16 @@
 			(type default)
 		)
 		(uuid "0c0f6d1c-e348-489a-9d12-0b1cbcf01bff")
+	)
+	(wire
+		(pts
+			(xy 228.6 111.76) (xy 228.6 118.11)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0c90d51e-7d06-408c-be29-6a57de5358ab")
 	)
 	(wire
 		(pts
@@ -5262,16 +5387,6 @@
 			(type default)
 		)
 		(uuid "1fb65368-2458-4f04-8dbc-9f6cdddd6474")
-	)
-	(wire
-		(pts
-			(xy 254 106.68) (xy 240.03 106.68)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "23e0ecc8-cf63-45d1-b22e-831ff5aeb206")
 	)
 	(wire
 		(pts
@@ -5485,16 +5600,6 @@
 	)
 	(wire
 		(pts
-			(xy 254 93.98) (xy 240.03 93.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3bf5f7d6-5e17-4eff-bb99-b1455929de02")
-	)
-	(wire
-		(pts
 			(xy 35.56 57.15) (xy 60.96 57.15)
 		)
 		(stroke
@@ -5563,16 +5668,6 @@
 		)
 		(uuid "41b0ebda-c35b-4231-ab5e-07acd8a78f3a")
 	)
-	(wire
-		(pts
-			(xy 220.98 106.68) (xy 220.98 93.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "41b6d158-f460-4734-9ecb-0384ee1143ce")
-	)
 	(bus
 		(pts
 			(xy 33.02 124.46) (xy 36.83 124.46)
@@ -5582,6 +5677,16 @@
 			(type default)
 		)
 		(uuid "4216ef54-40a1-473a-9f7f-aa4ead1591d4")
+	)
+	(wire
+		(pts
+			(xy 228.6 106.68) (xy 231.14 106.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "43488dd7-ccf8-449b-838b-c361a12a1a82")
 	)
 	(wire
 		(pts
@@ -5632,16 +5737,6 @@
 			(type default)
 		)
 		(uuid "49b1ee47-9f60-46cb-99d4-569f786a08dc")
-	)
-	(wire
-		(pts
-			(xy 223.52 118.11) (xy 220.98 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4a9267c0-6cbc-4572-bf48-0f52d93bd373")
 	)
 	(wire
 		(pts
@@ -5775,16 +5870,6 @@
 	)
 	(wire
 		(pts
-			(xy 220.98 93.98) (xy 223.52 93.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "57c44050-0bee-47e9-bdc2-73611183f457")
-	)
-	(wire
-		(pts
 			(xy 123.19 129.54) (xy 132.08 129.54)
 		)
 		(stroke
@@ -5885,7 +5970,7 @@
 	)
 	(wire
 		(pts
-			(xy 231.14 93.98) (xy 232.41 93.98)
+			(xy 238.76 93.98) (xy 254 93.98)
 		)
 		(stroke
 			(width 0)
@@ -6285,6 +6370,16 @@
 	)
 	(wire
 		(pts
+			(xy 228.6 101.6) (xy 228.6 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9098e9b7-e0b4-484d-9af3-041d119c4d54")
+	)
+	(wire
+		(pts
 			(xy 60.96 59.69) (xy 60.96 62.23)
 		)
 		(stroke
@@ -6573,16 +6668,6 @@
 		)
 		(uuid "ae252965-6ead-4f32-aedf-a90a5763a022")
 	)
-	(wire
-		(pts
-			(xy 219.71 93.98) (xy 220.98 93.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ae7b754b-0b15-40a5-ae47-7e16d1b11673")
-	)
 	(bus
 		(pts
 			(xy 36.83 129.54) (xy 36.83 132.08)
@@ -6822,16 +6907,6 @@
 			(type default)
 		)
 		(uuid "c738de53-d3a8-42b9-984a-415eb7e13fb8")
-	)
-	(wire
-		(pts
-			(xy 254 118.11) (xy 240.03 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c79550b8-765d-4bfd-afeb-1df4389a1143")
 	)
 	(wire
 		(pts
@@ -7115,7 +7190,7 @@
 	)
 	(wire
 		(pts
-			(xy 231.14 118.11) (xy 232.41 118.11)
+			(xy 238.76 118.11) (xy 254 118.11)
 		)
 		(stroke
 			(width 0)
@@ -7175,6 +7250,16 @@
 	)
 	(wire
 		(pts
+			(xy 228.6 118.11) (xy 231.14 118.11)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ea58f3d5-2449-4699-ae45-7bfed4dfe419")
+	)
+	(wire
+		(pts
 			(xy 161.29 72.39) (xy 186.69 72.39)
 		)
 		(stroke
@@ -7205,6 +7290,16 @@
 	)
 	(wire
 		(pts
+			(xy 228.6 93.98) (xy 231.14 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "eea62809-b574-48aa-8c72-9f39160c86c3")
+	)
+	(wire
+		(pts
 			(xy 35.56 87.63) (xy 60.96 87.63)
 		)
 		(stroke
@@ -7232,16 +7327,6 @@
 			(type default)
 		)
 		(uuid "f5d2e999-a408-4476-9f7d-797b8534b8f9")
-	)
-	(wire
-		(pts
-			(xy 220.98 106.68) (xy 223.52 106.68)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f5f4e18e-1288-4167-b219-4a1c6c844c6c")
 	)
 	(wire
 		(pts
@@ -7313,7 +7398,7 @@
 		)
 		(uuid "04ce001a-8c9c-4fe8-b451-079d4af955b2")
 	)
-	(label "MCU_SWC"
+	(label "K9_MCU_SWC"
 		(at 85.09 36.83 0)
 		(effects
 			(font
@@ -7372,16 +7457,6 @@
 			(justify left bottom)
 		)
 		(uuid "11b47a54-68ea-4f4b-bd3d-fb160d52ee94")
-	)
-	(label "MCU_SWD"
-		(at 232.41 148.59 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "1350e51d-0157-4b4b-8c44-ff4278cd284d")
 	)
 	(label "L10_IOT15A_40P"
 		(at 35.56 82.55 0)
@@ -7733,7 +7808,7 @@
 		)
 		(uuid "4e0d3345-8d79-4d32-a670-501dad1a9a7c")
 	)
-	(label "MCU_SWD"
+	(label "L9_MCU_SWD"
 		(at 85.09 34.29 0)
 		(effects
 			(font
@@ -7762,6 +7837,16 @@
 			(justify left bottom)
 		)
 		(uuid "5287a8bb-e5a9-403d-aeb7-09d1e338cf10")
+	)
+	(label "K9_MCU_SWC"
+		(at 232.41 151.13 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "5343af9f-e60e-4e91-94d4-3fda7247316d")
 	)
 	(label "K11_IOT11A"
 		(at 35.56 87.63 0)
@@ -7942,16 +8027,6 @@
 			(justify right bottom)
 		)
 		(uuid "756e7ea4-2a83-4e15-aee8-12d713bc434f")
-	)
-	(label "MCU_SWC"
-		(at 232.41 151.13 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "7626b8f7-32ef-403d-972d-09821f777b76")
 	)
 	(label "G7_IOT68A"
 		(at 35.56 49.53 0)
@@ -8572,6 +8647,16 @@
 			(justify left bottom)
 		)
 		(uuid "d3888321-22b6-499d-9744-cb40a972ebe5")
+	)
+	(label "L9_MCU_SWD"
+		(at 232.41 148.59 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d4dbb4c3-e928-4466-a968-71b65e9a93ff")
 	)
 	(label "B1_JTAG_TMS"
 		(at 171.45 59.69 0)
@@ -9559,83 +9644,6 @@
 		)
 	)
 	(symbol
-		(lib_id "HPM6280Foc:NCD0603B1")
-		(at 236.22 118.11 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "28a7de5a-f22e-408a-9962-06c012079459")
-		(property "Reference" "D3"
-			(at 237.8075 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "NCD0603B1"
-			(at 237.8075 113.03 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "LED_SMD:LED_0603_1608Metric"
-			(at 236.22 118.11 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://item.szlcsc.com/datasheet/NCD0603B1/85435.html?spm=sc.it.xds.a___sc.cidn.xh11.zy.n&lcsc_vid=RFRfBVcDE1AKVwFQFlNZVFdVEVVeBlJXT1hWXgUERFUxVlNTR1lYXlBSQ1ZWVztW"
-			(at 236.22 118.11 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Light emitting diode 蓝色"
-			(at 236.22 118.11 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "立创编号" "C84266"
-			(at 236.22 118.11 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "a8c234cd-5945-4e89-806d-6cd899b965f5")
-		)
-		(pin "2"
-			(uuid "4dce6c06-92ba-49a4-9248-c8db6d0e9ae4")
-		)
-		(instances
-			(project ""
-				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/01bd6ea3-3c36-4c85-b1f4-13f70ab917b0"
-					(reference "D3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:GND")
 		(at 161.29 54.61 90)
 		(unit 1)
@@ -10012,7 +10020,7 @@
 	)
 	(symbol
 		(lib_id "power:+3V3")
-		(at 219.71 93.98 90)
+		(at 218.44 106.68 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -10021,7 +10029,7 @@
 		(fields_autoplaced yes)
 		(uuid "3cd088fa-7600-451b-b581-21f9aba4826f")
 		(property "Reference" "#PWR0111"
-			(at 223.52 93.98 0)
+			(at 222.25 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10030,7 +10038,7 @@
 			)
 		)
 		(property "Value" "+3V3"
-			(at 215.9 93.9799 90)
+			(at 214.63 106.6799 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10039,7 +10047,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 219.71 93.98 0)
+			(at 218.44 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10048,7 +10056,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 219.71 93.98 0)
+			(at 218.44 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10057,7 +10065,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 219.71 93.98 0)
+			(at 218.44 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11079,7 +11087,7 @@
 	)
 	(symbol
 		(lib_id "HPM6280Foc:0402WGF1001TCE")
-		(at 227.33 118.11 0)
+		(at 234.95 118.11 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -11088,7 +11096,7 @@
 		(fields_autoplaced yes)
 		(uuid "6dd4442d-44db-46a4-a1c8-85fd8e418c29")
 		(property "Reference" "R38"
-			(at 227.33 111.76 0)
+			(at 234.95 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11096,7 +11104,7 @@
 			)
 		)
 		(property "Value" "1K,1%"
-			(at 227.33 114.3 0)
+			(at 234.95 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11104,7 +11112,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 227.33 118.11 0)
+			(at 234.95 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11113,7 +11121,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 227.33 118.11 0)
+			(at 234.95 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11122,7 +11130,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 227.33 118.11 0)
+			(at 234.95 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11131,7 +11139,7 @@
 			)
 		)
 		(property "华秋编号" "G0063277"
-			(at 227.33 118.11 0)
+			(at 234.95 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11140,7 +11148,7 @@
 			)
 		)
 		(property "立创编号" "C11702"
-			(at 227.33 118.11 0)
+			(at 234.95 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11296,7 +11304,7 @@
 	)
 	(symbol
 		(lib_id "HPM6280Foc:0402WGF1001TCE")
-		(at 227.33 106.68 0)
+		(at 234.95 106.68 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -11305,7 +11313,7 @@
 		(fields_autoplaced yes)
 		(uuid "89a9ea1b-8900-4e72-80d2-7e11a77e2c5f")
 		(property "Reference" "R37"
-			(at 227.33 100.33 0)
+			(at 234.95 100.33 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11313,7 +11321,7 @@
 			)
 		)
 		(property "Value" "1K,1%"
-			(at 227.33 102.87 0)
+			(at 234.95 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11321,7 +11329,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 227.33 106.68 0)
+			(at 234.95 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11330,7 +11338,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 227.33 106.68 0)
+			(at 234.95 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11339,7 +11347,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 227.33 106.68 0)
+			(at 234.95 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11348,7 +11356,7 @@
 			)
 		)
 		(property "华秋编号" "G0063277"
-			(at 227.33 106.68 0)
+			(at 234.95 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11357,7 +11365,7 @@
 			)
 		)
 		(property "立创编号" "C11702"
-			(at 227.33 106.68 0)
+			(at 234.95 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12479,7 +12487,7 @@
 	)
 	(symbol
 		(lib_id "HPM6280Foc:0402WGF1001TCE")
-		(at 227.33 93.98 0)
+		(at 234.95 93.98 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -12488,7 +12496,7 @@
 		(fields_autoplaced yes)
 		(uuid "bd81bd06-88d1-415f-ba9c-ecaf7c85eb4f")
 		(property "Reference" "R36"
-			(at 227.33 87.63 0)
+			(at 234.95 87.63 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12496,7 +12504,7 @@
 			)
 		)
 		(property "Value" "1K,1%"
-			(at 227.33 90.17 0)
+			(at 234.95 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12504,7 +12512,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 227.33 93.98 0)
+			(at 234.95 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12513,7 +12521,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 227.33 93.98 0)
+			(at 234.95 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12522,7 +12530,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 227.33 93.98 0)
+			(at 234.95 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12531,7 +12539,7 @@
 			)
 		)
 		(property "华秋编号" "G0063277"
-			(at 227.33 93.98 0)
+			(at 234.95 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12540,7 +12548,7 @@
 			)
 		)
 		(property "立创编号" "C11702"
-			(at 227.33 93.98 0)
+			(at 234.95 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12558,83 +12566,6 @@
 			(project ""
 				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/01bd6ea3-3c36-4c85-b1f4-13f70ab917b0"
 					(reference "R36")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "HPM6280Foc:NCD0603G1")
-		(at 236.22 93.98 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "c1f8cb21-1d25-4ed6-b8cc-07393cc26e8a")
-		(property "Reference" "D1"
-			(at 237.8075 86.36 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "NCD0603G1"
-			(at 237.8075 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "LED_SMD:LED_0603_1608Metric"
-			(at 236.22 93.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://item.szlcsc.com/datasheet/NCD0603G1/85436.html?spm=sc.it.xds.a___sc.cidn.xh6.zy.n&lcsc_vid=RFRfBVcDE1AKVwFQFlNZVFdVEVVeBlJXT1hWXgUERFUxVlNTR1lYXlBSQ1ZWVztW"
-			(at 236.22 93.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Light emitting diode 翠绿"
-			(at 236.22 93.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "立创编号" "C84267"
-			(at 236.22 93.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "5a48e7b1-3808-403a-ba34-c685f676a29c")
-		)
-		(pin "2"
-			(uuid "3ca9a59e-e40c-4d2d-ad87-81c6560e9860")
-		)
-		(instances
-			(project ""
-				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/01bd6ea3-3c36-4c85-b1f4-13f70ab917b0"
-					(reference "D1")
 					(unit 1)
 				)
 			)
@@ -12773,42 +12704,33 @@
 		)
 	)
 	(symbol
-		(lib_id "HPM6280Foc:NCD0603R1")
-		(at 236.22 106.68 180)
+		(lib_id "Device:LED_RGBA")
+		(at 223.52 106.68 0)
+		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "d9f90080-fc5e-4c42-8644-5b84cf8ba8bb")
-		(property "Reference" "D2"
-			(at 237.8075 99.06 0)
+		(uuid "cf08802c-4af4-4e0f-aecc-a1ab0fb44ff7")
+		(property "Reference" "D6"
+			(at 223.52 92.71 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "NCD0603R1"
-			(at 237.8075 101.6 0)
+		(property "Value" "LED_RGBA"
+			(at 223.52 95.25 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_0603_1608Metric"
-			(at 236.22 106.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://item.szlcsc.com/datasheet/NCD0603R1/85432.html?spm=sc.it.xds.a___sc.cidn.xh5.zy.n&lcsc_vid=RFRfBVcDE1AKVwFQFlNZVFdVEVVeBlJXT1hWXgUERFUxVlNTR1lYXlBSQ1ZWVztW"
-			(at 236.22 106.68 0)
+		(property "Footprint" "Library:LED_RGBA_1615"
+			(at 223.52 107.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12816,8 +12738,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Light emitting diode 红色"
-			(at 236.22 106.68 0)
+		(property "Datasheet" "~"
+			(at 223.52 107.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12825,8 +12747,26 @@
 				(hide yes)
 			)
 		)
-		(property "立创编号" "C84263"
-			(at 236.22 106.68 0)
+		(property "Description" "RGB LED, red/green/blue/anode"
+			(at 223.52 106.68 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" ""
+			(at 223.52 106.68 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" ""
+			(at 223.52 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12835,15 +12775,21 @@
 			)
 		)
 		(pin "1"
-			(uuid "b3d22e06-630c-4d24-b1bd-05bc818698f4")
+			(uuid "56a0914a-be6b-4878-9eb3-5dcb41b9e904")
 		)
 		(pin "2"
-			(uuid "aedb2010-6734-49b3-b264-4878a4f99d1a")
+			(uuid "968ce005-9d1a-4395-aade-a9de13542856")
+		)
+		(pin "3"
+			(uuid "e38c0352-4500-41c2-aa24-4ea27ac8a0f3")
+		)
+		(pin "4"
+			(uuid "b17f7880-4592-4eca-aa8d-67f46b9f393d")
 		)
 		(instances
 			(project ""
 				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/01bd6ea3-3c36-4c85-b1f4-13f70ab917b0"
-					(reference "D2")
+					(reference "D6")
 					(unit 1)
 				)
 			)

@@ -47,3 +47,4 @@ FPGA/terosHDL
 .vscode/
 FPGA/HFLink.gprj.user
 /Hardware/plus/GERBER
+*.html
