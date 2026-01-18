@@ -28,11 +28,16 @@ module AHB_USBDevice #(
         output usb_ulpi_stp,
         output usb_nrst,
 
+        // USB外部控制端口
+        output [3:0] ext_usb_endpt,
+        output ext_usb_txact,
+        output ext_usb_txpop,
+        output ext_usb_txpktfin,
+        input ext_usb_txcork,
+        input [7:0] ext_usb_txdata,
+        input [11:0] ext_usb_txlen,
+
         // 数据AxisStream
-        output winusb_in_tready,
-        input winusb_in_tvalid,
-        input [7:0] winusb_in_tdata,
-        input [11:0] winusb_in_tlen,
         input winusb_out_tready,
         output winusb_out_tvalid,
         output [7:0] winusb_out_tdata,
@@ -581,37 +586,21 @@ module AHB_USBDevice #(
     assign endpt0_txdat_len = endpt0_txdat_len_r;
     assign endpt0_txval = !ep0_tx_fifo_empty;
 
-
+    
     wire fifo_ep_usb_txcork;
     wire [11:0] fifo_ep_usb_txlen;
     wire [7:0] fifo_ep_usb_txdat;
-    wire mailbox_ep_usb_txcork;
-    wire [11:0] mailbox_ep_usb_txlen;
-    wire [7:0] mailbox_ep_usb_txdat;
+
     wire endpt_sel_ep1 = (endpt_sel == 4'd1);
 
-    assign ep_usb_txcork = endpt_sel_ep1 ? mailbox_ep_usb_txcork : fifo_ep_usb_txcork;
-    assign ep_usb_txlen = endpt_sel_ep1 ? mailbox_ep_usb_txlen : fifo_ep_usb_txlen;
-    assign ep_usb_txdat = endpt_sel_ep1 ? mailbox_ep_usb_txdat : fifo_ep_usb_txdat;
+    assign ext_usb_endpt = endpt_sel;
+    assign ext_usb_txact = usb_txact;
+    assign ext_usb_txpop = usb_txpop;
+    assign ext_usb_txpktfin = usb_txpktfin;
+    assign ep_usb_txcork = endpt_sel_ep1 ? ext_usb_txcork : fifo_ep_usb_txcork;
+    assign ep_usb_txlen = endpt_sel_ep1 ? ext_usb_txlen : fifo_ep_usb_txlen;
+    assign ep_usb_txdat = endpt_sel_ep1 ? ext_usb_txdata : fifo_ep_usb_txdat;
 
-    sync_tx_pkt_mailbox sync_tx_pkt_mailbox_inst(
-                            .clk(hclk),
-                            .resetn(!usb_link_rst),
-
-                            .i_tdata(winusb_in_tdata),
-                            .i_tlen(winusb_in_tlen),
-                            .i_tvalid(winusb_in_tvalid),
-                            .i_tready(winusb_in_tready),
-
-                            .usb_endpt(endpt_sel),
-                            .usb_txact(usb_txact),
-                            .usb_txpop(usb_txpop),
-                            .usb_txpktfin(usb_txpktfin),
-
-                            .usb_txcork(mailbox_ep_usb_txcork),
-                            .usb_txdata(mailbox_ep_usb_txdat),
-                            .usb_txlen(mailbox_ep_usb_txlen)
-                        );
 
     usb_fifo usb_fifo_u (
                  .i_clk(hclk),

@@ -1,7 +1,6 @@
 module DAP_GPIO #(
         parameter ADDRWIDTH = 12,
-        parameter [ADDRWIDTH-1:0] BASE_ADDR = 0,
-        parameter GPIO_NUM = 8 // 不超过8
+        parameter [ADDRWIDTH-1:0] BASE_ADDR = 0
     )(
         input clk,
         input resetn,
@@ -38,7 +37,7 @@ module DAP_GPIO #(
         input LOC_SWDIO_TMS_T,
         input LOC_SWDIO_TMS_O,
         output LOC_SWDIO_TMS_I,
-        output LOC_TDO_I,
+        output LOC_SWO_TDO_I,
         input LOC_TDI_O,
         output LOC_TRST_I,
         input LOC_TRST_O,
@@ -119,7 +118,7 @@ module DAP_GPIO #(
             );
 
     IODELAY #(.DYN_DLY_EN("TRUE")) TDO_I_delay_inst (
-                .DO(LOC_TDO_I),
+                .DO(LOC_SWO_TDO_I),
                 .DI(EXT_TDO_I),
                 .SDTAP(1'd0),
                 .VALUE(1'd0),
@@ -140,7 +139,7 @@ module DAP_GPIO #(
     assign EXT_SRST_O = SRST_DIRECT_EN ? SRST_DO : LOC_SRST_O;
     assign EXT_UART_TX = ALONE_UART_CON ? LOC_UART_TX : 1'd1;
     assign LOC_UART_RX = EXT_UART_RX; 
-    assign LOC_SWO_I = SWD_MODE ? LOC_TDO_I : 1'd0;
+    assign LOC_SWO_I = SWD_MODE ? LOC_SWO_TDO_I : 1'd0;
 
     always @(posedge clk or negedge resetn) begin : ahb_mem_write_ctrl
         if (!resetn) begin
@@ -203,7 +202,7 @@ module DAP_GPIO #(
                     LOC_SWDIO_TMS_T,
                     LOC_SWDIO_TMS_O,
                     LOC_SWDIO_TMS_I,
-                    LOC_TDO_I,
+                    LOC_SWO_TDO_I,
                     LOC_TDI_O,
                     LOC_TRST_I,
                     LOC_TRST_O,

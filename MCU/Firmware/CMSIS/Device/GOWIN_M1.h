@@ -507,7 +507,13 @@ typedef struct {
   __IO uint32_t CR;
   __IO uint32_t TIMESTAMP;
   __IO uint32_t SR;
-  __IO uint32_t DR;
+  struct {
+    union {
+      __I uint16_t RD;
+      __O uint8_t WD;
+    };
+    uint8_t RESERVED0[2];
+  } DR;
   __I uint32_t CURCMD;
   struct {
     __IO uint32_t CR;

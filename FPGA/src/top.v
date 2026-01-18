@@ -204,6 +204,15 @@ module HFLink_TOP(
     wire cdc_out_tvalid;
     wire [7:0] cdc_out_tdata;
 
+    wire [3:0] ext_usb_endpt;
+    wire ext_usb_txact;
+    wire ext_usb_txpop;
+    wire ext_usb_txpktfin;
+    wire ext_usb_txcork;
+    wire [7:0] ext_usb_txdata;
+    wire [11:0] ext_usb_txlen;
+
+
     AHB_USBDevice u_usb0 (
                       .hclk(AHB1HCLK),
                       .hresetn(AHB1HRESET),
@@ -226,10 +235,14 @@ module HFLink_TOP(
                       .usb_ulpi_stp(usb_ulpi_stp),
                       .usb_nrst(usb_rstn),
 
-                      .winusb_in_tready(winusb_in_tready),
-                      .winusb_in_tvalid(winusb_in_tvalid),
-                      .winusb_in_tdata(winusb_in_tdata),
-                      .winusb_in_tlen(winusb_in_tlen),
+                      .ext_usb_endpt(ext_usb_endpt),
+                      .ext_usb_txact(ext_usb_txact),
+                      .ext_usb_txpop(ext_usb_txpop),
+                      .ext_usb_txpktfin(ext_usb_txpktfin),
+                      .ext_usb_txcork(ext_usb_txcork),
+                      .ext_usb_txdata(ext_usb_txdata),
+                      .ext_usb_txlen(ext_usb_txlen),
+
                       .winusb_out_tready(winusb_out_tready),
                       .winusb_out_tvalid(winusb_out_tvalid),
                       .winusb_out_tdata(winusb_out_tdata),
@@ -297,9 +310,14 @@ module HFLink_TOP(
 
                        .dap_clk(clkout1),
 
-                       .dap_in_tvalid(winusb_out_tvalid),
-                       .dap_in_tready(winusb_out_tready),
-                       .dap_in_tdata(winusb_out_tdata),
+                       .usb_endpt(ext_usb_endpt),
+                       .usb_txact(ext_usb_txact),
+                       .usb_txpop(ext_usb_txpop),
+                       .usb_txpktfin(ext_usb_txpktfin),
+                       .usb_txcork(ext_usb_txcork),
+                       .usb_txdata(ext_usb_txdata),
+                       .usb_txlen(ext_usb_txlen),
+                       
                        .dap_out_tvalid(winusb_in_tvalid),
                        .dap_out_tdata(winusb_in_tdata),
                        .dap_out_tready(winusb_in_tready),

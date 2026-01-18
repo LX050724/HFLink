@@ -28,10 +28,13 @@ module DAP_Controller #(
         output wire dap_in_tready,
         input wire [7:0] dap_in_tdata,
 
-        output wire dap_out_tvalid,
-        output wire [7:0] dap_out_tdata,
-        input wire dap_out_tready,
-        output wire [11:0] dap_out_tlen,
+        input [3:0] usb_endpt,
+        input usb_txact,
+        input usb_txpop,
+        input usb_txpktfin,
+        output usb_txcork,
+        output [7:0] usb_txdata,
+        output [11:0] usb_txlen,
 
         // 内部串口
         input LOC_UART_TX,
@@ -240,24 +243,35 @@ module DAP_Controller #(
         end
     end
 
-    reg [7:0] dap_out_fifo_wdata;
-    wire [7:0] dap_out_fifo_rdata;
-    reg dap_out_fifo_WrEn;
-    reg dap_out_fifo_RdEn;
-    wire dap_out_fifo_empty;
-    wire [11:0] dap_out_fifo_Wnum;
+    reg [11:0] ram_write_addr;
+    reg [7:0] ram_write_data;
+    reg ram_write_en;
+    reg [11:0] packet_len;
+    reg group_finish;
+    reg packet_finish;
+    wire packet_almost_full;
 
-    fifo_sc_top dap_out_fifo_inst (
-                    .Data(dap_out_fifo_wdata), //input [7:0] Data
-                    .Clk(hclk), //input Clk
-                    .WrEn(dap_out_fifo_WrEn), //input WrEn
-                    .RdEn(dap_out_fifo_RdEn), //input RdEn
-                    .Reset(!hresetn), //input Reset
-                    .Wnum(dap_out_fifo_Wnum), //output [11:0] Wnum
-                    .Q(dap_out_tdata), //output [7:0] Q
-                    .Empty(dap_out_fifo_empty), //output Empty
-                    .Full() //output Full
-                );
+    DAP_USB_Packer dap_usb_packer_inst (
+                       .clk(hclk),
+                       .resetn(hresetn),
+
+                       .usb_endpt(usb_endpt),
+                       .usb_txact(usb_txact),
+                       .usb_txpop(usb_txpop),
+                       .usb_txpktfin(usb_txpktfin),
+                       .usb_txcork(usb_txcork),
+                       .usb_txdata(usb_txdata),
+                       .usb_txlen(usb_txlen),
+
+                       .ram_write_addr(ram_write_addr),
+                       .ram_write_data(ram_write_data),
+                       .ram_write_en(ram_write_en),
+                       .packet_len(packet_len),
+                       .group_finish(group_finish),
+                       .packet_finish(packet_finish),
+                       .almost_full(packet_almost_full)
+                   );
+
 
 
     // 一阶段解码器，命令字转换独热码
@@ -328,40 +342,132 @@ module DAP_Controller #(
     end
 
     reg [7:0] processing_cmd;   // 当前处理的命令
-    reg mcu_helper_intr;        // mcu介入中断信号
     reg [1:0] dap_sm;
     reg [7:0] num_cmd;
-    reg [11:0] pack_len;
     wire fist_decoder_tready = (dap_sm == 2'd0 || dap_sm == 2'd1);    // 一阶段解码器读就绪
-    wire [`CMD_REG_WIDTH-1:1] worker_start_flags = (dap_sm == 2'd2) ? cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] : `CMD_REG_WIDTH'd0;
-    wire [`CMD_REG_WIDTH-1:1] worker_done_flags;
-    wire [`CMD_REG_WIDTH-1:1] worker_dap_in_tready;
-    wire [`CMD_REG_WIDTH-1:1] worker_dap_out_tready;
-    wire [7:0] worker_dap_out_tdata [`CMD_REG_WIDTH-1:1];
-
-    assign dap_out_tlen = pack_len;
-
     // 根据状态选择解码信号
     assign decode_cmd = (dap_sm == 2'd0) ? dap_in_tdata : processing_cmd;
 
+
+    // worker数据输出接口
+    wire [9:0] worker_ram_write_addr [0:2];
+    wire [7:0] worker_ram_write_data [0:2];
+    wire worker_ram_write_en [0:2];
+    wire [9:0] worker_packet_len [0:2];
+
+    // worker启动标志，运行过程中全程拉高，done下一个周期拉低
+    wire [`CMD_REG_WIDTH-1:1] worker_start_flags = (dap_sm == 2'd2) ? cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] : `CMD_REG_WIDTH'd0;
+
+    // worker完成标志
+    wire [`CMD_REG_WIDTH-1:1] worker_done_flags;
+
+    // MCU部分操作信号
+    wire AHB_WRITE_DR = write_en && (addr == DAP_DR_ADDR) && byte_strobe[0];
+    wire AHB_READ_DR = read_en && (addr == DAP_DR_ADDR);
+    wire AHB_CLEAR_FLAG = write_en && (addr == DAP_SR_ADDR) && byte_strobe[3] && hwdatas[31];
+
+    /*********************************************** MCU HELPER ***********************************************/
+    reg [9:0] mcu_write_addr;
+    reg mcu_helper_done;
+    assign worker_ram_write_addr[0] = mcu_write_addr; // mcu地址自增
+    assign worker_ram_write_data[0] = hwdatas[7:0]; // AHB数据线
+    assign worker_ram_write_en[0] = AHB_WRITE_DR; // AHB写入DR信号作为写有效
+    assign worker_packet_len[0] = mcu_write_addr; // MCU写入不支持随机访问，直接使用addr作为长度
+    assign worker_done_flags[0] = mcu_helper_done; // MCU写入完成标志
+
     always @(posedge hclk or negedge hresetn) begin
-        if (!hresetn || !DAP_CR_EN) begin
-            mcu_helper_intr <= 1'd0;
-            processing_cmd <= 8'd0;
-            dap_out_fifo_RdEn <= 1'd0;
-            dap_sm <= 2'd0;
-            num_cmd <= 8'd0;
-            pack_len <= 12'd0;
+        if (!hresetn) begin
+            mcu_write_addr <= 10'd0;
+            mcu_helper_done <= 1'd0;
         end
         else begin
+            if (worker_start_flags[`CMD_MCU_HELPER_SHIFT]) begin
+                if (AHB_CLEAR_FLAG) begin
+                    mcu_write_addr <= mcu_write_addr + 1'd1;
+                end
+                if (AHB_CLEAR_FLAG) begin
+                    mcu_helper_done <= 1'd1;
+                end
+            end
+            else begin
+                mcu_helper_done <= 1'd0;
+                mcu_write_addr <= 10'd0;
+            end
+        end
+    end
+
+    /************************************************** DELAY *************************************************/
+    DAP_Delay DAP_Delay_inst (
+                  .clk(hclk),
+                  .resetn(hresetn),
+                  .us_tick(us_tick),
+                  .enable(DAP_CR_EN),
+
+                  .start(worker_start_flags[`CMD_DELAY_SHIFT]),
+                  .done(worker_done_flags[`CMD_DELAY_SHIFT]),
+
+                  .ram_write_addr(worker_ram_write_addr[1]),
+                  .ram_write_data(worker_ram_write_data[1]),
+                  .ram_write_en(worker_ram_write_en[1]),
+                  .packet_len(worker_packet_len[1]),
+
+                  .dap_out_tvalid(worker_dap_out_tready[`CMD_DELAY_SHIFT]),
+                  .dap_out_tdata(worker_dap_out_tdata[`CMD_DELAY_SHIFT])
+              );
+
+    /*************************************************** SWJ **************************************************/
+
+    wire LOC_SWCLK_TCK_O;
+    wire LOC_SWDIO_TMS_T;
+    wire LOC_SWDIO_TMS_O;
+    wire LOC_SWDIO_TMS_I;
+    wire LOC_SWO_TDO_I;
+    wire LOC_TDI_O;
+    wire LOC_SRST_I;
+    wire LOC_SRST_O;
+    wire LOC_TRST_I;
+    wire LOC_TRST_O;
+
+    DAP_SWJ DAP_SWJ_inst(
+                .clk(hclk),
+                .resetn(hresetn),
+                .us_tick(us_tick),
+                .us_timer(us_timer),
+                .enable(DAP_CR_EN),
+
+                .SWCLK_TCK_O(LOC_SWCLK_TCK_O),
+                .SWDIO_TMS_T(LOC_SWDIO_TMS_T),
+                .SWDIO_TMS_O(LOC_SWDIO_TMS_O),
+                .SWDIO_TMS_I(LOC_SWDIO_TMS_I),
+                .SWO_TDO_I(LOC_SWO_TDO_I),
+                .TDI_O(LOC_TDI_O),
+                .SRST_I(LOC_SRST_I),
+                .SRST_O(LOC_SRST_O),
+                .TRST_I(LOC_TRST_I),
+                .TRST_O(LOC_TRST_O)
+            );
+
+
+    /*********************************************** 一阶段状态机 ***********************************************/
+    reg sm_group_finish;
+    reg sm_package_finish;
+
+    always @(posedge hclk or negedge hresetn) begin
+        if (!hresetn || !DAP_CR_EN) begin
+            processing_cmd <= 8'd0;
+            dap_sm <= 2'd0;
+            num_cmd <= 8'd0;
+            sm_package_finish <= 1'd0;
+            sm_group_finish <= 1'd0;
+        end
+        else begin
+            sm_package_finish <= 1'd0;
+            sm_group_finish <= 1'd0;
             case (dap_sm)
                 2'd0: begin // 读第一字节
                     // 读取命令
                     if (dap_in_tvalid) begin
                         processing_cmd <= dap_in_tdata;
-                        if (cmd_decoder_reslut[`CMD_MCU_HELPER_SHIFT])
-                            mcu_helper_intr <= 1'd1;
-
                         if (cmd_decoder_reslut[`CMD_TRANSFER_ABORT_SHIFT])
                             dap_sm <= 2'd0;
                         else if (cmd_decoder_reslut[`CMD_EXEC_CMD_SHIFT])
@@ -377,36 +483,26 @@ module DAP_Controller #(
                         dap_sm <= 2'd0;
                     end
                 end
-                2'd2: begin // 等待处理完成
-                    // 判断忙标志
-                    if (cmd_decoder_reslut[`CMD_MCU_HELPER_SHIFT]) begin
-                        if (write_en && addr_equ(addr, DAP_SR_ADDR) && byte_strobe_reg[3] && hwdatas[31]) begin
-                            mcu_helper_intr <= 1'd0;
-                            dap_sm <= 2'd3;
-                        end
-                    end
-                    else if (cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] & worker_done_flags[`CMD_REG_WIDTH-1:1]) begin
+                2'd2: begin
+                    // 等待处理完成判断忙标志
+                    if (cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] & worker_done_flags[`CMD_REG_WIDTH-1:1]) begin
+                        // 分组打包完成，状态转移
+                        sm_group_finish <= 1'd1;
                         dap_sm <= 2'd3;
                     end
                 end
                 2'd3: begin
-                    // 没有num_cmd或最后一个处理完
-                    if (num_cmd == 8'd0 || num_cmd == 8'd1) begin
-                        num_cmd <= 8'd0;
-                        // 输出fifo
-                        if (dap_out_fifo_empty) begin
-                            dap_out_fifo_RdEn <= 1'd0;
-                            dap_sm <= 2'd0;
+                    if (!packet_almost_full) begin
+                        // 没有num_cmd或最后一个处理完
+                        if (num_cmd == 8'd0 || num_cmd == 8'd1) begin
+                            // 命令数量清零，整包打包完成
+                            num_cmd <= 8'd0;
+                            sm_package_finish <= 1'd1;
                         end
                         else begin
-                            dap_out_fifo_RdEn <= 1'd1;
-                            if (dap_out_fifo_RdEn == 1'd0)
-                                pack_len <= dap_out_fifo_Wnum;
+                            // 命令数量递减
+                            num_cmd <= num_cmd - 1'd1;
                         end
-                    end
-                    else begin
-                        // 命令数量递减，反回读命令状态
-                        num_cmd <= num_cmd - 8'd1;
                         dap_sm <= 2'd0;
                     end
                 end
@@ -414,59 +510,61 @@ module DAP_Controller #(
         end
     end
 
-    DAP_Delay DAP_Delay_inst (
-                  .hclk(hclk),
-                  .us_tick(us_tick),
-                  .en(DAP_CR_EN),
-
-                  .start(worker_start_flags[`CMD_DELAY_SHIFT]),
-                  .done(worker_done_flags[`CMD_DELAY_SHIFT]),
-                  .dap_in_tvalid(dap_in_tvalid),
-                  .dap_in_tready(worker_dap_in_tready[`CMD_DELAY_SHIFT]),
-                  .dap_in_tdata(dap_in_tdata),
-                  .dap_out_tvalid(worker_dap_out_tready[`CMD_DELAY_SHIFT]),
-                  .dap_out_tdata(worker_dap_out_tdata[`CMD_DELAY_SHIFT])
-              );
 
     wire worker_tready = ((cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] & worker_dap_in_tready[`CMD_REG_WIDTH-1:1]) ? 1'd1 : 1'd0);
-    wire ahb_read_dr = read_en && (addr == DAP_DR_ADDR);
 
-    assign dap_in_tready = DAP_CR_EN & (fist_decoder_tready | worker_tready | ahb_read_dr);
+    assign dap_in_tready = DAP_CR_EN & (fist_decoder_tready | worker_tready | AHB_READ_DR);
+
+    wire DAP_IN_BYPASS_ACTIVE = DAP_CR_EN & dap_in_tvalid & !cmd_decoder_reslut[`CMD_TRANSFER_ABORT_SHIFT];
 
     // 输出管道路由
     always @(*) begin
-        if (write_en && (addr == DAP_DR_ADDR) && byte_strobe[0]) begin
-            // MCU写入优先级最高
-            dap_out_fifo_WrEn = 1'd1;
-            dap_out_fifo_wdata = hwdatas[7:0];
-        end
-        else if (dap_sm == 2'd0) begin
+        packet_finish = sm_package_finish;
+
+        if (dap_sm == 2'd0) begin
             // DAP顶层控制器读取数据直接写入fifo, TransferAbort没有返回数据
-            dap_out_fifo_WrEn = DAP_CR_EN & dap_in_tvalid & !cmd_decoder_reslut[`CMD_TRANSFER_ABORT_SHIFT];
-            dap_out_fifo_wdata = dap_in_tdata;
+            ram_write_addr = 10'd0;
+            ram_write_data = dap_in_tdata;
+            ram_write_en = DAP_IN_BYPASS_ACTIVE;
+            packet_len = {9'd0, DAP_IN_BYPASS_ACTIVE};
+            group_finish = DAP_IN_BYPASS_ACTIVE;
         end
         else if (dap_sm == 2'd1) begin
-            dap_out_fifo_WrEn = DAP_CR_EN & dap_in_tvalid;
-            dap_out_fifo_wdata = dap_in_tdata;
+            ram_write_addr = 10'd0;
+            ram_write_data = dap_in_tdata;
+            ram_write_en = dap_in_tvalid;
+            packet_len = {9'd0, dap_in_tvalid};
+            group_finish = dap_in_tvalid;
         end
         else begin
             // 命令处理转接到各个worker
             casez (cmd_decoder_reslut)
+                `CMD_MCU_HELPER: begin
+                    ram_write_addr = worker_ram_write_addr[0];
+                    ram_write_data = worker_ram_write_data[0];
+                    ram_write_en = worker_ram_write_en[0];
+                    packet_len = worker_packet_len[0];
+                end
                 `CMD_DELAY: begin
-                    dap_out_fifo_WrEn = worker_dap_out_tready[`CMD_DELAY_SHIFT];
-                    dap_out_fifo_wdata  = worker_dap_out_tdata[`CMD_DELAY_SHIFT];
+                    ram_write_addr = worker_ram_write_addr[1];
+                    ram_write_data = worker_ram_write_data[1];
+                    ram_write_en = worker_ram_write_en[1];
+                    packet_len = worker_packet_len[1];
                 end
                 default: begin
-                    dap_out_fifo_WrEn = 1'd0;
-                    dap_out_fifo_wdata = 8'd0;
+                    ram_write_addr = worker_ram_write_addr[2];
+                    ram_write_data = worker_ram_write_data[2];
+                    ram_write_en = worker_ram_write_en[2];
+                    packet_len = worker_packet_len[2];
                 end
             endcase
+
+            group_finish = sm_group_finish;
         end
     end
 
 
-    assign intr = DAP_INT_EN & (mcu_helper_intr);
-    assign dap_out_tvalid = dap_out_fifo_RdEn ? !dap_out_fifo_empty : 1'd0;
+    assign intr = DAP_INT_EN & worker_start_flags[`CMD_MCU_HELPER_SHIFT];
 
     wire [31:0] baudgenerator_hrdatas;
     wire sclk_out;
@@ -520,34 +618,21 @@ module DAP_Controller #(
                  .EXT_TRST_I(EXT_TRST_I),
                  .EXT_TRST_O(EXT_TRST_O),
 
-                 .LOC_SWCLK_TCK_O(sclk_out),
-                 .LOC_SWDIO_TMS_T(1'd0),
-                 .LOC_SWDIO_TMS_O(sclk_out),
-                 .LOC_SWDIO_TMS_I(),
-                 .LOC_TDO_I(),
-                 .LOC_TDI_O(),
-                 .LOC_TRST_I(),
-                 .LOC_TRST_O(),
-                 .LOC_SRST_I(),
-                 .LOC_SRST_O(),
+                 
+                 .LOC_SWCLK_TCK_O(LOC_SWCLK_TCK_O),
+                 .LOC_SWDIO_TMS_T(LOC_SWDIO_TMS_T),
+                 .LOC_SWDIO_TMS_O(LOC_SWDIO_TMS_O),
+                 .LOC_SWDIO_TMS_I(LOC_SWDIO_TMS_I),
+                 .LOC_TDO_I(LOC_SWO_TDO_I),
+                 .LOC_TDI_O(LOC_TDI_O),
+                 .LOC_TRST_I(LOC_TRST_I),
+                 .LOC_TRST_O(LOC_TRST_O),
+                 .LOC_SRST_I(LOC_SRST_I),
+                 .LOC_SRST_O(LOC_SRST_O),
 
                  .LOC_UART_TX(LOC_UART_TX),
                  .LOC_UART_RX(LOC_UART_RX)
              );
-
-    //  读DR超时计时器
-    reg [3:0] dr_timeout;
-    always @(posedge hclk or negedge hresetn) begin
-        if (!hresetn) begin
-            dr_timeout <= 4'd0;
-        end
-        else begin
-            if (ahb_read_dr && !dap_in_tvalid)
-                dr_timeout <= dr_timeout + 4'd1;
-            else
-                dr_timeout <= 4'd0;
-        end
-    end
 
     always @(*) begin
         if (read_en) begin
@@ -561,12 +646,12 @@ module DAP_Controller #(
                     hreadyouts = 1'd1;
                 end
                 DAP_SR_ADDR[ADDRWIDTH-1:2]: begin
-                    hrdatas = {mcu_helper_intr, 30'd0};
+                    hrdatas = {worker_start_flags[`CMD_MCU_HELPER_SHIFT], 30'd0};
                     hreadyouts = 1'd1;
                 end
                 DAP_DR_ADDR[ADDRWIDTH-1:2]: begin
-                    hrdatas = {4{dap_in_tdata}};
-                    hreadyouts = dap_in_tvalid || (dr_timeout == 4'hf);
+                    hrdatas = {23'd0, dap_in_tvalid, dap_in_tdata};
+                    hreadyouts = 1'd1;
                 end
                 DAP_CURCMD_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = {24'd0, processing_cmd};

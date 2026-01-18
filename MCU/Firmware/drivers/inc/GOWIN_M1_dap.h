@@ -22,12 +22,17 @@ extern "C" {
 
 inline static void dap_write_data(DAP_TypeDef *dap, uint8_t data)
 {
-    *((uint8_t *)&dap->DR) = data;
+    dap->DR.WD = data;
 }
 
 inline static uint8_t dap_read_data(DAP_TypeDef *dap)
 {
-    return *((uint8_t *)&dap->DR);
+    uint16_t tmp;
+    do
+    {
+        tmp = dap->DR.RD;
+    } while ((tmp & 0x100) == 0);
+    return tmp;
 }
 
 inline static uint8_t dap_get_current_cmd(DAP_TypeDef *dap)
@@ -59,8 +64,6 @@ inline static void dap_gpio_disable_directio(DAP_TypeDef *dap, uint8_t index)
 {
     dap->GPIO.CR &= ~(1 << index);
 }
-
-
 
 // inline static void dap_gpio_set_direction(DAP_TypeDef *dap, uint8_t index, uint8_t dir)
 // {

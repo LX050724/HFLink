@@ -42,7 +42,7 @@ FPGA/impl/pnr
 *.jdebug
 *.jdebug.user
 */.venv/
-*/__pycache__/
+*__pycache__/
 FPGA/terosHDL
 .vscode/
 FPGA/HFLink.gprj.user
