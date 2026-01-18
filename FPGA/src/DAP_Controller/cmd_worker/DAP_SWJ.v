@@ -17,10 +17,14 @@ module DAP_SWJ #(
         input [31:0] ahb_wdata,
         input [3:0] ahb_byte_strobe,
 
-        output [8:0] ram_write_addr,
+        input dap_in_tvalid,
+        output [`CMD_REG_WIDTH-1:4] dap_in_tready,
+        input [7:0] dap_in_tdata,
+
+        output [9:0] ram_write_addr,
         output [7:0] ram_write_data,
         output ram_write_en,
-        output [8:0] packet_len,
+        output [9:0] packet_len,
 
         input [`CMD_REG_WIDTH-1:4] start,
         output [`CMD_REG_WIDTH-1:4] done,
@@ -140,18 +144,22 @@ module DAP_SWJ #(
                 ahb_rdata = SWJ_JTAG_IR_CONF_REG[6];
             SWJ_JTAG_IR_CONF7_ADDR[ADDRWIDTH-1:2]:
                 ahb_rdata = SWJ_JTAG_IR_CONF_REG[7];
+            default:
+                ahb_rdata = {32{1'bx}};
         endcase
     end
 
     task AHB_WRITE_REG32;
         output [31:0] optreg;
-        if (ahb_byte_strobe[0])
-            optreg[ 0+:8] <= ahb_wdata[ 0+:8];
-        if (ahb_byte_strobe[1])
-            optreg[ 8+:8] <= ahb_wdata[ 8+:8];
-        if (ahb_byte_strobe[2])
-            optreg[16+:8] <= ahb_wdata[16+:8];
-        if (ahb_byte_strobe[3])
-            optreg[24+:8] <= ahb_wdata[24+:8];
+        begin
+            if (ahb_byte_strobe[0])
+                optreg[ 0+:8] = ahb_wdata[ 0+:8];
+            if (ahb_byte_strobe[1])
+                optreg[ 8+:8] = ahb_wdata[ 8+:8];
+            if (ahb_byte_strobe[2])
+                optreg[16+:8] = ahb_wdata[16+:8];
+            if (ahb_byte_strobe[3])
+                optreg[24+:8] = ahb_wdata[24+:8];
+        end
     endtask
 endmodule

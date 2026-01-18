@@ -191,10 +191,6 @@ module HFLink_TOP(
     wire [7:0] usb_ulpi_data_i;
     wire [7:0] usb_ulpi_data_o;
 
-    wire winusb_in_tready;
-    wire winusb_in_tvalid;
-    wire [7:0] winusb_in_tdata;
-    wire [11:0] winusb_in_tlen;
     wire winusb_out_tready;
     wire winusb_out_tvalid;
     wire [7:0] winusb_out_tdata;
@@ -310,6 +306,10 @@ module HFLink_TOP(
 
                        .dap_clk(clkout1),
 
+                       .dap_in_tvalid(winusb_out_tvalid),
+                       .dap_in_tready(winusb_out_tready),
+                       .dap_in_tdata(winusb_out_tdata),
+
                        .usb_endpt(ext_usb_endpt),
                        .usb_txact(ext_usb_txact),
                        .usb_txpop(ext_usb_txpop),
@@ -317,11 +317,7 @@ module HFLink_TOP(
                        .usb_txcork(ext_usb_txcork),
                        .usb_txdata(ext_usb_txdata),
                        .usb_txlen(ext_usb_txlen),
-                       
-                       .dap_out_tvalid(winusb_in_tvalid),
-                       .dap_out_tdata(winusb_in_tdata),
-                       .dap_out_tready(winusb_in_tready),
-                       .dap_out_tlen(winusb_in_tlen),
+
                        .intr(intr[1]),
 
                        .EXT_SWCLK_TCK_O(EXT_SWCLK_TCK_O),
@@ -337,8 +333,6 @@ module HFLink_TOP(
                        .EXT_TRST_O(EXT_TRST_O),
                        .EXT_UART_TX(EXT_UART_TX),
                        .EXT_UART_RX(EXT_UART_RX),
-
-
 
                        .LOC_UART_TX(LOC_UART_TX),
                        .LOC_UART_RX(LOC_UART_RX)

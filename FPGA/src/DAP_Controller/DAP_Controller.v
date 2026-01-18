@@ -184,6 +184,9 @@ module DAP_Controller #(
     localparam [ADDRWIDTH-1:0] DAP_GPIO_DI_ADDR          = 12'h028;
     localparam [ADDRWIDTH-1:0] DAP_GPIO_DO_ADDR          = 12'h02C;
 
+    localparam [ADDRWIDTH-1:0] DAP_SWJ_CR_ADDR           = 12'h030;
+
+
     function addr_equ;
         input [ADDRWIDTH-1:0] addr;
         input [ADDRWIDTH-1:0] taddr;
@@ -276,10 +279,9 @@ module DAP_Controller #(
 
     // 一阶段解码器，命令字转换独热码
     reg [`CMD_REG_WIDTH-1:0] cmd_decoder_reslut;
-    wire [7:0] decode_cmd;
     always @(*) begin
         cmd_decoder_reslut = 12'd1;
-        case (decode_cmd)
+        case ((dap_sm == 2'd0) ? dap_in_tdata : processing_cmd)
             // ID_DAP_Transfer
             8'h05:
                 cmd_decoder_reslut = `CMD_TRANSFER;
@@ -346,7 +348,6 @@ module DAP_Controller #(
     reg [7:0] num_cmd;
     wire fist_decoder_tready = (dap_sm == 2'd0 || dap_sm == 2'd1);    // 一阶段解码器读就绪
     // 根据状态选择解码信号
-    assign decode_cmd = (dap_sm == 2'd0) ? dap_in_tdata : processing_cmd;
 
 
     // worker数据输出接口
@@ -356,10 +357,13 @@ module DAP_Controller #(
     wire [9:0] worker_packet_len [0:2];
 
     // worker启动标志，运行过程中全程拉高，done下一个周期拉低
-    wire [`CMD_REG_WIDTH-1:1] worker_start_flags = (dap_sm == 2'd2) ? cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] : `CMD_REG_WIDTH'd0;
+    wire [`CMD_REAL_NUM-1:0] worker_start_flags = (dap_sm == 2'd2) ? cmd_decoder_reslut[`CMD_REAL_NUM-1:0] : 0;
 
     // worker完成标志
-    wire [`CMD_REG_WIDTH-1:1] worker_done_flags;
+    wire [`CMD_REAL_NUM-1:0] worker_done_flags;
+
+    // worker tready标志
+    wire [`CMD_REAL_NUM-1:0] worker_dap_in_tready;
 
     // MCU部分操作信号
     wire AHB_WRITE_DR = write_en && (addr == DAP_DR_ADDR) && byte_strobe[0];
@@ -406,17 +410,17 @@ module DAP_Controller #(
                   .start(worker_start_flags[`CMD_DELAY_SHIFT]),
                   .done(worker_done_flags[`CMD_DELAY_SHIFT]),
 
+                  .dap_in_tvalid(dap_in_tvalid),
+                  .dap_in_tready(worker_dap_in_tready[`CMD_DELAY_SHIFT]),
+                  .dap_in_tdata(dap_in_tdata),
+
                   .ram_write_addr(worker_ram_write_addr[1]),
                   .ram_write_data(worker_ram_write_data[1]),
                   .ram_write_en(worker_ram_write_en[1]),
-                  .packet_len(worker_packet_len[1]),
-
-                  .dap_out_tvalid(worker_dap_out_tready[`CMD_DELAY_SHIFT]),
-                  .dap_out_tdata(worker_dap_out_tdata[`CMD_DELAY_SHIFT])
+                  .packet_len(worker_packet_len[1])
               );
 
     /*************************************************** SWJ **************************************************/
-
     wire LOC_SWCLK_TCK_O;
     wire LOC_SWDIO_TMS_T;
     wire LOC_SWDIO_TMS_O;
@@ -427,13 +431,36 @@ module DAP_Controller #(
     wire LOC_SRST_O;
     wire LOC_TRST_I;
     wire LOC_TRST_O;
+    wire SWD_MODE;
 
-    DAP_SWJ DAP_SWJ_inst(
+    wire [31:0] swj_hrdatas;
+    DAP_SWJ #(
+                .ADDRWIDTH(ADDRWIDTH),
+                .BASE_ADDR(DAP_SWJ_CR_ADDR)
+            ) DAP_SWJ_inst(
                 .clk(hclk),
                 .resetn(hresetn),
                 .us_tick(us_tick),
                 .us_timer(us_timer),
                 .enable(DAP_CR_EN),
+
+                .ahb_write_en(write_en),
+                .ahb_addr(addr),
+                .ahb_rdata(swj_hrdatas),
+                .ahb_wdata(hwdatas),
+                .ahb_byte_strobe(byte_strobe_reg),
+
+                .start(worker_start_flags[`CMD_SWJ_RANGE]),
+                .done(worker_done_flags[`CMD_SWJ_RANGE]),
+
+                .dap_in_tvalid(dap_in_tvalid),
+                .dap_in_tready(worker_dap_in_tready[`CMD_SWJ_RANGE]),
+                .dap_in_tdata(dap_in_tdata),
+
+                .ram_write_addr(worker_ram_write_addr[2]),
+                .ram_write_data(worker_ram_write_data[2]),
+                .ram_write_en(worker_ram_write_en[2]),
+                .packet_len(worker_packet_len[2]),
 
                 .SWCLK_TCK_O(LOC_SWCLK_TCK_O),
                 .SWDIO_TMS_T(LOC_SWDIO_TMS_T),
@@ -444,7 +471,8 @@ module DAP_Controller #(
                 .SRST_I(LOC_SRST_I),
                 .SRST_O(LOC_SRST_O),
                 .TRST_I(LOC_TRST_I),
-                .TRST_O(LOC_TRST_O)
+                .TRST_O(LOC_TRST_O),
+                .SWD_MODE(SWD_MODE)
             );
 
 
@@ -485,7 +513,7 @@ module DAP_Controller #(
                 end
                 2'd2: begin
                     // 等待处理完成判断忙标志
-                    if (cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] & worker_done_flags[`CMD_REG_WIDTH-1:1]) begin
+                    if (cmd_decoder_reslut[`CMD_REAL_NUM-1:1] & worker_done_flags[`CMD_REAL_NUM-1:1]) begin
                         // 分组打包完成，状态转移
                         sm_group_finish <= 1'd1;
                         dap_sm <= 2'd3;
@@ -511,7 +539,7 @@ module DAP_Controller #(
     end
 
 
-    wire worker_tready = ((cmd_decoder_reslut[`CMD_REG_WIDTH-1:1] & worker_dap_in_tready[`CMD_REG_WIDTH-1:1]) ? 1'd1 : 1'd0);
+    wire worker_tready = ((cmd_decoder_reslut[`CMD_REAL_NUM-1:1] & worker_dap_in_tready[`CMD_REAL_NUM-1:1]) ? 1'd1 : 1'd0);
 
     assign dap_in_tready = DAP_CR_EN & (fist_decoder_tready | worker_tready | AHB_READ_DR);
 
@@ -591,8 +619,7 @@ module DAP_Controller #(
     wire [31:0] gpio_hrdatas;
     DAP_GPIO #(
                  .ADDRWIDTH(ADDRWIDTH),
-                 .BASE_ADDR(DAP_GPIO_CR_DELAY_ADDR),
-                 .GPIO_NUM(GPIO_NUM)
+                 .BASE_ADDR(DAP_GPIO_CR_DELAY_ADDR)
              ) dap_gpio_inst (
                  .clk(hclk),
                  .resetn(hresetn),
@@ -618,18 +645,18 @@ module DAP_Controller #(
                  .EXT_TRST_I(EXT_TRST_I),
                  .EXT_TRST_O(EXT_TRST_O),
 
-                 
                  .LOC_SWCLK_TCK_O(LOC_SWCLK_TCK_O),
                  .LOC_SWDIO_TMS_T(LOC_SWDIO_TMS_T),
                  .LOC_SWDIO_TMS_O(LOC_SWDIO_TMS_O),
                  .LOC_SWDIO_TMS_I(LOC_SWDIO_TMS_I),
-                 .LOC_TDO_I(LOC_SWO_TDO_I),
+                 .LOC_SWO_TDO_I(LOC_SWO_TDO_I),
                  .LOC_TDI_O(LOC_TDI_O),
                  .LOC_TRST_I(LOC_TRST_I),
                  .LOC_TRST_O(LOC_TRST_O),
                  .LOC_SRST_I(LOC_SRST_I),
                  .LOC_SRST_O(LOC_SRST_O),
 
+                 .SWD_MODE(SWD_MODE),
                  .LOC_UART_TX(LOC_UART_TX),
                  .LOC_UART_RX(LOC_UART_RX)
              );
@@ -666,6 +693,11 @@ module DAP_Controller #(
                 // GPIO ADDR RANGE 2x
                 (10'b0000_0010_??): begin
                     hrdatas = gpio_hrdatas;
+                    hreadyouts = 1'd1;
+                end
+                // SWJ ADDR RANGE 3x 4x 5x
+                (10'b0000_0011_??), (10'b0000_010?_??): begin
+                    hrdatas = swj_hrdatas;
                     hreadyouts = 1'd1;
                 end
                 default: begin

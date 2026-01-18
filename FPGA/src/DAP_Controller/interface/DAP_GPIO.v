@@ -119,7 +119,7 @@ module DAP_GPIO #(
 
     IODELAY #(.DYN_DLY_EN("TRUE")) TDO_I_delay_inst (
                 .DO(LOC_SWO_TDO_I),
-                .DI(EXT_TDO_I),
+                .DI(EXT_SWO_TDO_I),
                 .SDTAP(1'd0),
                 .VALUE(1'd0),
                 .DLYSTEP(TDO_I_DELAY)
@@ -186,6 +186,26 @@ module DAP_GPIO #(
         end
     end
 
+    reg [9:0] GPIO_SYMPLE;
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            GPIO_SYMPLE <= 10'd0;
+        end
+        else begin
+            GPIO_SYMPLE <= {
+                            LOC_SWCLK_TCK_O,
+                            LOC_SWDIO_TMS_T,
+                            LOC_SWDIO_TMS_O,
+                            LOC_SWDIO_TMS_I,
+                            LOC_SWO_TDO_I,
+                            LOC_TDI_O,
+                            LOC_TRST_I,
+                            LOC_TRST_O,
+                            LOC_SRST_I,
+                            LOC_SRST_O
+                        };
+        end
+    end
 
     always @(*) begin : ahb_mem_read_ctrl
         case (ahb_addr[ADDRWIDTH-1:2])
@@ -194,21 +214,7 @@ module DAP_GPIO #(
             SWDIO_TMS_I_DELAY_ADDR[ADDRWIDTH-1:2]:
                 ahb_rdata = {8'd0, TDI_O_DELAY, TDO_I_DELAY, SWDIO_TMS_I_DELAY};
             GPIO_MODE_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = {
-                    15'd0,
-                    SWD_MODE,
-                    6'd0,
-                    LOC_SWCLK_TCK_O,
-                    LOC_SWDIO_TMS_T,
-                    LOC_SWDIO_TMS_O,
-                    LOC_SWDIO_TMS_I,
-                    LOC_SWO_TDO_I,
-                    LOC_TDI_O,
-                    LOC_TRST_I,
-                    LOC_TRST_O,
-                    LOC_SRST_I,
-                    LOC_SRST_O
-                };
+                ahb_rdata = {15'd0, SWD_MODE, 6'd0, GPIO_SYMPLE};
             GPIO_DO_ADDR[ADDRWIDTH-1:2]:
                 ahb_rdata = {24'd0, GPIO_DO};
             default:
