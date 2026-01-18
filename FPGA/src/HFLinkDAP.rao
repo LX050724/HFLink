@@ -9,59 +9,6 @@
                 <Signal>dap_controller_inst/dap_sm[1]</Signal>
                 <Signal>dap_controller_inst/dap_sm[0]</Signal>
             </Bus>
-            <Bus capture_enable="true" name="dap_controller_inst/num_cmd[7:0]">
-                <Signal>dap_controller_inst/num_cmd[7]</Signal>
-                <Signal>dap_controller_inst/num_cmd[6]</Signal>
-                <Signal>dap_controller_inst/num_cmd[5]</Signal>
-                <Signal>dap_controller_inst/num_cmd[4]</Signal>
-                <Signal>dap_controller_inst/num_cmd[3]</Signal>
-                <Signal>dap_controller_inst/num_cmd[2]</Signal>
-                <Signal>dap_controller_inst/num_cmd[1]</Signal>
-                <Signal>dap_controller_inst/num_cmd[0]</Signal>
-            </Bus>
-            <Bus capture_enable="true" name="dap_controller_inst/processing_cmd[7:0]">
-                <Signal>dap_controller_inst/processing_cmd[7]</Signal>
-                <Signal>dap_controller_inst/processing_cmd[6]</Signal>
-                <Signal>dap_controller_inst/processing_cmd[5]</Signal>
-                <Signal>dap_controller_inst/processing_cmd[4]</Signal>
-                <Signal>dap_controller_inst/processing_cmd[3]</Signal>
-                <Signal>dap_controller_inst/processing_cmd[2]</Signal>
-                <Signal>dap_controller_inst/processing_cmd[1]</Signal>
-                <Signal>dap_controller_inst/processing_cmd[0]</Signal>
-            </Bus>
-            <Bus capture_enable="true" name="dap_controller_inst/cmd_decoder_reslut[11:0]">
-                <Signal>dap_controller_inst/cmd_decoder_reslut[11]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[10]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[9]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[8]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[7]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[6]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[5]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[4]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[3]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[2]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[1]</Signal>
-                <Signal>dap_controller_inst/cmd_decoder_reslut[0]</Signal>
-            </Bus>
-            <Bus capture_enable="true" name="dap_controller_inst/worker_start_flags[11:1]">
-                <Signal>dap_controller_inst/worker_start_flags[11]</Signal>
-                <Signal>dap_controller_inst/worker_start_flags[10]</Signal>
-                <Signal>dap_controller_inst/worker_start_flags[9]</Signal>
-                <Signal>dap_controller_inst/worker_start_flags[8]</Signal>
-                <Signal>dap_controller_inst/worker_start_flags[7]</Signal>
-                <Signal>dap_controller_inst/worker_start_flags[6]</Signal>
-                <Signal>dap_controller_inst/worker_start_flags[5]</Signal>
-                <Signal>dap_controller_inst/worker_start_flags[4]</Signal>
-                <Signal>dap_controller_inst/worker_start_flags[3]</Signal>
-                <Signal>dap_controller_inst/worker_start_flags[2]</Signal>
-                <Signal>dap_controller_inst/worker_start_flags[1]</Signal>
-            </Bus>
-            <Bus capture_enable="true" name="dap_controller_inst/worker_done_flags[11:1]">
-                <Signal>dap_controller_inst/worker_done_flags[1]</Signal>
-            </Bus>
-            <Signal capture_enable="true">dap_controller_inst/dap_out_fifo_inst/WrEn</Signal>
-            <Signal capture_enable="true">dap_controller_inst/dap_out_fifo_inst/RdEn</Signal>
-            <Signal capture_enable="true">dap_controller_inst/dap_out_fifo_inst/Empty</Signal>
             <Bus capture_enable="true" name="dap_controller_inst/dap_in_tdata[7:0]">
                 <Signal>dap_controller_inst/dap_in_tdata[7]</Signal>
                 <Signal>dap_controller_inst/dap_in_tdata[6]</Signal>
@@ -85,23 +32,202 @@
                 <Signal>dap_controller_inst/dap_out_tdata[1]</Signal>
                 <Signal>dap_controller_inst/dap_out_tdata[0]</Signal>
             </Bus>
-            <Bus capture_enable="true" name="dap_controller_inst/DAP_Delay_Worker_inst/delay_time[15:0]">
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[15]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[14]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[13]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[12]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[11]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[10]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[9]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[8]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[7]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[6]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[5]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[4]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[3]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[2]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[1]</Signal>
-                <Signal>dap_controller_inst/DAP_Delay_Worker_inst/delay_time[0]</Signal>
+            <Signal capture_enable="true">u_usb0/usb_txact</Signal>
+            <Signal capture_enable="true">u_usb0/usb_txpktfin</Signal>
+            <Signal capture_enable="true">u_usb0/usb_txcork</Signal>
+            <Signal capture_enable="true">u_usb0/usb_txpop</Signal>
+            <Bus capture_enable="true" name="u_usb0/usb_txdat[7:0]">
+                <Signal>u_usb0/usb_txdat[7]</Signal>
+                <Signal>u_usb0/usb_txdat[6]</Signal>
+                <Signal>u_usb0/usb_txdat[5]</Signal>
+                <Signal>u_usb0/usb_txdat[4]</Signal>
+                <Signal>u_usb0/usb_txdat[3]</Signal>
+                <Signal>u_usb0/usb_txdat[2]</Signal>
+                <Signal>u_usb0/usb_txdat[1]</Signal>
+                <Signal>u_usb0/usb_txdat[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="u_usb0/ep_usb_txlen[11:0]">
+                <Signal>u_usb0/ep_usb_txlen[11]</Signal>
+                <Signal>u_usb0/ep_usb_txlen[10]</Signal>
+                <Signal>u_usb0/ep_usb_txlen[9]</Signal>
+                <Signal>u_usb0/ep_usb_txlen[8]</Signal>
+                <Signal>u_usb0/ep_usb_txlen[7]</Signal>
+                <Signal>u_usb0/ep_usb_txlen[6]</Signal>
+                <Signal>u_usb0/ep_usb_txlen[5]</Signal>
+                <Signal>u_usb0/ep_usb_txlen[4]</Signal>
+                <Signal>u_usb0/ep_usb_txlen[3]</Signal>
+                <Signal>u_usb0/ep_usb_txlen[2]</Signal>
+                <Signal>u_usb0/ep_usb_txlen[1]</Signal>
+                <Signal>u_usb0/ep_usb_txlen[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="u_usb0/endpt_sel[3:0]">
+                <Signal>u_usb0/endpt_sel[3]</Signal>
+                <Signal>u_usb0/endpt_sel[2]</Signal>
+                <Signal>u_usb0/endpt_sel[1]</Signal>
+                <Signal>u_usb0/endpt_sel[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="u_usb0/sync_tx_pkt_mailbox_inst/pack_queue_size[3:0]">
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue_size[3]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue_size[2]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue_size[1]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue_size[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][11:0]">
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][11]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][10]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][9]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][8]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][7]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][6]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][5]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][4]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][3]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][2]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][1]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[0][0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][11:0]">
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][11]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][10]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][9]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][8]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][7]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][6]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][5]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][4]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][3]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][2]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][1]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/pack_queue[1][0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="u_usb0/sync_tx_pkt_mailbox_inst/read_addr[11:0]">
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[11]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[10]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[9]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[8]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[7]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[6]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[5]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[4]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[3]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[2]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[1]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[11:0]">
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[11]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[10]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[9]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[8]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[7]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[6]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[5]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[4]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[3]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[2]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[1]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/read_addr_start[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="winusb_in_tlen[11:0]">
+                <Signal>winusb_in_tlen[11]</Signal>
+                <Signal>winusb_in_tlen[10]</Signal>
+                <Signal>winusb_in_tlen[9]</Signal>
+                <Signal>winusb_in_tlen[8]</Signal>
+                <Signal>winusb_in_tlen[7]</Signal>
+                <Signal>winusb_in_tlen[6]</Signal>
+                <Signal>winusb_in_tlen[5]</Signal>
+                <Signal>winusb_in_tlen[4]</Signal>
+                <Signal>winusb_in_tlen[3]</Signal>
+                <Signal>winusb_in_tlen[2]</Signal>
+                <Signal>winusb_in_tlen[1]</Signal>
+                <Signal>winusb_in_tlen[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[11:0]">
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[11]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[10]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[9]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[8]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[7]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[6]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[5]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[4]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[3]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[2]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[1]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_waddr[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="u_usb0/sync_tx_pkt_mailbox_inst/ram_wdata[7:0]">
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_wdata[7]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_wdata[6]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_wdata[5]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_wdata[4]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_wdata[3]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_wdata[2]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_wdata[1]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_wdata[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="u_usb0/sync_tx_pkt_mailbox_inst/ram_radata[7:0]">
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_radata[7]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_radata[6]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_radata[5]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_radata[4]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_radata[3]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_radata[2]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_radata[1]</Signal>
+                <Signal>u_usb0/sync_tx_pkt_mailbox_inst/ram_radata[0]</Signal>
+            </Bus>
+            <Signal capture_enable="false">dap_controller_inst/dap_out_fifo_inst/Empty</Signal>
+            <Signal capture_enable="false">dap_controller_inst/dap_out_fifo_inst/RdEn</Signal>
+            <Signal capture_enable="false">dap_controller_inst/dap_out_fifo_inst/WrEn</Signal>
+            <Bus capture_enable="false" name="dap_controller_inst/worker_done_flags[11:1]">
+                <Signal>dap_controller_inst/worker_done_flags[1]</Signal>
+            </Bus>
+            <Bus capture_enable="false" name="dap_controller_inst/worker_start_flags[11:1]">
+                <Signal>dap_controller_inst/worker_start_flags[11]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[10]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[9]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[8]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[7]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[6]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[5]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[4]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[3]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[2]</Signal>
+                <Signal>dap_controller_inst/worker_start_flags[1]</Signal>
+            </Bus>
+            <Bus capture_enable="false" name="dap_controller_inst/cmd_decoder_reslut[11:0]">
+                <Signal>dap_controller_inst/cmd_decoder_reslut[11]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[10]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[9]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[8]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[7]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[6]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[5]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[4]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[3]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[2]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[1]</Signal>
+                <Signal>dap_controller_inst/cmd_decoder_reslut[0]</Signal>
+            </Bus>
+            <Bus capture_enable="false" name="dap_controller_inst/num_cmd[7:0]">
+                <Signal>dap_controller_inst/num_cmd[7]</Signal>
+                <Signal>dap_controller_inst/num_cmd[6]</Signal>
+                <Signal>dap_controller_inst/num_cmd[5]</Signal>
+                <Signal>dap_controller_inst/num_cmd[4]</Signal>
+                <Signal>dap_controller_inst/num_cmd[3]</Signal>
+                <Signal>dap_controller_inst/num_cmd[2]</Signal>
+                <Signal>dap_controller_inst/num_cmd[1]</Signal>
+                <Signal>dap_controller_inst/num_cmd[0]</Signal>
+            </Bus>
+            <Bus capture_enable="false" name="dap_controller_inst/processing_cmd[7:0]">
+                <Signal>dap_controller_inst/processing_cmd[7]</Signal>
+                <Signal>dap_controller_inst/processing_cmd[6]</Signal>
+                <Signal>dap_controller_inst/processing_cmd[5]</Signal>
+                <Signal>dap_controller_inst/processing_cmd[4]</Signal>
+                <Signal>dap_controller_inst/processing_cmd[3]</Signal>
+                <Signal>dap_controller_inst/processing_cmd[2]</Signal>
+                <Signal>dap_controller_inst/processing_cmd[1]</Signal>
+                <Signal>dap_controller_inst/processing_cmd[0]</Signal>
             </Bus>
         </SignalList>
         <Triggers>
@@ -112,7 +238,13 @@
             </Trigger>
             <Trigger index="1">
                 <SignalList>
-                    <Signal>dap_controller_inst/intr</Signal>
+                    <Signal>u_usb0/usb_txact</Signal>
+                    <Bus restorename="u_usb0/usb_controller/endpt_o[3:0]">
+                        <Signal>u_usb0/usb_controller/endpt_o[3]</Signal>
+                        <Signal>u_usb0/usb_controller/endpt_o[2]</Signal>
+                        <Signal>u_usb0/usb_controller/endpt_o[1]</Signal>
+                        <Signal>u_usb0/usb_controller/endpt_o[0]</Signal>
+                    </Bus>
                 </SignalList>
             </Trigger>
             <Trigger index="2">
@@ -136,7 +268,7 @@
         </Triggers>
         <MatchUnits>
             <MatchUnit index="0" enabled="1" match_type="1" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="R" value1="0" trigger="0"/>
-            <MatchUnit index="1" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="1" value1="0" trigger="1"/>
+            <MatchUnit index="1" enabled="1" match_type="1" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="R0001" value1="00000" trigger="1"/>
             <MatchUnit index="2" enabled="1" match_type="1" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="R" value1="0" trigger="2"/>
             <MatchUnit index="3" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
             <MatchUnit index="4" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
@@ -159,5 +291,5 @@
             <Expression>M0|M2</Expression>
         </Expressions>
     </AoCore>
-    <GAO_ID>0001111010110000</GAO_ID>
+    <GAO_ID>0000010110000010</GAO_ID>
 </GAO_CONFIG>

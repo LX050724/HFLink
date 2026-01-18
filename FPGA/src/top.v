@@ -1,10 +1,9 @@
 module HFLink_TOP(
         input clk_osc
-        ,output ready_led
-        ,output done_led
-        ,inout swdio
-        ,inout swclk
-        ,input reset
+
+        ,inout MCU_SWDIO
+        ,inout MCU_SWCLK
+        // ,input reset
 
         ,inout FLASH_SPI_HOLDN_io
         ,inout FLASH_SPI_CSN_io
@@ -13,22 +12,40 @@ module HFLink_TOP(
         ,inout FLASH_SPI_WPN_io
         ,inout FLASH_SPI_CLK_io
 
-        ,output UART_TX
-        ,input  UART_RX
-        ,output UART_DE
-        ,output UART_RTS
-        ,output UART_DTR
+        // 独立串口连接器
+        ,output EXT_UART_TX
+        ,input EXT_UART_RX
 
+        // SWD/JTAG连接器端口
+        ,output EXT_SWCLK_TCK_O
+        ,output EXT_SWDIO_TMS_T
+        ,output EXT_SWDIO_TMS_O
+        ,input EXT_SWDIO_TMS_I
+        ,input EXT_SWO_TDO_I
+        ,output EXT_TDI_O
+        ,input EXT_RTCK_I
+        ,input EXT_SRST_I
+        ,output EXT_SRST_O
+        ,input EXT_TRST_I
+        ,output EXT_TRST_O
+
+        // RGB & PWRCTL
+        ,inout [3:0] GPIO
+
+        // IIC
+        ,inout IIC_SDA
+        ,inout IIC_SCL
+
+        // USB ULPI
         ,output usb_clk
         ,output usb_rstn
         ,inout [7:0] usb_ulpi_data
         ,input usb_ulpi_nxt
         ,input usb_ulpi_dir
         ,output usb_ulpi_stp
-
-        ,inout [3:0] gpio
     );
 
+    wire reset = 0;
     wire lock;
     wire clkout0;
     wire clkout1;
@@ -89,8 +106,8 @@ module HFLink_TOP(
                   .clkout0(clkout0), //output clkout0
                   .clkout1(clkout1), //output clkout1
                   .clkin(clk_osc), //input clkin
-                  .mdclk(clk_osc),
-                  .reset(reset) //input reset
+                  .mdclk(clk_osc)
+                  //   .reset(reset) //input reset
               );
 
     wire cm_nreset = n_reset & lock;
@@ -98,8 +115,8 @@ module HFLink_TOP(
     Gowin_EMPU_M1_Top Cortex_M1 (
                           //.LOCKUP(lockup), //output LOCKUP
                           .HALTED(m1_halt), //output HALTED
-                          .JTAG_7(swdio), //inout JTAG_7
-                          .JTAG_9(swclk), //inout JTAG_9
+                          .JTAG_7(MCU_SWDIO), //inout JTAG_7
+                          .JTAG_9(MCU_SWCLK), //inout JTAG_9
                           .HCLK(clkout0), //input HCLK
                           .hwRstn(cm_nreset), //input hwRstn
 
@@ -161,6 +178,12 @@ module HFLink_TOP(
                           .FLASH_SPI_MOSI(FLASH_SPI_MOSI_io), //inout FLASH_SPI_MOSI
                           .FLASH_SPI_WPN(FLASH_SPI_WPN_io), //inout FLASH_SPI_WPN
                           .FLASH_SPI_CLK(FLASH_SPI_CLK_io), //inout FLASH_SPI_CLK
+
+                          // IIC
+                          .SDA(IIC_SDA),
+                          .SCL(IIC_SCL),
+
+                          .GPIO(GPIO),
 
                           .EXTINT(intr) //input [3:0] EXTINT
                       );
@@ -230,6 +253,8 @@ module HFLink_TOP(
         end
     endgenerate
 
+    wire LOC_UART_TX;
+    wire LOC_UART_RX;
 
     APB_Stream_UART apb_stream_uart(
                         // APB
@@ -252,11 +277,8 @@ module HFLink_TOP(
                         .rx_tdata(cdc_in_tdata),
 
                         // UART IO
-                        .UART_TX(UART_TX),
-                        .UART_RX(UART_RX),
-                        .UART_DE(UART_DE),
-                        .UART_RTS(UART_RTS),
-                        .UART_DTR(UART_DTR)
+                        .UART_TX(LOC_UART_TX),
+                        .UART_RX(LOC_UART_RX)
                     );
 
     DAP_Controller dap_controller_inst(
@@ -272,7 +294,7 @@ module HFLink_TOP(
                        .hreadyouts(AHB2HREADYOUT),
                        .hresps(AHB2HRESP[0]),
                        .hrdatas(AHB2HRDATA),
-                       
+
                        .dap_clk(clkout1),
 
                        .dap_in_tvalid(winusb_out_tvalid),
@@ -284,6 +306,23 @@ module HFLink_TOP(
                        .dap_out_tlen(winusb_in_tlen),
                        .intr(intr[1]),
 
-                       .gpio(gpio)
+                       .EXT_SWCLK_TCK_O(EXT_SWCLK_TCK_O),
+                       .EXT_SWDIO_TMS_T(EXT_SWDIO_TMS_T),
+                       .EXT_SWDIO_TMS_O(EXT_SWDIO_TMS_O),
+                       .EXT_SWDIO_TMS_I(EXT_SWDIO_TMS_I),
+                       .EXT_SWO_TDO_I(EXT_SWO_TDO_I),
+                       .EXT_TDI_O(EXT_TDI_O),
+                       .EXT_RTCK_I(EXT_RTCK_I),
+                       .EXT_SRST_I(EXT_SRST_I),
+                       .EXT_SRST_O(EXT_SRST_O),
+                       .EXT_TRST_I(EXT_TRST_I),
+                       .EXT_TRST_O(EXT_TRST_O),
+                       .EXT_UART_TX(EXT_UART_TX),
+                       .EXT_UART_RX(EXT_UART_RX),
+
+
+
+                       .LOC_UART_TX(LOC_UART_TX),
+                       .LOC_UART_RX(LOC_UART_RX)
                    );
 endmodule

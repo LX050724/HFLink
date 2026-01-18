@@ -516,14 +516,19 @@ typedef struct {
   } BAUD_GEN;
   uint32_t RESERVED0[1];
   struct {
-    __IO uint32_t CR;
-    __IO uint32_t DIR;
-    __IO uint32_t DO;
-    __I uint32_t DI;
-    __O uint32_t BS;
-    __O uint32_t BR;
-    __IO uint8_t IDELAY[8];
-    __IO uint8_t ODELAY[8];
+    __IO uint8_t CR;
+    __IO uint8_t TCK_DELAY;
+    __IO uint8_t TMS_T_DELAY;
+    __IO uint8_t TMS_O_DELAY;
+    __IO uint8_t TMS_I_DELAY;
+    __IO uint8_t TDO_DELAY;
+    __IO uint8_t TDI_DELAY;
+    uint8_t RESERVED0;
+    __I uint16_t SWD_MODE;
+    __I uint16_t GPIO_STATUS;
+    __IO uint8_t DIRECTIO_DO;
+    __IO uint8_t DIRECTIO_SET;
+    __IO uint8_t DIRECTIO_RESET;
   } GPIO;
 } DAP_TypeDef;
 

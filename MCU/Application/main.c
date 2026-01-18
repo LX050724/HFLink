@@ -8,6 +8,7 @@
 
 #include "dap/dap.h"
 #include "usb/usbd_core.h"
+#include "ads1115/ads1115.h"
 #include <GOWIN_M1_qspi_flash.h>
 
 #ifdef DEBUG
@@ -76,10 +77,9 @@ int main()
     DAP->CR = 0x80000001;
     DAP->TIMESTAMP = 0;
     print("DAP->TIME %08x\n", DAP->TIMESTAMP);
-
-
+    
     qspi_flash_init();
-    // qspi_flash_Enable();
+    qspi_flash_Enable();
 
     print("SPI_FLASH IDREV: %08x\n", SPI_FLASH->IDREV);
     print("SPI_FLASH Support Slave: %d\n", !!(SPI_FLASH->CONFIG & SPIFLASH_CONF_SLAVE_Msk));
@@ -109,31 +109,20 @@ int main()
     dap_baud_set_delay(DAP, 0);
     dap_baud_start(DAP);
 
-    // dap_gpio_enable_directio(DAP, DAP_GPIO_0);
-    // dap_gpio_enable_directio(DAP, DAP_GPIO_1);
-    // dap_gpio_enable_directio(DAP, DAP_GPIO_2);
-    // dap_gpio_enable_directio(DAP, DAP_GPIO_3);
+    DAP->GPIO.TCK_DELAY = 175;
     
-    // dap_gpio_set_direction(DAP, DAP_GPIO_0, DAP_GPIO_DIR_OUTPUT);
-    // dap_gpio_set_direction(DAP, DAP_GPIO_1, DAP_GPIO_DIR_OUTPUT);
-    // dap_gpio_set_direction(DAP, DAP_GPIO_2, DAP_GPIO_DIR_OUTPUT);
-    // dap_gpio_set_direction(DAP, DAP_GPIO_3, DAP_GPIO_DIR_OUTPUT);
-    
-    // dap_gpio_set_odelay(DAP, DAP_GPIO_0, 128);
-    // dap_gpio_set_odelay(DAP, DAP_GPIO_1, 0);
-    // dap_gpio_set_odelay(DAP, DAP_GPIO_2, 0);
-    // dap_gpio_set_odelay(DAP, DAP_GPIO_3, 0);
+    GPIO_SetBit(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
+    GPIO_SetOutEnable(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
+
+    ads1115_i2c_init();
+
 
     while (1)
     {
-        for (int i = 0; i < 2; i++)
-        {
-            dap_gpio_set_pin(DAP, 0xff);
-            delay_1ms(1);
-            dap_gpio_reset_pin(DAP, 0xff);
-            delay_1ms(1);
-        }
-        // DAP->GPIO.ODELAY[0]++;
+        GPIO_SetBit(GPIO0, GPIO_Pin_1);
+        delay_1ms(300);
+        GPIO_ResetBit(GPIO0, GPIO_Pin_1);
+        delay_1ms(300);
     }
 }
 

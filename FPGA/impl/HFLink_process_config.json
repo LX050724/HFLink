@@ -18,7 +18,7 @@
  "ERROR_INJECTION" : false,
  "EXTERNAL_MASTER_CONFIG_CLOCK" : false,
  "Enable_DSRM" : false,
- "FORMAT" : "binary",
+ "FORMAT" : "txt",
  "FREQUENCY_DIVIDER" : "1",
  "Generate_Constraint_File_of_Ports" : false,
  "Generate_IBIS_File" : false,

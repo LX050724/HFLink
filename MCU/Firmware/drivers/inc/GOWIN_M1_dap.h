@@ -60,42 +60,44 @@ inline static void dap_gpio_disable_directio(DAP_TypeDef *dap, uint8_t index)
     dap->GPIO.CR &= ~(1 << index);
 }
 
-inline static void dap_gpio_set_direction(DAP_TypeDef *dap, uint8_t index, uint8_t dir)
-{
-    if (dir)
-    {
-        dap->GPIO.DIR |= 1 << index;
-    }
-    else
-    {
-        dap->GPIO.DIR &= ~(1 << index);
-    }
-}
 
-inline static void dap_gpio_set_idelay(DAP_TypeDef *dap, uint8_t index, uint8_t delay)
-{
-    dap->GPIO.IDELAY[index] = delay;
-}
 
-inline static void dap_gpio_set_odelay(DAP_TypeDef *dap, uint8_t index, uint8_t delay)
-{
-    dap->GPIO.ODELAY[index] = delay;
-}
+// inline static void dap_gpio_set_direction(DAP_TypeDef *dap, uint8_t index, uint8_t dir)
+// {
+//     if (dir)
+//     {
+//         dap->GPIO.DIR |= 1 << index;
+//     }
+//     else
+//     {
+//         dap->GPIO.DIR &= ~(1 << index);
+//     }
+// }
 
-inline static void dap_gpio_set_pin(DAP_TypeDef *dap, uint8_t gpio)
-{
-    dap->GPIO.BS = gpio;
-}
+// inline static void dap_gpio_set_idelay(DAP_TypeDef *dap, uint8_t index, uint8_t delay)
+// {
+//     dap->GPIO.IDELAY[index] = delay;
+// }
 
-inline static void dap_gpio_reset_pin(DAP_TypeDef *dap, uint8_t gpio)
-{
-    dap->GPIO.BR = gpio;
-}
+// inline static void dap_gpio_set_odelay(DAP_TypeDef *dap, uint8_t index, uint8_t delay)
+// {
+//     dap->GPIO.ODELAY[index] = delay;
+// }
 
-inline static uint8_t dap_gpio_read_pin(DAP_TypeDef *dap)
-{
-    return dap->GPIO.DI;
-}
+// inline static void dap_gpio_set_pin(DAP_TypeDef *dap, uint8_t gpio)
+// {
+//     dap->GPIO.BS = gpio;
+// }
+
+// inline static void dap_gpio_reset_pin(DAP_TypeDef *dap, uint8_t gpio)
+// {
+//     dap->GPIO.BR = gpio;
+// }
+
+// inline static uint8_t dap_gpio_read_pin(DAP_TypeDef *dap)
+// {
+//     return dap->GPIO.DI;
+// }
 
 #ifdef __cplusplus
 }

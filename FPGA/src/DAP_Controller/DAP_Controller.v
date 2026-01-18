@@ -33,7 +33,26 @@ module DAP_Controller #(
         input wire dap_out_tready,
         output wire [11:0] dap_out_tlen,
 
-        inout [GPIO_NUM-1:0] gpio
+        // 内部串口
+        input LOC_UART_TX,
+        output LOC_UART_RX,
+
+        // SWD/JTAG连接器端口
+        output EXT_SWCLK_TCK_O,
+        output EXT_SWDIO_TMS_T,
+        output EXT_SWDIO_TMS_O,
+        input EXT_SWDIO_TMS_I,
+        input EXT_SWO_TDO_I,
+        output EXT_TDI_O,
+        input EXT_RTCK_I,
+        input EXT_SRST_I,
+        output EXT_SRST_O,
+        input EXT_TRST_I,
+        output EXT_TRST_O,
+
+        // 独立串口连接器
+        output EXT_UART_TX,
+        input EXT_UART_RX
     );
 
     // ----------------------------------------
@@ -157,16 +176,10 @@ module DAP_Controller #(
     localparam [ADDRWIDTH-1:0] DAP_BAUD_CR_ADDR          = 12'h014;
     localparam [ADDRWIDTH-1:0] DAP_BAUD_TIMING_ADDR      = 12'h018;
 
-    localparam [ADDRWIDTH-1:0] DAP_GPIO_CR_ADDR          = 12'h020;
-    // DAP_GPIO_DIR_ADDR                                 = 12'h024;
-    // DAP_GPIO_DO_ADDR                                  = 12'h028;
-    // DAP_GPIO_DI_ADDR                                  = 12'h02C;
-    // DAP_GPIO_BS_ADDR                                  = 12'h030;
-    // DAP_GPIO_BR_ADDR                                  = 12'h034;
-    // DAP_GPIO_IDELAY_0_3_ADDR                          = 12'h038;
-    // DAP_GPIO_IDELAY_4_7_ADDR                          = 12'h03C;
-    // DAP_GPIO_ODELAY_0_3_ADDR                          = 12'h040;
-    // DAP_GPIO_ODELAY_4_7_ADDR                          = 12'h044;
+    localparam [ADDRWIDTH-1:0] DAP_GPIO_CR_DELAY_ADDR    = 12'h020;
+    localparam [ADDRWIDTH-1:0] DAP_GPIO_DELAY_ADDR       = 12'h024;
+    localparam [ADDRWIDTH-1:0] DAP_GPIO_DI_ADDR          = 12'h028;
+    localparam [ADDRWIDTH-1:0] DAP_GPIO_DO_ADDR          = 12'h02C;
 
     function addr_equ;
         input [ADDRWIDTH-1:0] addr;
@@ -350,9 +363,9 @@ module DAP_Controller #(
                             mcu_helper_intr <= 1'd1;
 
                         if (cmd_decoder_reslut[`CMD_TRANSFER_ABORT_SHIFT])
-                            dap_sm <= 2'd1;
-                        else if (cmd_decoder_reslut[`CMD_EXEC_CMD_SHIFT])
                             dap_sm <= 2'd0;
+                        else if (cmd_decoder_reslut[`CMD_EXEC_CMD_SHIFT])
+                            dap_sm <= 2'd1;
                         else
                             dap_sm <= 2'd2;
                     end
@@ -477,11 +490,10 @@ module DAP_Controller #(
                           .sclk_delay_pulse(sclk_delay_pulse)
                       );
 
-    wire [3:0] afio_i;
     wire [31:0] gpio_hrdatas;
     DAP_GPIO #(
                  .ADDRWIDTH(ADDRWIDTH),
-                 .BASE_ADDR(DAP_GPIO_CR_ADDR),
+                 .BASE_ADDR(DAP_GPIO_CR_DELAY_ADDR),
                  .GPIO_NUM(GPIO_NUM)
              ) dap_gpio_inst (
                  .clk(hclk),
@@ -493,15 +505,34 @@ module DAP_Controller #(
                  .ahb_wdata(hwdatas),
                  .ahb_byte_strobe(byte_strobe_reg),
 
-                 .afio0_I(afio_i),
-                 .afio0_O({afio_i[0], sclk_delay_pulse, sclk_pulse, sclk_out}),
-                 .afio0_T(4'd0),
+                 .EXT_UART_TX(EXT_UART_TX),
+                 .EXT_UART_RX(EXT_UART_RX),
 
-                 //  .afio1_I(),
-                 //  .afio1_O(),
-                 //  .afio1_T(),
+                 .EXT_SWCLK_TCK_O(EXT_SWCLK_TCK_O),
+                 .EXT_SWDIO_TMS_T(EXT_SWDIO_TMS_T),
+                 .EXT_SWDIO_TMS_O(EXT_SWDIO_TMS_O),
+                 .EXT_SWDIO_TMS_I(EXT_SWDIO_TMS_I),
+                 .EXT_SWO_TDO_I(EXT_SWO_TDO_I),
+                 .EXT_TDI_O(EXT_TDI_O),
+                 .EXT_RTCK_I(EXT_RTCK_I),
+                 .EXT_SRST_I(EXT_SRST_I),
+                 .EXT_SRST_O(EXT_SRST_O),
+                 .EXT_TRST_I(EXT_TRST_I),
+                 .EXT_TRST_O(EXT_TRST_O),
 
-                 .gpio(gpio)
+                 .LOC_SWCLK_TCK_O(sclk_out),
+                 .LOC_SWDIO_TMS_T(1'd0),
+                 .LOC_SWDIO_TMS_O(sclk_out),
+                 .LOC_SWDIO_TMS_I(),
+                 .LOC_TDO_I(),
+                 .LOC_TDI_O(),
+                 .LOC_TRST_I(),
+                 .LOC_TRST_O(),
+                 .LOC_SRST_I(),
+                 .LOC_SRST_O(),
+
+                 .LOC_UART_TX(LOC_UART_TX),
+                 .LOC_UART_RX(LOC_UART_RX)
              );
 
     //  读DR超时计时器
@@ -547,8 +578,8 @@ module DAP_Controller #(
                     hrdatas = baudgenerator_hrdatas;
                     hreadyouts = 1'd1;
                 end
-                // GPIO ADDR RANGE 02x 03x 04x
-                (10'b0000_001?_??), (10'b0000_0100_??): begin
+                // GPIO ADDR RANGE 2x
+                (10'b0000_0010_??): begin
                     hrdatas = gpio_hrdatas;
                     hreadyouts = 1'd1;
                 end

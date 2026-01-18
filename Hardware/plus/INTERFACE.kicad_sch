@@ -4555,6 +4555,16 @@
 			"TRST_O" "TRST_I" "SRST_O" "SRST_I" "TDO" "RTCK"
 		)
 	)
+	(text "延迟敏感，不要买友台的"
+		(exclude_from_sim no)
+		(at 103.886 63.5 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "ec87187d-25c3-408d-bb15-01065e8d53f6")
+	)
 	(junction
 		(at 246.38 17.78)
 		(diameter 0)
@@ -4664,7 +4674,7 @@
 		(uuid "4a791481-fae0-4b60-a104-85700cfc1fb1")
 	)
 	(junction
-		(at 267.97 129.54)
+		(at 276.86 127)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "50c41074-ca75-4f1f-8eb5-04566255d483")
@@ -4930,10 +4940,6 @@
 		(uuid "158606e8-a8dd-4b07-9e97-21d94208643a")
 	)
 	(no_connect
-		(at 48.26 134.62)
-		(uuid "40fce2e6-1f75-4552-a7cc-3a53014774ed")
-	)
-	(no_connect
 		(at 106.68 97.79)
 		(uuid "e28bd080-29d4-4f6f-a2ae-e7284e38eb4f")
 	)
@@ -5123,6 +5129,16 @@
 	)
 	(wire
 		(pts
+			(xy 77.3554 105.41) (xy 82.55 105.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "04f3a92d-4955-42c3-b83c-ba5681b40bcb")
+	)
+	(wire
+		(pts
 			(xy 95.25 90.17) (xy 99.06 90.17)
 		)
 		(stroke
@@ -5273,16 +5289,6 @@
 	)
 	(wire
 		(pts
-			(xy 254 116.84) (xy 262.89 116.84)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "24d6922e-06e0-424b-8228-af2a4c6e00f2")
-	)
-	(wire
-		(pts
 			(xy 246.38 78.74) (xy 254 78.74)
 		)
 		(stroke
@@ -5340,6 +5346,16 @@
 			(type default)
 		)
 		(uuid "2e92758c-37da-4e60-b75e-01039bf8c3d1")
+	)
+	(wire
+		(pts
+			(xy 255.27 114.3) (xy 271.78 114.3)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "328c0ba7-59a8-4746-8cf0-92682e38a844")
 	)
 	(bus
 		(pts
@@ -5613,6 +5629,16 @@
 	)
 	(wire
 		(pts
+			(xy 77.47 100.33) (xy 82.55 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5498aa9d-acec-445d-8dcc-a0026d1dba89")
+	)
+	(wire
+		(pts
 			(xy 246.38 78.74) (xy 246.38 83.82)
 		)
 		(stroke
@@ -5803,7 +5829,7 @@
 	)
 	(wire
 		(pts
-			(xy 254 119.38) (xy 262.89 119.38)
+			(xy 262.89 116.84) (xy 271.78 116.84)
 		)
 		(stroke
 			(width 0)
@@ -5813,7 +5839,7 @@
 	)
 	(wire
 		(pts
-			(xy 254 121.92) (xy 262.89 121.92)
+			(xy 262.89 119.38) (xy 271.78 119.38)
 		)
 		(stroke
 			(width 0)
@@ -6093,7 +6119,7 @@
 	)
 	(wire
 		(pts
-			(xy 262.89 124.46) (xy 262.89 129.54)
+			(xy 271.78 121.92) (xy 271.78 127)
 		)
 		(stroke
 			(width 0)
@@ -6223,16 +6249,6 @@
 	)
 	(wire
 		(pts
-			(xy 72.39 100.33) (xy 68.58 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8ca3f8fe-d5a8-4671-9c0a-90f6bdfb6519")
-	)
-	(wire
-		(pts
 			(xy 177.8 20.32) (xy 177.8 34.29)
 		)
 		(stroke
@@ -6260,6 +6276,16 @@
 			(type default)
 		)
 		(uuid "8fc7bc1c-b17b-4649-80b4-1b55bd11bc37")
+	)
+	(wire
+		(pts
+			(xy 68.58 105.41) (xy 69.7354 105.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8fd5d097-523a-4767-8a14-3c87d6bddb4e")
 	)
 	(wire
 		(pts
@@ -6373,6 +6399,16 @@
 	)
 	(wire
 		(pts
+			(xy 77.47 139.7) (xy 86.36 139.7)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9ca590f0-fc82-45f1-b904-6061b97a5625")
+	)
+	(wire
+		(pts
 			(xy 246.38 83.82) (xy 254 83.82)
 		)
 		(stroke
@@ -6413,7 +6449,7 @@
 	)
 	(wire
 		(pts
-			(xy 262.89 129.54) (xy 267.97 129.54)
+			(xy 271.78 127) (xy 276.86 127)
 		)
 		(stroke
 			(width 0)
@@ -6531,6 +6567,16 @@
 		)
 		(uuid "b34a3c40-c60e-4550-988c-d256bf8e592c")
 	)
+	(wire
+		(pts
+			(xy 68.58 139.7) (xy 69.85 139.7)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b40d2956-1ef6-4093-9fb9-0e9ca0691053")
+	)
 	(bus
 		(pts
 			(xy 143.51 15.24) (xy 143.51 31.75)
@@ -6553,13 +6599,13 @@
 	)
 	(wire
 		(pts
-			(xy 72.39 105.41) (xy 68.58 105.41)
+			(xy 68.58 100.33) (xy 69.85 100.33)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "ba126b74-649a-43b7-82ba-f0187b469329")
+		(uuid "b853d432-e540-42ee-9b17-d5db38c8700d")
 	)
 	(wire
 		(pts
@@ -6590,16 +6636,6 @@
 			(type default)
 		)
 		(uuid "beed7638-b1cf-4826-8499-a2a2f19ce4cc")
-	)
-	(wire
-		(pts
-			(xy 77.47 139.7) (xy 68.58 139.7)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c0ace14d-6b17-4884-83ae-901396fa8c3d")
 	)
 	(wire
 		(pts
@@ -7212,7 +7248,7 @@
 		(uuid "21e9adb4-3990-42da-b477-0b68c694bd9f")
 	)
 	(label "UART_TX"
-		(at 77.47 139.7 180)
+		(at 86.36 139.7 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7222,7 +7258,7 @@
 		(uuid "31bae329-aaf1-4c6f-a10e-f2c2dceb409a")
 	)
 	(label "UART_RX"
-		(at 254 121.92 0)
+		(at 262.89 119.38 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7462,7 +7498,7 @@
 		(uuid "c4d5bdb7-695d-43c4-aa2c-116cf3517c9a")
 	)
 	(label "UART_TX"
-		(at 254 119.38 0)
+		(at 262.89 116.84 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7502,7 +7538,7 @@
 		(uuid "dbcf2dea-adb8-4e70-948e-c37fb7fb25db")
 	)
 	(label "TCK"
-		(at 72.39 100.33 180)
+		(at 82.55 100.33 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7532,7 +7568,7 @@
 		(uuid "e8aea614-5e66-4336-a623-2be95a3e0fc1")
 	)
 	(label "TDI"
-		(at 72.39 105.41 180)
+		(at 82.55 105.41 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7583,6 +7619,92 @@
 			(justify right)
 		)
 		(uuid "f12780ab-b701-4913-94bc-936f58507793")
+	)
+	(symbol
+		(lib_id "HPM6280Foc:0402WGF1002TCE")
+		(at 259.08 119.38 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "01e1ae16-438c-40e4-84c8-97ba281aea99")
+		(property "Reference" "R39"
+			(at 259.08 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10K,1%"
+			(at 259.08 125.73 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 259.08 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://atta.szlcsc.com/upload/public/pdf/source/20200306/C422600_1E6D84923E4A46A82E41ADD87F860B5C.pdf"
+			(at 259.08 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 259.08 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0063278"
+			(at 259.08 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C25744"
+			(at 259.08 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "e15178df-38b0-4569-ba25-87fc9f7c2712")
+		)
+		(pin "2"
+			(uuid "ff132fca-dab7-444e-8c35-628c470858c4")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "R39")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Amplifier_Operational:LMV358")
@@ -10346,6 +10468,92 @@
 		)
 	)
 	(symbol
+		(lib_id "HPM6280Foc:0402WGF330JTCE")
+		(at 73.66 139.7 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "54d6edd0-5d37-4456-b3ea-7854ae4cd02c")
+		(property "Reference" "R42"
+			(at 73.66 133.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "33R,1%"
+			(at 73.66 135.89 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 73.66 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 73.66 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 73.66 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0064864"
+			(at 73.66 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C25105"
+			(at 73.66 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "4f1c4dd8-fcb6-4272-8b9a-6c7cc858d849")
+		)
+		(pin "1"
+			(uuid "a1fb6119-48e7-4fa6-bc7c-a92632c7de5b")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "R42")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 107.95 184.15 0)
 		(unit 1)
@@ -10917,7 +11125,7 @@
 	)
 	(symbol
 		(lib_id "HPM6280Foc:WAFER-ZH1.5-4PWB")
-		(at 267.97 120.65 0)
+		(at 276.86 118.11 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -10926,7 +11134,7 @@
 		(fields_autoplaced yes)
 		(uuid "5d33596e-fc83-4e73-aaa7-e48455f27305")
 		(property "Reference" "J5"
-			(at 270.51 119.7355 0)
+			(at 279.4 117.1955 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10935,7 +11143,7 @@
 			)
 		)
 		(property "Value" "WAFER-ZH1.5-4PWB"
-			(at 270.51 122.2755 0)
+			(at 279.4 119.7355 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10944,7 +11152,7 @@
 			)
 		)
 		(property "Footprint" "Library:ZH_SM04_1.50mm_Horizontal"
-			(at 267.97 120.65 0)
+			(at 276.86 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10953,7 +11161,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.xunpu.com.cn/uploadfile/202307/78d9f7bd5df3bdc.pdf"
-			(at 267.97 120.65 0)
+			(at 276.86 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10962,7 +11170,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 267.97 120.65 0)
+			(at 276.86 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10971,7 +11179,7 @@
 			)
 		)
 		(property "立创编号" "C3029424"
-			(at 267.97 120.65 0)
+			(at 276.86 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10980,7 +11188,7 @@
 			)
 		)
 		(property "华秋编号" "G6593627"
-			(at 267.97 120.65 0)
+			(at 276.86 118.11 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11226,6 +11434,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
+		(fields_autoplaced yes)
 		(uuid "60ab0e53-7956-4075-a4c6-0caaadd6ccf2")
 		(property "Reference" "#PWR074"
 			(at 60.96 128.27 0)
@@ -12110,7 +12319,7 @@
 	)
 	(symbol
 		(lib_id "power:+1V0")
-		(at 254 116.84 90)
+		(at 255.27 114.3 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -12119,7 +12328,7 @@
 		(fields_autoplaced yes)
 		(uuid "79c52b35-0e50-4b24-87cd-9f4b92bcacd2")
 		(property "Reference" "#PWR0115"
-			(at 257.81 116.84 0)
+			(at 259.08 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12128,7 +12337,7 @@
 			)
 		)
 		(property "Value" "VTREF"
-			(at 250.19 116.8399 90)
+			(at 251.46 114.2999 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12137,7 +12346,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 254 116.84 0)
+			(at 255.27 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12146,7 +12355,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 254 116.84 0)
+			(at 255.27 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12155,7 +12364,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+1V0\""
-			(at 254 116.84 0)
+			(at 255.27 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15795,6 +16004,92 @@
 		)
 	)
 	(symbol
+		(lib_id "HPM6280Foc:0402WGF330JTCE")
+		(at 73.5454 105.41 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "c267a553-0bd5-4c0d-9af4-5c3c93c51bc8")
+		(property "Reference" "R41"
+			(at 73.5454 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "33R,1%"
+			(at 73.5454 111.76 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 73.5454 105.41 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 73.5454 105.41 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 73.5454 105.41 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0064864"
+			(at 73.5454 105.41 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C25105"
+			(at 73.5454 105.41 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "5f56496c-faf8-4125-81b4-767a9c329e66")
+		)
+		(pin "1"
+			(uuid "5c13fbcf-ea11-4308-bbad-04ea7a7e3e5e")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "R41")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "HPM6280Foc:BLM15PX601SN1D")
 		(at 116.84 83.82 90)
 		(unit 1)
@@ -15893,7 +16188,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 267.97 129.54 0)
+		(at 276.86 127 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -15902,7 +16197,7 @@
 		(fields_autoplaced yes)
 		(uuid "c95c709a-7e96-416f-b384-d658f9d8d29b")
 		(property "Reference" "#PWR087"
-			(at 267.97 135.89 0)
+			(at 276.86 133.35 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15911,7 +16206,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 267.97 134.62 0)
+			(at 276.86 132.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15919,7 +16214,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 267.97 129.54 0)
+			(at 276.86 127 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15928,7 +16223,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 267.97 129.54 0)
+			(at 276.86 127 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15937,7 +16232,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 267.97 129.54 0)
+			(at 276.86 127 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16017,6 +16312,73 @@
 			(project "HFLink_Plus"
 				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
 					(reference "#PWR0108")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 48.26 134.62 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "ca2a68a1-92d0-45bb-b6a3-fa0069595165")
+		(property "Reference" "#PWR0117"
+			(at 41.91 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 44.45 134.6199 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 48.26 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 48.26 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 48.26 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "1eaa435c-1802-4b63-ba5d-31020727fb6c")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "#PWR0117")
 					(unit 1)
 				)
 			)
@@ -16114,6 +16476,92 @@
 			(project ""
 				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
 					(reference "R30")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "HPM6280Foc:0402WGF330JTCE")
+		(at 73.66 100.33 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "cec12063-72f5-4f80-a751-c2f8ebec97a8")
+		(property "Reference" "R40"
+			(at 73.66 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "33R,1%"
+			(at 73.66 96.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 73.66 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 73.66 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 73.66 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0064864"
+			(at 73.66 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C25105"
+			(at 73.66 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "30d77178-9598-41a2-b4fb-4502455cb910")
+		)
+		(pin "1"
+			(uuid "0be3736b-abb7-43e1-929d-e007dcb3234b")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "R40")
 					(unit 1)
 				)
 			)
@@ -16793,6 +17241,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
+		(fields_autoplaced yes)
 		(uuid "d9ee4294-47d9-41e3-9375-af958c0b4093")
 		(property "Reference" "#PWR73"
 			(at 55.88 128.27 0)
@@ -17407,6 +17856,73 @@
 			(project ""
 				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
 					(reference "#PWR48")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+1V0")
+		(at 255.27 119.38 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "f393442c-a1ba-4bc2-b338-cd4181972687")
+		(property "Reference" "#PWR0114"
+			(at 259.08 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "VTARG"
+			(at 251.46 119.3799 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 255.27 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 255.27 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+1V0\""
+			(at 255.27 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "4ab0825b-9e14-40eb-ab24-37f86a965fd8")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "#PWR0114")
 					(unit 1)
 				)
 			)
