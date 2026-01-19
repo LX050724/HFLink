@@ -8,6 +8,7 @@ module DAP_BaudGenerator#(
 
         // AHB MEM接口
         input ahb_write_en,
+        input ahb_read_en,
         input [ADDRWIDTH-1:0] ahb_addr,
         output reg [31:0] ahb_rdata,
         input [31:0] ahb_wdata,
@@ -63,14 +64,19 @@ module DAP_BaudGenerator#(
     end
 
     always @(*) begin : ahb_mem_read_ctrl
-        case (ahb_addr[ADDRWIDTH-1:2])
-            REG_CR_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = REG_CR;
-            REG_TIMING_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = {13'd0, REG_TIMING_DELAY, REG_TIMING_DIV};
-            default:
-                ahb_rdata = {32{1'bx}};
-        endcase
+        if (ahb_read_en) begin
+            case (ahb_addr[ADDRWIDTH-1:2])
+                REG_CR_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = REG_CR;
+                REG_TIMING_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = {13'd0, REG_TIMING_DELAY, REG_TIMING_DIV};
+                default:
+                    ahb_rdata = {32{1'bx}};
+            endcase
+        end
+        else begin
+            ahb_rdata = {32{1'bx}};
+        end
     end
 
 

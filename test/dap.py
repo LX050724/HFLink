@@ -82,5 +82,9 @@ class DAP:
     def delay(self, time_us: int):
         self._write(b'\x09' + time_us.to_bytes(length=2, byteorder='little'))
         self._read(timeout=int(time_us/1000*3))
+
+    def delay3(self, time_us: int):
+        self._write(b'\x7e\x03' + (b'\x09' + time_us.to_bytes(length=2, byteorder='little')) * 3)
+        self._read(timeout=int(time_us/1000*3))
         # self._read(timeout=1000)
     

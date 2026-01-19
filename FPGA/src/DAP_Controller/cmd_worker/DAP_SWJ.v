@@ -12,6 +12,7 @@ module DAP_SWJ #(
 
         // AHB MEM接口
         input ahb_write_en,
+        input ahb_read_en,
         input [ADDRWIDTH-1:0] ahb_addr,
         output reg [31:0] ahb_rdata,
         input [31:0] ahb_wdata,
@@ -91,7 +92,7 @@ module DAP_SWJ #(
             end
         end
         else begin
-            if (ahb_wdata) begin
+            if (ahb_write_en) begin
                 case (ahb_addr[ADDRWIDTH-1:2])
                     SWJ_CR_ADDR[ADDRWIDTH-1:2]:
                         AHB_WRITE_REG32(SWJ_CR);
@@ -121,32 +122,37 @@ module DAP_SWJ #(
     end
 
     always @(*) begin : ahb_mem_read_ctrl
-        case (ahb_addr[ADDRWIDTH-1:2])
-            SWJ_CR_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = SWJ_CR;
-            SWJ_SWD_CR_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = SWJ_SWD_CR;
-            SWJ_JTAG_CR_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = SWJ_JTAG_CR;
-            SWJ_JTAG_IR_CONF0_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = SWJ_JTAG_IR_CONF_REG[0];
-            SWJ_JTAG_IR_CONF1_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = SWJ_JTAG_IR_CONF_REG[1];
-            SWJ_JTAG_IR_CONF2_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = SWJ_JTAG_IR_CONF_REG[2];
-            SWJ_JTAG_IR_CONF3_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = SWJ_JTAG_IR_CONF_REG[3];
-            SWJ_JTAG_IR_CONF4_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = SWJ_JTAG_IR_CONF_REG[4];
-            SWJ_JTAG_IR_CONF5_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = SWJ_JTAG_IR_CONF_REG[5];
-            SWJ_JTAG_IR_CONF6_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = SWJ_JTAG_IR_CONF_REG[6];
-            SWJ_JTAG_IR_CONF7_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = SWJ_JTAG_IR_CONF_REG[7];
-            default:
-                ahb_rdata = {32{1'bx}};
-        endcase
+        if (ahb_read_en) begin
+            case (ahb_addr[ADDRWIDTH-1:2])
+                SWJ_CR_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = SWJ_CR;
+                SWJ_SWD_CR_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = SWJ_SWD_CR;
+                SWJ_JTAG_CR_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = SWJ_JTAG_CR;
+                SWJ_JTAG_IR_CONF0_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = SWJ_JTAG_IR_CONF_REG[0];
+                SWJ_JTAG_IR_CONF1_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = SWJ_JTAG_IR_CONF_REG[1];
+                SWJ_JTAG_IR_CONF2_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = SWJ_JTAG_IR_CONF_REG[2];
+                SWJ_JTAG_IR_CONF3_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = SWJ_JTAG_IR_CONF_REG[3];
+                SWJ_JTAG_IR_CONF4_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = SWJ_JTAG_IR_CONF_REG[4];
+                SWJ_JTAG_IR_CONF5_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = SWJ_JTAG_IR_CONF_REG[5];
+                SWJ_JTAG_IR_CONF6_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = SWJ_JTAG_IR_CONF_REG[6];
+                SWJ_JTAG_IR_CONF7_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = SWJ_JTAG_IR_CONF_REG[7];
+                default:
+                    ahb_rdata = {32{1'bx}};
+            endcase
+        end
+        else begin
+            ahb_rdata = {32{1'bx}};
+        end
     end
 
     task AHB_WRITE_REG32;

@@ -7,6 +7,7 @@ module DAP_GPIO #(
 
         // AHB MEM接口
         input ahb_write_en,
+        input ahb_read_en,
         input [ADDRWIDTH-1:0] ahb_addr,
         output reg [31:0] ahb_rdata,
         input [31:0] ahb_wdata,
@@ -138,7 +139,7 @@ module DAP_GPIO #(
     assign LOC_SRST_I = EXT_SRST_I;
     assign EXT_SRST_O = SRST_DIRECT_EN ? SRST_DO : LOC_SRST_O;
     assign EXT_UART_TX = ALONE_UART_CON ? LOC_UART_TX : 1'd1;
-    assign LOC_UART_RX = EXT_UART_RX; 
+    assign LOC_UART_RX = EXT_UART_RX;
     assign LOC_SWO_I = SWD_MODE ? LOC_SWO_TDO_I : 1'd0;
 
     always @(posedge clk or negedge resetn) begin : ahb_mem_write_ctrl
@@ -208,18 +209,23 @@ module DAP_GPIO #(
     end
 
     always @(*) begin : ahb_mem_read_ctrl
-        case (ahb_addr[ADDRWIDTH-1:2])
-            GPIO_CR_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = {SWDIO_TMS_O_DELAY, SWDIO_TMS_T_DELAY, SWCLK_TCK_O_DELAY, GPIO_REG_CR};
-            SWDIO_TMS_I_DELAY_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = {8'd0, TDI_O_DELAY, TDO_I_DELAY, SWDIO_TMS_I_DELAY};
-            GPIO_MODE_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = {15'd0, SWD_MODE, 6'd0, GPIO_SYMPLE};
-            GPIO_DO_ADDR[ADDRWIDTH-1:2]:
-                ahb_rdata = {24'd0, GPIO_DO};
-            default:
-                ahb_rdata = {32{1'bx}};
-        endcase
+        if (ahb_read_en) begin
+            case (ahb_addr[ADDRWIDTH-1:2])
+                GPIO_CR_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = {SWDIO_TMS_O_DELAY, SWDIO_TMS_T_DELAY, SWCLK_TCK_O_DELAY, GPIO_REG_CR};
+                SWDIO_TMS_I_DELAY_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = {8'd0, TDI_O_DELAY, TDO_I_DELAY, SWDIO_TMS_I_DELAY};
+                GPIO_MODE_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = {15'd0, SWD_MODE, 6'd0, GPIO_SYMPLE};
+                GPIO_DO_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = {24'd0, GPIO_DO};
+                default:
+                    ahb_rdata = {32{1'bx}};
+            endcase
+        end
+        else begin
+            ahb_rdata = {32{1'bx}};
+        end
     end
 
 endmodule

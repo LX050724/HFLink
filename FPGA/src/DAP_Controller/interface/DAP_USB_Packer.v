@@ -11,8 +11,8 @@ module DAP_USB_Packer#(
         input [9:0] ram_write_addr, // 数据包相对地址，0起
         input [7:0] ram_write_data,
         input ram_write_en,
-        input [9:0] packet_len, // 
-        input packet_finish, // 整包完成，触发发送(高优先)
+        input [9:0] packet_len, //
+        input packet_finish, // 整包完成，触发发送，发送前必须通过group_finish更新所有数据
         input group_finish, // 分组完成，更新头指针位置并累加包总长
         output almost_full,
 
@@ -34,7 +34,7 @@ module DAP_USB_Packer#(
 
     reg [11:0] packet_head_addr; // 包头部地址
     reg [9:0] packet_total_len;
-    wire [11:0] packet_tail_addr = packet_head_addr + packet_total_len + packet_len; // 计算的包末尾地址
+    wire [11:0] packet_tail_addr = packet_head_addr + packet_len; // 计算的包末尾地址
 
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
@@ -48,7 +48,7 @@ module DAP_USB_Packer#(
             if (packet_finish) begin
                 packet_total_len <= 10'd0;
                 packet_head_addr <= {packet_tail_addr[11:4] + 12'd1, 4'd0};
-            end 
+            end
             else if (group_finish) begin
                 packet_total_len <= packet_total_len + packet_len;
                 packet_head_addr <= packet_head_addr + packet_len;
@@ -72,7 +72,7 @@ module DAP_USB_Packer#(
     assign usb_txcork = ~ram_read_en;
     assign almost_full = pack_queue_size >= (MAX_PACKET_NUM - 1);
 
-    wire usb_tx_active = (usb_txcork == 1'd0) && usb_txact;
+    wire usb_tx_active = ram_read_en && usb_txact;
     wire usb_tx_success = usb_tx_active_store & !usb_tx_active & usb_txpktfin_store;
     wire [11:0] next_read_addr = usb_txpop ? (read_addr + 1'd1) : read_addr;
 
@@ -89,14 +89,16 @@ module DAP_USB_Packer#(
             usb_tx_active_store <= usb_tx_active;
 
             // 发送中
-            if (usb_tx_active) begin
-                read_addr <= next_read_addr;
-                ram_radata <= ram[next_read_addr];
-
-                if (usb_txpktfin)
-                    usb_txpktfin_store <= 1'd1;
-            end else begin
-                ram_radata <= ram[read_addr];
+            if (ram_read_en) begin
+                if (usb_txact) begin
+                    read_addr <= next_read_addr;
+                    ram_radata <= ram[next_read_addr];
+                    if (usb_txpktfin)
+                        usb_txpktfin_store <= 1'd1;
+                end
+                else begin
+                    ram_radata <= ram[read_addr];
+                end
             end
 
             // 发送结束计算地址
@@ -125,14 +127,14 @@ module DAP_USB_Packer#(
                 end
                 2'b10: begin // 压入
                     pack_queue_size <= pack_queue_size + 1;
-                    pack_queue[pack_queue_size] <= packet_total_len + packet_len;
+                    pack_queue[pack_queue_size] <= packet_total_len;
                 end
                 2'b11: begin // 同时弹出压入只移位队列
                     for (i = 0; i < (MAX_PACKET_NUM - 1); i=i+1) begin : shift_loop_2
                         pack_queue[i] <= pack_queue[i+1];
                     end
                     pack_queue[MAX_PACKET_NUM-1] <= 12'd0;
-                    pack_queue[pack_queue_size] <= packet_total_len + packet_len;
+                    pack_queue[pack_queue_size] <= packet_total_len;
                 end
             endcase
         end

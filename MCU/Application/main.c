@@ -114,7 +114,7 @@ int main()
     GPIO_SetBit(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
     GPIO_SetOutEnable(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
 
-    ads1115_i2c_init();
+    // ads1115_i2c_init();
 
 
     while (1)

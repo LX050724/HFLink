@@ -366,9 +366,9 @@ module DAP_Controller #(
     wire [`CMD_REAL_NUM-1:0] worker_dap_in_tready;
 
     // MCU部分操作信号
-    wire AHB_WRITE_DR = write_en && (addr == DAP_DR_ADDR) && byte_strobe[0];
-    wire AHB_READ_DR = read_en && (addr == DAP_DR_ADDR);
-    wire AHB_CLEAR_FLAG = write_en && (addr == DAP_SR_ADDR) && byte_strobe[3] && hwdatas[31];
+    wire AHB_WRITE_DR = write_en && addr_equ(addr, DAP_DR_ADDR) && byte_strobe[0];
+    wire AHB_READ_DR = read_en && addr_equ(addr, DAP_DR_ADDR);
+    wire AHB_CLEAR_FLAG = write_en && addr_equ(addr, DAP_SR_ADDR) && byte_strobe[3] && hwdatas[31];
 
     /*********************************************** MCU HELPER ***********************************************/
     reg [9:0] mcu_write_addr;
@@ -386,7 +386,7 @@ module DAP_Controller #(
         end
         else begin
             if (worker_start_flags[`CMD_MCU_HELPER_SHIFT]) begin
-                if (AHB_CLEAR_FLAG) begin
+                if (AHB_WRITE_DR) begin
                     mcu_write_addr <= mcu_write_addr + 1'd1;
                 end
                 if (AHB_CLEAR_FLAG) begin
@@ -445,6 +445,7 @@ module DAP_Controller #(
                 .enable(DAP_CR_EN),
 
                 .ahb_write_en(write_en),
+                .ahb_read_en(read_en),
                 .ahb_addr(addr),
                 .ahb_rdata(swj_hrdatas),
                 .ahb_wdata(hwdatas),
@@ -513,7 +514,7 @@ module DAP_Controller #(
                 end
                 2'd2: begin
                     // 等待处理完成判断忙标志
-                    if (cmd_decoder_reslut[`CMD_REAL_NUM-1:1] & worker_done_flags[`CMD_REAL_NUM-1:1]) begin
+                    if (cmd_decoder_reslut[`CMD_REAL_NUM-1:0] & worker_done_flags[`CMD_REAL_NUM-1:0]) begin
                         // 分组打包完成，状态转移
                         sm_group_finish <= 1'd1;
                         dap_sm <= 2'd3;
@@ -554,15 +555,15 @@ module DAP_Controller #(
             ram_write_addr = 10'd0;
             ram_write_data = dap_in_tdata;
             ram_write_en = DAP_IN_BYPASS_ACTIVE;
-            packet_len = {9'd0, DAP_IN_BYPASS_ACTIVE};
+            packet_len = 10'd1;
             group_finish = DAP_IN_BYPASS_ACTIVE;
         end
         else if (dap_sm == 2'd1) begin
             ram_write_addr = 10'd0;
             ram_write_data = dap_in_tdata;
-            ram_write_en = dap_in_tvalid;
-            packet_len = {9'd0, dap_in_tvalid};
-            group_finish = dap_in_tvalid;
+            ram_write_en = DAP_CR_EN & dap_in_tvalid;
+            packet_len = 10'd1;
+            group_finish = DAP_CR_EN & dap_in_tvalid;
         end
         else begin
             // 命令处理转接到各个worker
@@ -606,6 +607,7 @@ module DAP_Controller #(
                           .resetn(hresetn),
                           .sclk_in(dap_clk),
                           .ahb_write_en(write_en),
+                          .ahb_read_en(read_en),
                           .ahb_addr(addr),
                           .ahb_rdata(baudgenerator_hrdatas),
                           .ahb_wdata(hwdatas),
@@ -625,6 +627,7 @@ module DAP_Controller #(
                  .resetn(hresetn),
 
                  .ahb_write_en(write_en),
+                 .ahb_read_en(read_en),
                  .ahb_addr(addr),
                  .ahb_rdata(gpio_hrdatas),
                  .ahb_wdata(hwdatas),
@@ -661,6 +664,21 @@ module DAP_Controller #(
                  .LOC_UART_RX(LOC_UART_RX)
              );
 
+
+    //  读DR无数据最多等待16周期
+    reg [4:0] read_dr_timeout;
+    always @(posedge hclk or negedge hresetn) begin
+        if (!hresetn) begin
+            read_dr_timeout <= 5'd0;
+        end else begin
+            if (AHB_READ_DR && !dap_in_tvalid) begin
+                read_dr_timeout <= read_dr_timeout + 1'd1;
+            end else begin
+                read_dr_timeout <= 5'd0;
+            end
+        end
+    end
+
     always @(*) begin
         if (read_en) begin
             casez (addr[ADDRWIDTH-1:2])
@@ -678,7 +696,7 @@ module DAP_Controller #(
                 end
                 DAP_DR_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = {23'd0, dap_in_tvalid, dap_in_tdata};
-                    hreadyouts = 1'd1;
+                    hreadyouts = dap_in_tvalid | read_dr_timeout[4];
                 end
                 DAP_CURCMD_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = {24'd0, processing_cmd};

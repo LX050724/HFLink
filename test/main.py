@@ -15,4 +15,6 @@ if __name__ == '__main__':
             print("timestamp freqence       :", dap.get_timestamp_freq())
             print("max packet count         :", dap.get_max_packet_count())
             print("max packet size          :", dap.get_max_packet_size())
+
+            dap.delay3(100)
             # break

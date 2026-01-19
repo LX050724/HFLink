@@ -530,12 +530,22 @@ typedef struct {
     __IO uint8_t TDO_DELAY;
     __IO uint8_t TDI_DELAY;
     uint8_t RESERVED0;
-    __I uint16_t SWD_MODE;
     __I uint16_t GPIO_STATUS;
+    __I uint16_t SWD_MODE;
     __IO uint8_t DIRECTIO_DO;
     __IO uint8_t DIRECTIO_SET;
     __IO uint8_t DIRECTIO_RESET;
   } GPIO;
+  struct {
+    __IO uint32_t CR;
+    __IO uint32_t SWD_CR;
+    __IO uint32_t JTAG_CR;
+    struct {
+      __IO uint32_t IR_LEN : 4;
+      __IO uint32_t IR_AFTER_LEN : 14;
+      __IO uint32_t IR_BEFORE_LEN : 4;
+    } JTAG_IR_CONF [8];
+  } SWJ;
 } DAP_TypeDef;
 
 /* --------  End of section using anonymous unions and disabling warnings  -------- */
