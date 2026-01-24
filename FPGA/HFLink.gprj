@@ -12,8 +12,10 @@
         <File path="src/DAP_Controller/cmd_worker/DAP_SWJ.v" type="file.verilog" enable="1"/>
         <File path="src/DAP_Controller/interface/DAP_BaudGenerator.v" type="file.verilog" enable="1"/>
         <File path="src/DAP_Controller/interface/DAP_GPIO.v" type="file.verilog" enable="1"/>
+        <File path="src/DAP_Controller/interface/DAP_Seqence.v" type="file.verilog" enable="1"/>
         <File path="src/DAP_Controller/interface/DAP_USB_Packer.v" type="file.verilog" enable="1"/>
         <File path="src/fifo_sc_top/fifo_sc_top.v" type="file.verilog" enable="1"/>
+        <File path="src/fifo_top/fifo_top.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_dpb/gowin_dpb.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_empu_m1/gowin_empu_m1.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_pll/gowin_pll.v" type="file.verilog" enable="1"/>

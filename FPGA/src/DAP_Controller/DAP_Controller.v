@@ -433,6 +433,10 @@ module DAP_Controller #(
     wire LOC_TRST_O;
     wire SWD_MODE;
 
+    wire sclk_out;
+    wire sclk_pulse;
+    wire sclk_delay_pulse;
+
     wire [31:0] swj_hrdatas;
     DAP_SWJ #(
                 .ADDRWIDTH(ADDRWIDTH),
@@ -443,6 +447,11 @@ module DAP_Controller #(
                 .us_tick(us_tick),
                 .us_timer(us_timer),
                 .enable(DAP_CR_EN),
+
+                .sclk(dap_clk),
+                .sclk_out(sclk_out),
+                .sclk_pulse(sclk_pulse),
+                .sclk_delay_pulse(sclk_delay_pulse),
 
                 .ahb_write_en(write_en),
                 .ahb_read_en(read_en),
@@ -596,9 +605,7 @@ module DAP_Controller #(
     assign intr = DAP_INT_EN & worker_start_flags[`CMD_MCU_HELPER_SHIFT];
 
     wire [31:0] baudgenerator_hrdatas;
-    wire sclk_out;
-    wire sclk_pulse;
-    wire sclk_delay_pulse;
+
     DAP_BaudGenerator #(
                           .ADDRWIDTH(ADDRWIDTH),
                           .BASE_ADDR(DAP_BAUD_CR_ADDR)

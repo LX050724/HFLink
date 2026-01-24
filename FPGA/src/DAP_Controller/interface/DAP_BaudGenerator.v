@@ -14,9 +14,9 @@ module DAP_BaudGenerator#(
         input [31:0] ahb_wdata,
         input [3:0] ahb_byte_strobe,
 
-        output sclk_out,
-        output sclk_pulse,
-        output sclk_delay_pulse
+        output sclk_out, // 输出到GPIO的时钟信号
+        output sclk_pulse, // 控制器置位时刻参考
+        output sclk_delay_pulse // 控制器采样时刻参考
     );
 
     localparam [ADDRWIDTH-1:0] REG_CR_ADDR = BASE_ADDR + 0;  // RW
@@ -86,10 +86,10 @@ module DAP_BaudGenerator#(
     reg [15:0] div_count;
     reg sclk_out_reg;
     reg sclk_pulse_reg;
-    reg sclk_delay_pulse_reg;
 
     reg [6:0] delay_reg;
     wire [7:0] delay_chain = {delay_reg, sclk_pulse_reg};
+    wire [15:0] div_count_next = div_count + 1'd1;
 
     always @(posedge sclk_in or negedge resetn) begin
         if (!resetn) begin
@@ -102,16 +102,19 @@ module DAP_BaudGenerator#(
             cen <= cen_ff1;
 
             sclk_pulse_reg <= 1'd0;
-            sclk_delay_pulse_reg <= 1'd0;
 
             if (cen) begin
+                div_count <= div_count_next;
                 if (div_count == REG_TIMING_DIV) begin
                     div_count <= 16'd0;
                     sclk_out_reg <= ~sclk_out_reg;
-                    sclk_pulse_reg <= ~sclk_out_reg;
                 end
-                else begin
-                    div_count <= div_count + 1'd1;
+                
+                if (REG_TIMING_DIV == 0) begin
+                    sclk_pulse_reg <= sclk_out_reg;
+                end
+                else if (div_count_next == REG_TIMING_DIV) begin
+                    sclk_pulse_reg <= ~sclk_out_reg;
                 end
 
                 delay_reg <= {delay_reg[5:0], sclk_pulse_reg};

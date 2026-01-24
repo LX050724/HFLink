@@ -10,6 +10,12 @@ module DAP_SWJ #(
         input [31:0] us_timer,
         input enable,
 
+        // 串行时钟
+        input sclk,
+        input sclk_out,
+        input sclk_pulse,
+        input sclk_delay_pulse,
+
         // AHB MEM接口
         input ahb_write_en,
         input ahb_read_en,
@@ -19,16 +25,16 @@ module DAP_SWJ #(
         input [3:0] ahb_byte_strobe,
 
         input dap_in_tvalid,
-        output [`CMD_REG_WIDTH-1:4] dap_in_tready,
+        output [`CMD_SWJ_RANGE] dap_in_tready,
         input [7:0] dap_in_tdata,
 
-        output [9:0] ram_write_addr,
-        output [7:0] ram_write_data,
-        output ram_write_en,
-        output [9:0] packet_len,
+        output reg [9:0] ram_write_addr,
+        output reg [7:0] ram_write_data,
+        output reg ram_write_en,
+        output reg [9:0] packet_len,
 
-        input [`CMD_REG_WIDTH-1:4] start,
-        output [`CMD_REG_WIDTH-1:4] done,
+        input [`CMD_SWJ_RANGE] start,
+        output reg [`CMD_SWJ_RANGE] done,
 
         output SWCLK_TCK_O,
         output SWDIO_TMS_T,
@@ -154,6 +160,256 @@ module DAP_SWJ #(
             ahb_rdata = {32{1'bx}};
         end
     end
+
+    reg [15:0] seq_tx_cmd;
+    reg [63:0] seq_tx_data;
+    reg seq_tx_valid;
+    wire seq_tx_full;
+    reg seq_rx_nxt;
+
+
+    DAP_Seqence dap_seqence_inst(
+                    // 控制器时钟
+                    .clk(clk),
+                    .resetn(resetn),
+
+                    // 串行时钟
+                    .sclk(sclk),
+                    .sclk_out(sclk_out),
+                    .sclk_pulse(sclk_pulse),
+                    .sclk_delay_pulse(sclk_delay_pulse),
+
+                    // 控制器输入输出
+                    .seq_tx_valid(seq_tx_valid),
+                    .seq_tx_cmd(seq_tx_cmd),
+                    .seq_tx_data(seq_tx_data),
+                    .seq_tx_full(seq_tx_full),
+
+                    .seq_rx_valid(seq_rx_valid),
+                    .seq_rx_nxt(seq_rx_nxt),
+                    .seq_rx_flag(seq_rx_flag),
+                    .seq_rx_data(seq_rx_data),
+
+
+                    // GPIO
+                    .SWCLK_TCK_O(SWCLK_TCK_O),
+                    .SWDIO_TMS_T(SWDIO_TMS_T),
+                    .SWDIO_TMS_O(SWDIO_TMS_O),
+                    .SWDIO_TMS_I(SWDIO_TMS_I),
+                    .SWO_TDO_I(SWO_TDO_I),
+                    .TDI_O(TDI_O),
+                    // input RTCK_I,
+                    .SRST_I(SRST_I),
+                    .SRST_O(SRST_O),
+                    .TRST_I(TRST_I),
+                    .TRST_O(TRST_O)
+                );
+
+    reg [7:0] buf64_reg [0:7]; // 64位串转并缓存
+    wire [63:0] buf64 = {
+        buf64_reg[7],
+        buf64_reg[6],
+        buf64_reg[5],
+        buf64_reg[4],
+        buf64_reg[3],
+        buf64_reg[2],
+        buf64_reg[1],
+        buf64_reg[0]
+    };
+
+    reg buf64_start;
+    reg [6:0] buf64_rbit_len; // 设定的读取位数量
+    reg buf64_finish_reg;
+    wire buf64_finish = buf64_finish_reg && !buf64_start;
+
+    // 写入索引
+    wire [3:0] buf64_write_index = buf64_start ? 4'd0 : buf64_rbyte_num;
+    reg [3:0] buf64_rbyte_num;
+    wire [3:0] buf64_rbyte_num_next = buf64_write_index + 1'd1;
+    wire buf64_tready = buf64_finish_reg == 1'd0 || buf64_start;
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            buf64_reg[7] <= 8'd0;
+            buf64_reg[6] <= 8'd0;
+            buf64_reg[5] <= 8'd0;
+            buf64_reg[4] <= 8'd0;
+            buf64_reg[3] <= 8'd0;
+            buf64_reg[2] <= 8'd0;
+            buf64_reg[1] <= 8'd0;
+            buf64_reg[0] <= 8'd0;
+            buf64_finish_reg <= 1'd1;
+            buf64_rbyte_num <= 4'd0;
+        end
+        else begin
+            if (buf64_start) begin
+                buf64_finish_reg <= 1'd0;
+                buf64_rbyte_num <= 1'd0;
+            end
+
+            if (buf64_finish_reg == 1'd0 || buf64_start) begin
+                if (dap_in_tvalid) begin
+                    buf64_reg[buf64_write_index] <= dap_in_tdata;
+                    if (buf64_rbyte_num_next >= ((buf64_rbit_len + 7) >> 3)) begin
+                        buf64_finish_reg <= 1'd1;
+                    end
+                    buf64_rbyte_num <= buf64_rbyte_num_next;
+                end
+            end
+        end
+    end
+
+    reg [8:0] swj_seq_bit_num;
+    reg [1:0] swj_seq_sm;
+    wire [8:0] swj_seq_bit_num_next = (swj_seq_bit_num >= 9'd64 ? (swj_seq_bit_num - 9'd64) : 9'd0);
+
+    reg [1:0] swd_seq_sm;
+    reg [7:0] swd_seq_count;
+    reg [7:0] swd_seq_info;
+    reg [3:0] swd_seq_recv_num;
+    reg [7:0] swd_seq_cmd;
+    reg [63:0] swd_seq_data;
+    wire [6:0] swd_seq_cycle = (dap_in_tdata[5:0] == 0) ? 7'd64 : dap_in_tdata[5:0];
+
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            seq_tx_cmd <= 0;
+            seq_tx_data <= 0;
+            seq_tx_valid <= 0;
+            swj_seq_bit_num <= 0;
+            swj_seq_sm <= 0;
+            swd_seq_sm <= 0;
+            seq_rx_nxt <= 0;
+            ram_write_en <= 0;
+            done <= 0;
+            packet_len <= 1'd0;
+            ram_write_data <= 9'd0;
+            ram_write_addr <= 8'd0;
+        end
+        else begin
+            buf64_start <= 1'd0;
+            seq_tx_valid <= 1'd0;
+            seq_rx_nxt <= 1'd0;
+            ram_write_en <= 1'd0;
+
+            if (start[`CMD_SWJ_SEQUENCE_SHIFT]) begin
+                case (swj_seq_sm)
+                    0: begin
+                        if (dap_in_tvalid) begin
+                            if (dap_in_tdata == 0) begin
+                                swj_seq_bit_num <= 9'd256;
+                                buf64_rbit_len <= 7'd64;
+                            end else begin
+                                swj_seq_bit_num <= dap_in_tdata;
+                                buf64_rbit_len <= dap_in_tdata > 8'd64 ? 7'd64 : dap_in_tdata[6:0];
+                            end
+                            buf64_start <= 1'd1;
+                            swj_seq_sm <= 1;
+                        end
+                    end
+
+                    1: begin
+                        if (buf64_finish) begin
+                            seq_tx_cmd <= {`SEQ_CMD_SWJ_SEQ, 6'd0, buf64_rbit_len};
+                            seq_tx_data <= buf64;
+                            seq_tx_valid <= 1'd1;
+
+                            swj_seq_bit_num <= swj_seq_bit_num_next;
+                            if (swj_seq_bit_num_next > 9'd64) begin
+                                buf64_rbit_len <= 7'd64; 
+                                buf64_start <= 1'd1;
+                            end else if (swj_seq_bit_num_next != 0) begin
+                                buf64_rbit_len <= swj_seq_bit_num_next[6:0]; 
+                                buf64_start <= 1'd1;
+                            end
+
+                            swj_seq_sm <= 2;
+                        end
+                    end
+                    2: begin
+                        if (seq_rx_valid) begin
+                            seq_rx_nxt <= 1'd1;
+                            if (swj_seq_bit_num == 0) begin
+                                swj_seq_sm <= 3;
+                                ram_write_addr <= 10'd0;
+                                ram_write_data <= 8'd0;
+                                packet_len <= 1'd1;
+                                ram_write_en <= 1'd1;
+                                done[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd1;
+                            end
+                            else begin
+                                swj_seq_sm <= 1;
+                            end
+                        end
+                    end
+                endcase
+            end
+            else begin
+                done[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd0;
+                swj_seq_sm <= 2'd0;
+            end
+
+
+            if (start[`CMD_SWD_SEQUENCE_SHIFT]) begin
+                case (swd_seq_sm)
+                    0: begin
+                        if (dap_in_tvalid) begin
+                            swd_seq_count <= dap_in_tdata;
+                            swd_seq_sm <= 1;
+                        end
+                    end
+                    1: begin
+                        if (dap_in_tvalid) begin
+                            swd_seq_cmd <= {dap_in_tdata[7], swd_seq_cycle};
+                            swd_seq_sm <= 4;
+                        end
+                    end
+                    2: begin // 等待发送完成
+                        if (seq_rx_valid) begin
+                            swd_seq_count <= swd_seq_count - 1;
+                            if (swd_seq_count == 1) begin
+                                swd_seq_sm <= 3;
+                            end
+                            else begin
+                                swd_seq_sm <= 1;
+                            end
+                        end
+                    end
+                    3: begin // done
+
+                    end
+
+
+                    4: begin
+                        if (dap_in_tvalid) begin
+                            swd_seq_data[{swd_seq_recv_num, 3'd0}+:8] <= dap_in_tdata;
+                            swd_seq_recv_num <= swd_seq_recv_num + 1;
+                            if (swd_seq_recv_num + 1 == ((swd_seq_cmd[6:0] + 3'd7) >> 3)) begin
+                                swd_seq_sm <= 2;
+                                seq_tx_cmd <= {SEQ_CMD_SWD_SEQ, 5'd0, swd_seq_cmd};
+                                seq_tx_data <= swd_seq_data;
+                                seq_tx_valid <= 1'd1;
+                            end
+                        end
+                    end
+                endcase
+
+
+
+            end
+            else begin
+                swd_seq_info <= 8'd0;
+            end
+
+        end
+    end
+
+    assign dap_in_tready[`CMD_SWJ_SEQUENCE_SHIFT] = ((swj_seq_sm == 0) || (swj_seq_sm == 1 && !seq_tx_full)) || buf64_tready;
+
+
+
+
+
+
 
     task AHB_WRITE_REG32;
         output [31:0] optreg;
