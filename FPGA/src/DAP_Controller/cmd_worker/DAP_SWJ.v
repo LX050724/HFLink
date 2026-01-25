@@ -165,7 +165,6 @@ module DAP_SWJ #(
     reg [63:0] seq_tx_data;
     reg seq_tx_valid;
     wire seq_tx_full;
-    reg seq_rx_nxt;
 
 
     DAP_Seqence dap_seqence_inst(
@@ -186,7 +185,6 @@ module DAP_SWJ #(
                     .seq_tx_full(seq_tx_full),
 
                     .seq_rx_valid(seq_rx_valid),
-                    .seq_rx_nxt(seq_rx_nxt),
                     .seq_rx_flag(seq_rx_flag),
                     .seq_rx_data(seq_rx_data),
 
@@ -207,15 +205,15 @@ module DAP_SWJ #(
 
     reg [7:0] buf64_reg [0:7]; // 64位串转并缓存
     wire [63:0] buf64 = {
-        buf64_reg[7],
-        buf64_reg[6],
-        buf64_reg[5],
-        buf64_reg[4],
-        buf64_reg[3],
-        buf64_reg[2],
-        buf64_reg[1],
-        buf64_reg[0]
-    };
+             buf64_reg[7],
+             buf64_reg[6],
+             buf64_reg[5],
+             buf64_reg[4],
+             buf64_reg[3],
+             buf64_reg[2],
+             buf64_reg[1],
+             buf64_reg[0]
+         };
 
     reg buf64_start;
     reg [6:0] buf64_rbit_len; // 设定的读取位数量
@@ -278,7 +276,6 @@ module DAP_SWJ #(
             swj_seq_bit_num <= 0;
             swj_seq_sm <= 0;
             swd_seq_sm <= 0;
-            seq_rx_nxt <= 0;
             ram_write_en <= 0;
             done <= 0;
             packet_len <= 1'd0;
@@ -288,7 +285,6 @@ module DAP_SWJ #(
         else begin
             buf64_start <= 1'd0;
             seq_tx_valid <= 1'd0;
-            seq_rx_nxt <= 1'd0;
             ram_write_en <= 1'd0;
 
             if (start[`CMD_SWJ_SEQUENCE_SHIFT]) begin
@@ -298,7 +294,8 @@ module DAP_SWJ #(
                             if (dap_in_tdata == 0) begin
                                 swj_seq_bit_num <= 9'd256;
                                 buf64_rbit_len <= 7'd64;
-                            end else begin
+                            end
+                            else begin
                                 swj_seq_bit_num <= dap_in_tdata;
                                 buf64_rbit_len <= dap_in_tdata > 8'd64 ? 7'd64 : dap_in_tdata[6:0];
                             end
@@ -309,16 +306,17 @@ module DAP_SWJ #(
 
                     1: begin
                         if (buf64_finish) begin
-                            seq_tx_cmd <= {`SEQ_CMD_SWJ_SEQ, 6'd0, buf64_rbit_len};
+                            seq_tx_cmd <= {`SEQ_CMD_SWJ_SEQ, 5'd0, buf64_rbit_len};
                             seq_tx_data <= buf64;
                             seq_tx_valid <= 1'd1;
 
                             swj_seq_bit_num <= swj_seq_bit_num_next;
                             if (swj_seq_bit_num_next > 9'd64) begin
-                                buf64_rbit_len <= 7'd64; 
+                                buf64_rbit_len <= 7'd64;
                                 buf64_start <= 1'd1;
-                            end else if (swj_seq_bit_num_next != 0) begin
-                                buf64_rbit_len <= swj_seq_bit_num_next[6:0]; 
+                            end
+                            else if (swj_seq_bit_num_next != 0) begin
+                                buf64_rbit_len <= swj_seq_bit_num_next[6:0];
                                 buf64_start <= 1'd1;
                             end
 
@@ -327,7 +325,6 @@ module DAP_SWJ #(
                     end
                     2: begin
                         if (seq_rx_valid) begin
-                            seq_rx_nxt <= 1'd1;
                             if (swj_seq_bit_num == 0) begin
                                 swj_seq_sm <= 3;
                                 ram_write_addr <= 10'd0;
@@ -403,7 +400,8 @@ module DAP_SWJ #(
         end
     end
 
-    assign dap_in_tready[`CMD_SWJ_SEQUENCE_SHIFT] = ((swj_seq_sm == 0) || (swj_seq_sm == 1 && !seq_tx_full)) || buf64_tready;
+    assign dap_in_tready[`CMD_SWJ_SEQUENCE_SHIFT] = ((swj_seq_sm == 0) || (swj_seq_sm == 1)) || buf64_tready;
+    assign dap_in_tready[`CMD_SWD_SEQUENCE_SHIFT] = ((swd_seq_sm == 0) || (swd_seq_sm == 1)) || buf64_tready;
 
 
 

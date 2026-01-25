@@ -46,23 +46,75 @@
 `define CMD_EXEC_CMD                14'b1?_????_????_????
 
 /**
- * SWJ SEQ
- * | 15 14 13 | 12 11 10  9  8 | 7  6  5  4  3  2  1  0 |
- * |  0  0  0 |  0  0  0  0  0 |   Sequence Bit Count   |
+ * SWJ_Sequence
+ * | 15 14 13 12 | 11 10  9  8  7 |  6  5  4  3  2  1  0 |
+ * |  0  0  0  0 |  0  0  0  0  0 |   Sequence Bit Count |
  * Sequence Bit Count [1-64]
  */
-`define SEQ_CMD_SWJ_SEQ             3'd0
+`define SEQ_CMD_SWJ_SEQ             4'd0
 
- /**
- * SWD SEQ
- * | 15 14 13 | 12 11 10  9  8 |    7  | 6  5  4  3  2  1  0 |
- * |  0  0  1 |  0  0  0  0  0 | mode  |   Number of cycles  |
+/**
+ * SWD_Sequence
+ * | 15 14 13 12 | 11 10  9  8 |    7 | 6  5  4  3  2  1  0 |
+ * |  0  0  0  1 |  0  0  0  0 | mode |    Number of cycles |
+ * mode 0: output; 1: input
  * Number of cycles [1-64]
  */
-`define SEQ_CMD_SWD_SEQ             3'd1
-`define SEQ_CMD_SWD_TRANSFER        3'd2
-`define SEQ_CMD_JTAG_SEQ            3'd3
-`define SEQ_CMD_JTAG_READID         3'd4
-`define SEQ_CMD_JTAG_ABORT          3'd5
-`define SEQ_CMD_JTAG_IR             3'd6
-`define SEQ_CMD_JTAG_TRANSFER       3'd7
+`define SEQ_CMD_SWD_SEQ             4'd1
+
+/**
+ * SWD_Transfer
+ * | 15 14 13 12 | 11 10  9  8  7  6 |          5 |           4 |  3 |  2 |   1 |     0 |
+ * |  0  0  1  0 |  0  0  0  0  0  0 | Match Mask | Value Match | A3 | A2 | RnW | APnDP |
+ */
+`define SEQ_CMD_SWD_TRANSFER        4'd2
+
+/**
+ * JTAG_Sequence
+ * | 15 14 13 12 | 11 10  9  8 |   7 | 6  5  4  3  2  1  0 |
+ * |  0  0  1  1 |  0  0  0  0 | TMS |   Number of cycles  |
+ * Number of cycles [1-64]
+ */
+`define SEQ_CMD_JTAG_SEQ            4'd3
+
+/**
+ * JTAG_IDCODE
+ * | 15 14 13 12 | 11 10  9 |    8  7  6 | 5 4 3 2 1 0 |
+ * |  0  1  0  0 |  0  0  0 | JTAG Index | 0 0 0 0 0 0 |
+ */
+`define SEQ_CMD_JTAG_IDCODE         4'd4
+
+/**
+ * JTAG_ABORT
+ * | 15 14 13 12 | 11 10  9 |    8  7  6 | 5 4 3 2 1 0 |
+ * |  0  1  0  1 |  0  0  0 | JTAG Index | 0 0 0 0 0 0 |
+ */
+`define SEQ_CMD_JTAG_ABORT          4'd5
+
+ /**
+  * JTAG_IR
+  * | 15 14 13 12 | 11 10  9 |    8  7  6 | 5 4 3 2 1 0 |
+  * |  0  1  1  0 |  0  0  0 | JTAG Index | 0 0 0 0 0 0 |
+  */
+`define SEQ_CMD_JTAG_IR             4'd6
+
+/**
+ * JTAG_Transfer
+ * | 15 14 13 12 | 11 10  9 |    8  7  6 |          5 |           4 |  3 |  2 |   1 |     0 |
+ * |  0  1  1  1 |  0  0  0 | JTAG Index | Match Mask | Value Match | A3 | A2 | RnW | APnDP |
+ */
+`define SEQ_CMD_JTAG_TRANSFER       4'd7
+
+/**
+ * SWJ_Pins
+ * | 15 14 13 12 | 11 10  9  8 | 7  6  5  4  3  2  1  0 |
+ * |  1  1  1  1 |  0  0  0  0 |             Pin Select |
+ * Pin Select:
+ *      [0] SWCLK/TCK
+ *      [1] SWDIO/TMS
+ *      [2] TDI
+ *      [3] TDO
+ *      [5] nTRST
+ *      [7] nRESET
+ */
+`define SEQ_CMD_SWJ_PINS                4'd15
