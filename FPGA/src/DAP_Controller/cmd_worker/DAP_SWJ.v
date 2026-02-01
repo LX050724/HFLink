@@ -486,6 +486,7 @@ module DAP_SWJ #(
                             end
                             else begin
                                 swd_seq_send_count <= swd_seq_send_count - 8'd1;
+                                swd_seq_send_sm <= 2'd0;
                             end
                         end
                     endcase

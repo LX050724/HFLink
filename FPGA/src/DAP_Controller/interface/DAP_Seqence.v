@@ -166,7 +166,7 @@ module DAP_Seqence (
 
                     if (sclk_delay_pulse && swd_seq_rx_count) begin
                         swd_seq_rx_count <= swd_seq_rx_count - 7'd1;
-                        rx_shift_reg <= {rx_shift_reg[63:1], SWDIO_TMS_I};
+                        rx_shift_reg <= {rx_shift_reg[62:0], SWDIO_TMS_I};
                     end
                 end
             endcase

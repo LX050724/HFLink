@@ -1,5 +1,22 @@
+from typing import List
 import usb.core
 import asyncio
+
+class DAP_SWD_Seqence:
+    DIR_OUTPUT = 0
+    DIR_INPUT = 0x80
+
+    def __init__(self, dir, bit_num: int, data: bytes):
+        self.dir = dir
+        self.bit_num = bit_num
+        self.data = data
+        self.byte_num = (bit_num + 7) // 8
+        if (bit_num == 64):
+            bit_num = 0
+        if dir == DAP_SWD_Seqence.DIR_OUTPUT:
+            self.cmd = int.to_bytes(bit_num & 0x1f | dir) + data
+        else:
+            self.cmd = int.to_bytes(bit_num & 0x1f | dir)
 
 
 
@@ -13,13 +30,14 @@ class DAP:
         self._dap_out_ep = dap_out_ep
         self._dap_in_ep = dap_in_ep
         self._dap_swo_ep = dap_swo_ep
-        self._read()
+        for _ in range(8):
+            self._read()
 
     def _write(self, data):
         print('->:', data.hex())
         return self._dev.write(self._dap_out_ep.bEndpointAddress, data)
     
-    def _read(self, n=512, timeout=1):
+    def _read(self, n=512, timeout=10):
         try:
             d = self._dev.read(self._dap_in_ep.bEndpointAddress, n, timeout=timeout)
             print('<-:', bytes(d).hex())
@@ -88,3 +106,22 @@ class DAP:
         self._read(timeout=int(time_us/1000*3))
         # self._read(timeout=1000)
     
+    def swj_seqence(self, bit_num: int, data: bytes):
+        byte_num = (bit_num + 7) // 8
+        if bit_num == 256:
+            bit_num = 0
+        self._write(b'\x12' + bit_num.to_bytes(1) + data[0:byte_num])
+        # self._read(2, 1000)
+
+    def swj_read(self):
+        self._read(2, 1000)
+
+    def swd_seqence(self, seq: List[DAP_SWD_Seqence]):
+        cmd = b'\x1d' + len(seq).to_bytes(1)
+        rd_len = 0
+        for item in seq:
+            cmd += item.cmd
+            if item.dir == DAP_SWD_Seqence.DIR_INPUT:
+                rd_len += item.byte_num
+        self._write(cmd)
+        self._read(2 + rd_len)
