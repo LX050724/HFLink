@@ -119,7 +119,7 @@ module DAP_USB_Packer#(
                 2'b00: begin // 无事发生
                 end
                 2'b01: begin // 弹出
-                    pack_queue_size <= pack_queue_size - 1;
+                    pack_queue_size <= pack_queue_size - 4'd1;
                     for (i = 0; i < (MAX_PACKET_NUM - 1); i=i+1) begin : shift_loop_1
                         pack_queue[i] <= pack_queue[i+1];
                     end

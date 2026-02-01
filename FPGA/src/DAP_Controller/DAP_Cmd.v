@@ -45,13 +45,6 @@
 `define CMD_EXEC_CMD_SHIFT          13
 `define CMD_EXEC_CMD                14'b1?_????_????_????
 
-/**
- * SWJ_Sequence
- * | 15 14 13 12 | 11 10  9  8  7 |  6  5  4  3  2  1  0 |
- * |  0  0  0  0 |  0  0  0  0  0 |   Sequence Bit Count |
- * Sequence Bit Count [1-64]
- */
-`define SEQ_CMD_SWJ_SEQ             4'd0
 
 /**
  * SWD_Sequence

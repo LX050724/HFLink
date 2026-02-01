@@ -38,6 +38,7 @@ module DAP_Seqence (
 
 
     reg [63:0] tx_shift_reg;
+    reg [63:0] rx_shift_reg;
 
     reg rx_valid;
     reg rx_valid2;
@@ -48,6 +49,7 @@ module DAP_Seqence (
     reg tx_valid_ff1;
     reg tx_valid_ff2;
     reg tx_valid;
+    reg tx_nxt;
     reg [15:0] tx_cmd;
     reg [63:0] tx_data;
     always @(posedge sclk or negedge resetn) begin
@@ -63,7 +65,7 @@ module DAP_Seqence (
                 tx_cmd <= seq_tx_cmd;
                 tx_data <= seq_tx_data;
             end
-            else begin
+            else if (tx_nxt) begin
                 tx_valid <= 1'd0;
             end
             tx_valid_ff1 <= seq_tx_valid;
@@ -94,65 +96,80 @@ module DAP_Seqence (
     assign SWCLK_TCK_O = clock_oen ? ~sclk_out : 1'd0;
 
     reg [31:0] MATCH_MASK;
-
-    reg [3:0] swj_seq_sm;
-    reg [7:0] swj_seq_count;
     reg swj_busy;
+
+    reg [1:0] swj_seq_sm;
+    reg [7:0] swj_seq_count;
+
+    reg swd_seq_sm;
+    reg [7:0] swd_seq_cmd;
+    reg [6:0] swd_seq_tx_count;
+    reg [6:0] swd_seq_rx_count;
 
     always @(posedge sclk or negedge resetn) begin
         if (!resetn) begin
-            swj_seq_sm <= 0;
             rx_valid <= 0;
             rx_valid2 <= 0;
-            swj_seq_count <= 0;
             tx_shift_reg <= 64'd0;
             clock_oen <= 0;
             rx_flag <= 0;
+            tx_nxt <= 1'd0;
             rx_data <= 64'd0;
-            swj_busy <= 1'd0;
             SWDIO_TMS_T <= 1'd1;
             SWDIO_TMS_O <= 1'd0;
             MATCH_MASK <= 32'd0;
+            swj_busy <= 1'd0;
+
+            swj_seq_sm <= 0;
+            swj_seq_count <= 0;
+
+            swd_seq_sm <= 1'd0;
+            swd_seq_cmd <= 8'd0;
+            swd_seq_tx_count <= 7'd0;
+            swd_seq_rx_count <= 7'd0;
         end
         else begin
             rx_valid2 <= rx_valid;
             if (rx_valid2)
                 rx_valid <= 1'd0;
 
-            case (swj_seq_sm)
-                0: begin
-                    if (tx_valid && current_cmd == `SEQ_CMD_SWJ_SEQ && swj_busy == 0) begin
-                        swj_seq_count <= tx_cmd[7:0];
+            case (swd_seq_sm)
+                1'd0: begin
+                    if (tx_valid && current_cmd == `SEQ_CMD_SWD_SEQ && swj_busy == 0) begin
+                        tx_nxt <= 1'd1;
                         tx_shift_reg <= tx_data;
-                        swj_busy <= 1'd1;
-                        SWDIO_TMS_T <= 1'd0; // TODO 是否需要turn周期
-                        swj_seq_sm <= 2;
+                        swd_seq_cmd <= tx_cmd;
+                        SWDIO_TMS_T <= tx_cmd[7];
+                        swd_seq_tx_count <= tx_cmd[6:0];
+                        swd_seq_rx_count <= tx_cmd[6:0];
+                        swd_seq_sm <= 2'd1;
                     end
                 end
-                1: begin
+                1'd1: begin
                     if (sclk_pulse) begin
-                        swj_seq_sm <= 1'd2;
-                    end
-                end
-                2: begin
-                    if (sclk_pulse) begin
-                        if (swj_seq_count == 0) begin
-                            clock_oen <= 1'd0; // 关闭时钟输出
-                            rx_flag <= 16'd0;
-                            rx_data <= 64'd0;
-                            rx_valid <= 1'd1; // 反馈
-                            swj_seq_sm <= 2'd0; // 复位状态机
-                            swj_busy <= 1'd0;
+                        if (swd_seq_tx_count) begin
+                            clock_oen <= 1'd1;
+                            swd_seq_tx_count <= swd_seq_tx_count - 7'd1;
+                            {tx_shift_reg[62:0], SWDIO_TMS_O} <= tx_shift_reg; // 移位输出
                         end
                         else begin
-                            clock_oen <= 1'd1;   // 开启时钟输出
-                            {tx_shift_reg[62:0], SWDIO_TMS_O} <= tx_shift_reg; // 移位输出
-                            swj_seq_count <= swj_seq_count - 1; // 计数递减
+                            clock_oen <= 1'd0; // 关闭时钟输出
+                            if (swd_seq_rx_count == 7'd0) begin
+                                rx_data <= rx_shift_reg;
+                                rx_flag <= swd_seq_cmd;
+                                rx_valid <= 1'd1;
+                                swd_seq_sm <= 1'd0;
+                                swj_busy <= 1'd0;
+                            end
                         end
+                    end
+
+                    if (sclk_delay_pulse && swd_seq_rx_count) begin
+                        swd_seq_rx_count <= swd_seq_rx_count - 7'd1;
+                        rx_shift_reg <= {rx_shift_reg[63:1], SWDIO_TMS_I};
                     end
                 end
             endcase
-
         end
     end
 
