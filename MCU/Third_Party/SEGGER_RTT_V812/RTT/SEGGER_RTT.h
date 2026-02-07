@@ -440,7 +440,7 @@ int     SEGGER_RTT_TerminalOut        (unsigned char TerminalId, const char* s);
 *
 **********************************************************************
 */
-int SEGGER_RTT_printf(unsigned BufferIndex, const char * sFormat, ...);
+int SEGGER_RTT_printf(unsigned BufferIndex, const char * sFormat, ...) __attribute__((format(printf, 2, 3)));
 int SEGGER_RTT_vprintf(unsigned BufferIndex, const char * sFormat, va_list * pParamList);
 
 #ifdef __cplusplus

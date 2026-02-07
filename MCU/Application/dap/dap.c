@@ -10,6 +10,7 @@
 static void dap_return_n_string(DAP_TypeDef *dap, const char *str);
 static void dap_get_info_handler(DAP_TypeDef *dap);
 static void dap_connect_handler(DAP_TypeDef *dap);
+static void dap_disconnect_handler(DAP_TypeDef *dap);
 static void dap_transfer_configure_handler(DAP_TypeDef *dap);
 static void dap_host_status_handler(DAP_TypeDef *dap);
 static void dap_swj_clock_handler(DAP_TypeDef *dap);
@@ -31,7 +32,9 @@ void dap_irq_handler(DAP_TypeDef *dap)
     case ID_DAP_Connect:
         dap_connect_handler(dap);
         break;
-    // case ID_DAP_Disconnect:
+    case ID_DAP_Disconnect:
+        dap_disconnect_handler(dap);
+        break;
     case ID_DAP_TransferConfigure:
         dap_transfer_configure_handler(dap);
         break;
@@ -122,6 +125,11 @@ static void dap_connect_handler(DAP_TypeDef *dap)
     if (port == 0)
         port = DAP_DEFAULT_PORT;
     dap_write_data(dap, port);
+}
+
+static void dap_disconnect_handler(DAP_TypeDef *dap)
+{
+    dap_write_data(dap, 0x00);
 }
 
 static void dap_swj_clock_handler(DAP_TypeDef *dap)

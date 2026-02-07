@@ -100,14 +100,7 @@
 
 /**
  * SWJ_Pins
- * | 15 14 13 12 | 11 10  9  8 | 7  6  5  4  3  2  1  0 |
- * |  1  1  1  1 |  0  0  0  0 |             Pin Select |
- * Pin Select:
- *      [0] SWCLK/TCK
- *      [1] SWDIO/TMS
- *      [2] TDI
- *      [3] TDO
- *      [5] nTRST
- *      [7] nRESET
+ * | 15 14 13 12 | 11 10  9  8  7  6  5  4  3  2  1  0 |
+ * |  1  1  1  1 |  0  0  0  0  0  0  0  0  0  0  0  0 |
  */
 `define SEQ_CMD_SWJ_PINS                4'd15

@@ -1,12 +1,12 @@
 from typing import List
 import usb.core
 import asyncio
-
+from io import BytesIO
 class DAP_SWD_Seqence:
     DIR_OUTPUT = 0
     DIR_INPUT = 0x80
 
-    def __init__(self, dir, bit_num: int, data: bytes):
+    def __init__(self, dir, bit_num: int, data: bytes|None=None):
         self.dir = dir
         self.bit_num = bit_num
         self.data = data
@@ -21,23 +21,42 @@ class DAP_SWD_Seqence:
 
 
 class DAP:
+    DAP_PORT_DEFAULT=0
+    DAP_PORT_SWD=1
+    DAP_PORT_JTAG=2
+
     def __init__(self, dev: usb.core.Device):
         cfg = dev.get_active_configuration()
         dap_intf = cfg[(0,0)]
         cdc_intf = cfg[(2,0)]
-        [dap_out_ep, dap_in_ep, dap_swo_ep] = dap_intf
+        dap_out_ep = dap_intf[0]
+        dap_in_ep = dap_intf[1]
         self._dev = dev
         self._dap_out_ep = dap_out_ep
         self._dap_in_ep = dap_in_ep
-        self._dap_swo_ep = dap_swo_ep
-        for _ in range(8):
+        self._dap_swo_ep = None
+        for _ in range(16):
             self._read()
 
+        self.exec_num = 0
+        self.exec_count = 0
+        self.exec_buffer = None
+
     def _write(self, data):
-        print('->:', data.hex())
-        return self._dev.write(self._dap_out_ep.bEndpointAddress, data)
+        if self.exec_count < self.exec_num:
+            r = self.exec_buffer.write(data)
+            self.exec_count += 1
+
+            if self.exec_count == self.exec_num:
+                data = self.exec_buffer.getvalue()
+                print('->:', data.hex())
+                self._dev.write(self._dap_out_ep, data)
+            return r
+        else:
+            print('->:', data.hex())
+            return self._dev.write(self._dap_out_ep.bEndpointAddress, data)
     
-    def _read(self, n=512, timeout=10):
+    def _read(self, n=512, timeout=50):
         try:
             d = self._dev.read(self._dap_in_ep.bEndpointAddress, n, timeout=timeout)
             print('<-:', bytes(d).hex())
@@ -95,8 +114,33 @@ class DAP:
     
     def get_max_packet_size(self):
         return int.from_bytes(self._DAP_Info(0xff), 'little')
-
     
+    def connect(self, port=DAP_PORT_DEFAULT):
+        self._write(b'\x02' + port.to_bytes(1))
+        return self._read(2)
+    
+    def disconnect(self):
+        self._write(b'\x03')
+        return self._read(2)
+    
+    def start_exec(self, num: int):
+        self.exec_num = num
+        self.exec_count = 0
+        self.exec_buffer = BytesIO()
+        self.exec_buffer.write(b'\x7f' + num.to_bytes(1))
+
+
+    def transfer_abort(self):
+        self._write(b'x07')
+
+    def swj_clock(self, clock: int):
+        self._write(b'\x11' + clock.to_bytes(4, 'little'))
+        return self._read(2)
+    
+    def swj_pins(self, output: int, select: int, delay_us: int):
+        self._write(b'\x10' + output.to_bytes() + select.to_bytes() + delay_us.to_bytes(4, 'little'))
+        return self._read(2)[1]
+
     def delay(self, time_us: int):
         self._write(b'\x09' + time_us.to_bytes(length=2, byteorder='little'))
         self._read(timeout=int(time_us/1000*3))
@@ -118,10 +162,16 @@ class DAP:
 
     def swd_seqence(self, seq: List[DAP_SWD_Seqence]):
         cmd = b'\x1d' + len(seq).to_bytes(1)
-        rd_len = 0
+        rd_len = 2
         for item in seq:
             cmd += item.cmd
             if item.dir == DAP_SWD_Seqence.DIR_INPUT:
                 rd_len += item.byte_num
+        if rd_len > 512:
+            raise RuntimeError("报文超长")
         self._write(cmd)
-        self._read(2 + rd_len)
+        # self._read(rd_len)
+        return rd_len
+
+    def read(self, n=512, timeout=10):
+        self._read(n, timeout)

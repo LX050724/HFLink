@@ -93,7 +93,8 @@ module DAP_Seqence (
     wire [3:0] current_cmd = tx_cmd[15:12];
 
     reg clock_oen;
-    assign SWCLK_TCK_O = clock_oen ? ~sclk_out : 1'd0;
+    reg clock_idle;
+    assign SWCLK_TCK_O = clock_oen ? ~sclk_out : clock_idle;
 
     reg [31:0] MATCH_MASK;
     reg swj_busy;
@@ -106,12 +107,32 @@ module DAP_Seqence (
     reg [6:0] swd_seq_tx_count;
     reg [6:0] swd_seq_rx_count;
 
+    reg swj_pin_sm;
+    reg [7:0] swj_pin_select_reg;
+    reg [7:0] swj_pin_output_reg;
+    reg [31:0] swj_us_cnt;
+    reg [7:0] swj_tick_cnt;
+    wire [7:0] swj_pin_output = seq_tx_data[7:0];
+    wire [7:0] swj_pin_select = seq_tx_data[15:8];
+    wire [31:0] swj_pin_delay = seq_tx_data[47:16];
+    wire [7:0] swj_pin_read = {
+             SRST_I,
+             1'd0,
+             TRST_I,
+             1'd0,
+             SWO_TDO_I,
+             TDI_O,
+             SWDIO_TMS_I,
+             SWCLK_TCK_O
+         };
+
     always @(posedge sclk or negedge resetn) begin
         if (!resetn) begin
             rx_valid <= 0;
             rx_valid2 <= 0;
             tx_shift_reg <= 64'd0;
-            clock_oen <= 0;
+            clock_oen <= 1'd0;
+            clock_idle <= 1'd1;
             rx_flag <= 0;
             tx_nxt <= 1'd0;
             rx_data <= 64'd0;
@@ -127,12 +148,19 @@ module DAP_Seqence (
             swd_seq_cmd <= 8'd0;
             swd_seq_tx_count <= 7'd0;
             swd_seq_rx_count <= 7'd0;
+
+            swj_pin_select_reg <= 8'd0;
+            swj_pin_output_reg <= 8'd0;
+            swj_pin_sm <= 1'd0;
+            swj_us_cnt <= 32'd0;
+            swj_tick_cnt <= 8'd0;
         end
         else begin
             rx_valid2 <= rx_valid;
             if (rx_valid2)
                 rx_valid <= 1'd0;
 
+            // SEQ_CMD_SWD_SEQ
             case (swd_seq_sm)
                 1'd0: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_SWD_SEQ && swj_busy == 0) begin
@@ -154,6 +182,7 @@ module DAP_Seqence (
                         end
                         else begin
                             clock_oen <= 1'd0; // 关闭时钟输出
+                            SWDIO_TMS_T <= 1'd1;
                             if (swd_seq_rx_count == 7'd0) begin
                                 rx_data <= rx_shift_reg;
                                 rx_flag <= swd_seq_cmd;
@@ -170,6 +199,72 @@ module DAP_Seqence (
                     end
                 end
             endcase
+
+            // SEQ_CMD_SWJ_PINS
+            case (swj_pin_sm)
+                0: begin
+                    if (tx_valid && current_cmd == `SEQ_CMD_SWJ_PINS && swj_busy == 0) begin
+                        // 位 0：SWCLK/TCK
+                        if (swj_pin_select[0]) begin
+                            clock_idle <= swj_pin_output[0];
+                        end
+
+                        // 位 1：SWDIO/TMS
+                        if (swj_pin_select[1]) begin
+                            SWDIO_TMS_T <= 1'd0;
+                            SWDIO_TMS_O <= swj_pin_output[1];
+                        end
+                        else begin
+                            SWDIO_TMS_T <= 1'd1;
+                        end
+
+                        // 位 2：TDI
+                        if (swj_pin_select[2]) begin
+                            TDI_O <= swj_pin_output[2];
+                        end
+
+                        // 位 5：nTRST
+                        if (swj_pin_select[5]) begin
+                            TRST_O <= swj_pin_output[5];
+                        end
+
+                        // 位 7：nRESET
+                        if (swj_pin_select[7]) begin
+                            SRST_O <= swj_pin_output[7];
+                        end
+
+                        swj_pin_select_reg <= swj_pin_select;
+                        swj_pin_output_reg <= swj_pin_output;
+                        swj_pin_sm <= 1'd1;
+                        swj_us_cnt <= swj_pin_delay;
+                        swj_tick_cnt <= 8'd0;
+                        swj_busy <= 1'd1;
+                        tx_nxt <= 1'd1;
+                    end
+                end
+
+                1: begin
+                    if (swj_tick_cnt < 8'd120) begin
+                        swj_tick_cnt <= swj_tick_cnt + 1'd1;
+                    end
+                    else begin
+                        swj_tick_cnt <= 8'd0;
+                        swj_us_cnt <= swj_us_cnt - 1'd1;
+                    end
+
+                    if (
+                        swj_us_cnt == 32'd0 ||
+                        (swj_pin_select_reg & (swj_pin_read ^ swj_pin_output_reg)) == 8'd0
+                    ) begin
+                        rx_data <= {56'd0, swj_pin_read};
+                        rx_flag <= 16'd0;
+                        rx_valid <= 1'd1;
+                        swj_pin_sm <= 1'd0;
+                        swj_busy <= 1'd0;
+                    end
+                end
+            endcase
+
         end
     end
 

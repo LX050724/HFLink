@@ -17,5 +17,5 @@ add_subdirectory(Firmware)
 add_subdirectory(Third_Party/SEGGER_RTT_V812)
 
 add_subdirectory(Application)
-add_subdirectory(Bootloader)
-add_subdirectory(FlashAlgo)
+# add_subdirectory(Bootloader)
+# add_subdirectory(FlashAlgo)

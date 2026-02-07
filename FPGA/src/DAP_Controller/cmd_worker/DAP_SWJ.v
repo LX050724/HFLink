@@ -313,6 +313,8 @@ module DAP_SWJ #(
     assign swd_seq_info_next[7] = dap_in_tdata[7];
     assign swd_seq_info_next[6:0] = (dap_in_tdata[5:0] == 0) ? 7'd64 : {1'd0, dap_in_tdata[5:0]};
 
+    reg [1:0] swj_pin_sm;
+
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
             seq_tx_cmd <= 16'd0;
@@ -336,6 +338,8 @@ module DAP_SWJ #(
             swd_seq_send_count <= 7'd0;
             swd_seq_send_data_byte <= 7'd0;
             swd_seq_send_data <= 64'd0;
+
+            swj_pin_sm <= 2'd0;
         end
         else begin
             buf64_start <= 1'd0;
@@ -504,16 +508,48 @@ module DAP_SWJ #(
                 swd_seq_send_sm <= 2'd0;
             end
 
+
+            if (start[`CMD_SWJ_PINS_SHIFT]) begin
+                case(swj_pin_sm)
+                    0: begin
+                        buf64_rbit_len <= 7'd48;
+                        buf64_start <= 1'd1;
+                        swj_pin_sm <= 2'd1;
+                    end
+                    1: begin
+                        if (buf64_finish) begin
+                            seq_tx_cmd <= {`SEQ_CMD_SWJ_PINS, 12'd0};
+                            seq_tx_data <= buf64;
+                            seq_tx_valid <= 1'd1;
+                            swj_pin_sm <= 2'd2;
+                        end
+                    end
+                    2: begin
+                        if (seq_rx_valid) begin
+                            done[`CMD_SWJ_PINS_SHIFT] <= 1'd1;
+                            ram_write_addr <= 10'd0;
+                            ram_write_data <= seq_rx_data[7:0];
+                            ram_write_en <= 1'd1;
+                            packet_len <= 1'd1;
+                            swj_pin_sm <= 2'd3;
+                        end
+                    end
+                endcase
+            end else begin
+                swj_pin_sm <= 2'd0;
+                done[`CMD_SWJ_PINS_SHIFT] <= 1'd0;
+            end
+
             if (!start || done) begin
                 ram_write_addr <= 10'd0;
                 ram_write_data <= 8'd0;
-                ram_write_en <= 1'd0;
             end
         end
     end
 
     assign dap_in_tready[`CMD_SWJ_SEQUENCE_SHIFT] = ((swj_seq_sm == 2'd0) || (swj_seq_sm == 2'd1)) || buf64_tready;
     assign dap_in_tready[`CMD_SWD_SEQUENCE_SHIFT] = (swd_seq_recv_sm == 2'd0) || buf64_tready;
+    assign dap_in_tready[`CMD_SWJ_PINS_SHIFT] = buf64_tready;
 
 
 
