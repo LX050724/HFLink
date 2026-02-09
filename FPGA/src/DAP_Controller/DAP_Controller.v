@@ -24,10 +24,6 @@ module DAP_Controller #(
 
         output wire intr,
 
-        input wire dap_in_tvalid,
-        output wire dap_in_tready,
-        input wire [7:0] dap_in_tdata,
-
         input [3:0] usb_endpt,
         input usb_txact,
         input usb_txpop,
@@ -35,6 +31,11 @@ module DAP_Controller #(
         output usb_txcork,
         output [7:0] usb_txdata,
         output [11:0] usb_txlen,
+        input [7:0] usb_rxdat,
+        input usb_rxval,
+        output usb_rxrdy,
+        input usb_rxact,
+        input usb_rxpktval,
 
         // 内部串口
         input LOC_UART_TX,
@@ -246,6 +247,9 @@ module DAP_Controller #(
         end
     end
 
+    wire dap_in_tvalid;
+    wire dap_in_tready;
+    wire [7:0] dap_in_tdata;
     reg [11:0] ram_write_addr;
     reg [7:0] ram_write_data;
     reg ram_write_en;
@@ -253,6 +257,22 @@ module DAP_Controller #(
     reg group_finish;
     reg packet_finish;
     wire packet_almost_full;
+
+    DAP_USB_Receiver dap_usb_receiver_inst (
+                         .clk(hclk),
+                         .resetn(hresetn),
+
+                         .usb_endpt(usb_endpt),
+                         .usb_rxdat(usb_rxdat),
+                         .usb_rxval(usb_rxval),
+                         .usb_rxrdy(usb_rxrdy),
+                         .usb_rxact(usb_rxact),
+                         .usb_rxpktval(usb_rxpktval),
+
+                         .axis_tvaild(dap_in_tvalid),
+                         .axis_tready(dap_in_tready),
+                         .axis_tdata(dap_in_tdata)
+                     );
 
     DAP_USB_Packer dap_usb_packer_inst (
                        .clk(hclk),
@@ -672,20 +692,6 @@ module DAP_Controller #(
              );
 
 
-    //  读DR无数据最多等待16周期
-    reg [4:0] read_dr_timeout;
-    always @(posedge hclk or negedge hresetn) begin
-        if (!hresetn) begin
-            read_dr_timeout <= 5'd0;
-        end else begin
-            if (AHB_READ_DR && !dap_in_tvalid) begin
-                read_dr_timeout <= read_dr_timeout + 1'd1;
-            end else begin
-                read_dr_timeout <= 5'd0;
-            end
-        end
-    end
-
     always @(*) begin
         if (read_en) begin
             casez (addr[ADDRWIDTH-1:2])
@@ -703,7 +709,7 @@ module DAP_Controller #(
                 end
                 DAP_DR_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = {23'd0, dap_in_tvalid, dap_in_tdata};
-                    hreadyouts = dap_in_tvalid | read_dr_timeout[4];
+                    hreadyouts = 1'd1;
                 end
                 DAP_CURCMD_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = {24'd0, processing_cmd};

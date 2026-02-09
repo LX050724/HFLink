@@ -66,6 +66,10 @@ module DAP_SWJ #(
     localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF6_ADDR = BASE_ADDR + 12'h024;  // RW
     localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF7_ADDR = BASE_ADDR + 12'h028;  // RW
 
+    localparam [1:0] SEQ_STATUS_IDLE = 2'd0;
+    localparam [1:0] SEQ_STATUS_BUSY = 2'd1;
+    localparam [1:0] SEQ_STATUS_DONE = 2'd2;
+
     reg [31:0] SWJ_CR;
 
     reg [8:0] SWJ_SWD_CR;
@@ -266,14 +270,14 @@ module DAP_SWJ #(
         end
         else if (start) begin
             case (seq_status_reg)
-                2'd0, 2'd2: begin // 未启动状态，传输完成状态
+                SEQ_STATUS_IDLE, SEQ_STATUS_DONE: begin // 未启动状态，传输完成状态
                     if (seq_tx_valid) begin
-                        seq_status_reg <= 2'd1;
+                        seq_status_reg <= SEQ_STATUS_BUSY;
                     end
                 end
-                2'd1: begin // 正在传输状态
+                SEQ_STATUS_BUSY: begin // 正在传输状态
                     if (seq_rx_valid) begin
-                        seq_status_reg <= 2'd2;
+                        seq_status_reg <= SEQ_STATUS_DONE;
                     end
                 end
             endcase
@@ -287,13 +291,13 @@ module DAP_SWJ #(
     always @(*) begin
         if (start) begin
             case (seq_status_reg) /*synthesis full_case*/
-                2'd0, 2'd2:
-                    seq_status = seq_tx_valid ? 2'd1 : seq_status_reg;
-                2'd1:
-                    seq_status = seq_rx_valid ? 2'd2 : seq_status_reg;
+                SEQ_STATUS_IDLE, SEQ_STATUS_DONE:
+                    seq_status = seq_tx_valid ? SEQ_STATUS_BUSY : seq_status_reg;
+                SEQ_STATUS_BUSY:
+                    seq_status = seq_rx_valid ? SEQ_STATUS_DONE : seq_status_reg;
             endcase
         end else begin
-            seq_status = 2'd0;
+            seq_status = SEQ_STATUS_IDLE;
         end
     end
 
@@ -429,7 +433,7 @@ module DAP_SWJ #(
                                     buf64_start <= 1'd1;
                                     swd_seq_recv_sm <= 2'd1;
                                 end
-                                else if (seq_status != 2'd1) begin // trans空闲触发
+                                else if (seq_status != SEQ_STATUS_BUSY) begin // trans空闲触发
                                     swd_seq_recv_count <= swd_seq_recv_count - 8'd1;
                                     seq_tx_cmd <= {`SEQ_CMD_SWD_SEQ, 4'd0, swd_seq_info_next};
                                     seq_tx_data <= buf64;
@@ -446,7 +450,7 @@ module DAP_SWJ #(
                         end
 
                         1: begin // 接收数据段
-                            if (buf64_finish && seq_status != 2'd1) begin
+                            if (buf64_finish && seq_status != SEQ_STATUS_BUSY) begin
                                 swd_seq_recv_count <= swd_seq_recv_count - 8'd1;
                                 seq_tx_cmd <= {`SEQ_CMD_SWD_SEQ, 4'd0, swd_seq_info};
                                 seq_tx_data <= buf64;
@@ -456,13 +460,9 @@ module DAP_SWJ #(
                                     swd_seq_recv_sm <= 2'd3; // 最后一个
                                 end
                                 else begin
-                                    swd_seq_recv_sm <= 2'd2;
+                                    swd_seq_recv_sm <= 2'd0;
                                 end
                             end
-                        end
-
-                        2: begin // TODO: 高云USB FIFO有BUG，一个周期的ready低电平无效
-                            swd_seq_recv_sm <= 2'd0;
                         end
                     endcase
 
@@ -547,7 +547,7 @@ module DAP_SWJ #(
         end
     end
 
-    assign dap_in_tready[`CMD_SWJ_SEQUENCE_SHIFT] = ((swj_seq_sm == 2'd0) || (swj_seq_sm == 2'd1)) || buf64_tready;
+    assign dap_in_tready[`CMD_SWJ_SEQUENCE_SHIFT] = (swj_seq_sm == 2'd0) || buf64_tready;
     assign dap_in_tready[`CMD_SWD_SEQUENCE_SHIFT] = (swd_seq_recv_sm == 2'd0) || buf64_tready;
     assign dap_in_tready[`CMD_SWJ_PINS_SHIFT] = buf64_tready;
 

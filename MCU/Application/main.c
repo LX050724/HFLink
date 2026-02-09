@@ -109,7 +109,7 @@ int main()
     dap_baud_set_delay(DAP, 0);
     dap_baud_start(DAP);
 
-    DAP->GPIO.TCK_DELAY = 175;
+    DAP->GPIO.TCK_DELAY = 60; // 750ps
     
     GPIO_SetBit(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
     GPIO_SetOutEnable(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);

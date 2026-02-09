@@ -207,6 +207,11 @@ module HFLink_TOP(
     wire ext_usb_txcork;
     wire [7:0] ext_usb_txdata;
     wire [11:0] ext_usb_txlen;
+    wire [7:0] ext_usb_rxdat;
+    wire ext_usb_rxval;
+    wire ext_usb_rxrdy;
+    wire ext_usb_rxact;
+    wire ext_usb_rxpktval;
 
 
     AHB_USBDevice u_usb0 (
@@ -238,10 +243,12 @@ module HFLink_TOP(
                       .ext_usb_txcork(ext_usb_txcork),
                       .ext_usb_txdata(ext_usb_txdata),
                       .ext_usb_txlen(ext_usb_txlen),
+                      .ext_usb_rxdat(ext_usb_rxdat),
+                      .ext_usb_rxval(ext_usb_rxval),
+                      .ext_usb_rxrdy(ext_usb_rxrdy),
+                      .ext_usb_rxact(ext_usb_rxact),
+                      .ext_usb_rxpktval(ext_usb_rxpktval),
 
-                      .winusb_out_tready(winusb_out_tready),
-                      .winusb_out_tvalid(winusb_out_tvalid),
-                      .winusb_out_tdata(winusb_out_tdata),
                       .cdc_in_tvalid(cdc_in_tvalid),
                       .cdc_in_tdata(cdc_in_tdata),
                       .cdc_out_tready(cdc_out_tready),
@@ -306,10 +313,6 @@ module HFLink_TOP(
 
                        .dap_clk(clkout1),
 
-                       .dap_in_tvalid(winusb_out_tvalid),
-                       .dap_in_tready(winusb_out_tready),
-                       .dap_in_tdata(winusb_out_tdata),
-
                        .usb_endpt(ext_usb_endpt),
                        .usb_txact(ext_usb_txact),
                        .usb_txpop(ext_usb_txpop),
@@ -317,6 +320,11 @@ module HFLink_TOP(
                        .usb_txcork(ext_usb_txcork),
                        .usb_txdata(ext_usb_txdata),
                        .usb_txlen(ext_usb_txlen),
+                       .usb_rxdat(ext_usb_rxdat),
+                       .usb_rxval(ext_usb_rxval),
+                       .usb_rxrdy(ext_usb_rxrdy),
+                       .usb_rxact(ext_usb_rxact),
+                       .usb_rxpktval(ext_usb_rxpktval),
 
                        .intr(intr[1]),
 

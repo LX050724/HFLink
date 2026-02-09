@@ -9,8 +9,8 @@ class DAP_SWD_Seqence:
     def __init__(self, dir, bit_num: int, data: bytes|None=None):
         self.dir = dir
         self.bit_num = bit_num
-        self.data = data
         self.byte_num = (bit_num + 7) // 8
+        self.data = data[0:self.byte_num]
         if (bit_num == 64):
             bit_num = 0
         if dir == DAP_SWD_Seqence.DIR_OUTPUT:

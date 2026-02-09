@@ -253,8 +253,8 @@ module DAP_Seqence (
                     end
 
                     if (
-                        swj_us_cnt == 32'd0 ||
-                        (swj_pin_select_reg & (swj_pin_read ^ swj_pin_output_reg)) == 8'd0
+                        (swj_us_cnt == 32'd0) ||
+                        ((swj_pin_select_reg & (swj_pin_read ^ swj_pin_output_reg)) == 8'd0)
                     ) begin
                         rx_data <= {56'd0, swj_pin_read};
                         rx_flag <= 16'd0;

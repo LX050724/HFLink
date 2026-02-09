@@ -37,10 +37,13 @@ module AHB_USBDevice #(
         input [7:0] ext_usb_txdata,
         input [11:0] ext_usb_txlen,
 
+        output [7:0] ext_usb_rxdat,
+        output ext_usb_rxval,
+        input ext_usb_rxrdy,
+        output ext_usb_rxact,
+        output ext_usb_rxpktval,
+
         // 数据AxisStream
-        input winusb_out_tready,
-        output winusb_out_tvalid,
-        output [7:0] winusb_out_tdata,
         input cdc_in_tvalid,
         input [7:0] cdc_in_tdata,
         input cdc_out_tready,
@@ -350,6 +353,8 @@ module AHB_USBDevice #(
 
 
     localparam ENDPT0 = 4'd0;
+    localparam ENDPT1 = 4'd1;
+    localparam ENDPT2 = 4'd2;
 
     wire endpt0_txval;
     wire [7:0] endpt0_dat;
@@ -378,12 +383,40 @@ module AHB_USBDevice #(
     wire ep_usb_txcork;
     wire endpt0_rxrdy;
 
+    wire fifo_ep_usb_txcork;
+    wire [11:0] fifo_ep_usb_txlen;
+    wire [7:0] fifo_ep_usb_txdat;
+
+    wire endpt_sel_ep1 = (endpt_sel == ENDPT1);
+
+
 
     /* 根据USB端点号选通数据线 */
-    assign usb_rxrdy     = (endpt_sel == ENDPT0) ? endpt0_rxrdy : ep_usb_rxrdy;
-    assign usb_txcork    = (endpt_sel == ENDPT0) ? 1'd0 : ep_usb_txcork;
-    assign usb_txdat     = (endpt_sel == ENDPT0) ? endpt0_dat : ep_usb_txdat;
-    assign usb_txdat_len = (endpt_sel == ENDPT0) ? endpt0_txdat_len : ep_usb_txlen;
+    assign usb_rxrdy     = (endpt_sel == ENDPT0) ? endpt0_rxrdy : 
+                           (endpt_sel == ENDPT2) ? ext_usb_rxrdy : 
+                                                   ep_usb_rxrdy;
+
+    assign usb_txcork    = (endpt_sel == ENDPT0) ? 1'd0 : 
+                           (endpt_sel == ENDPT1) ? ext_usb_txcork :
+                                                   ep_usb_txcork;
+
+    assign usb_txdat     = (endpt_sel == ENDPT0) ? endpt0_dat : 
+                           (endpt_sel == ENDPT1) ? ext_usb_txdata : 
+                                                   ep_usb_txdat;
+
+    assign usb_txdat_len = (endpt_sel == ENDPT0) ? endpt0_txdat_len : 
+                           (endpt_sel == ENDPT1) ? ext_usb_txlen : 
+                                                   ep_usb_txlen;
+
+    assign ext_usb_endpt = endpt_sel;
+    assign ext_usb_txact = usb_txact;
+    assign ext_usb_txpop = usb_txpop;
+    assign ext_usb_txpktfin = usb_txpktfin;
+    assign ext_usb_rxdat = usb_rxdat;
+    assign ext_usb_rxval = usb_rxval;
+    assign ext_usb_rxact = usb_rxact;
+    assign ext_usb_rxpktval = usb_rxpktval;
+
 
     // /* INF接口选择 */
     reg [7:0] interface_alter[3:0];
@@ -586,20 +619,6 @@ module AHB_USBDevice #(
     assign endpt0_txdat_len = endpt0_txdat_len_r;
     assign endpt0_txval = !ep0_tx_fifo_empty;
 
-    
-    wire fifo_ep_usb_txcork;
-    wire [11:0] fifo_ep_usb_txlen;
-    wire [7:0] fifo_ep_usb_txdat;
-
-    wire endpt_sel_ep1 = (endpt_sel == 4'd1);
-
-    assign ext_usb_endpt = endpt_sel;
-    assign ext_usb_txact = usb_txact;
-    assign ext_usb_txpop = usb_txpop;
-    assign ext_usb_txpktfin = usb_txpktfin;
-    assign ep_usb_txcork = endpt_sel_ep1 ? ext_usb_txcork : fifo_ep_usb_txcork;
-    assign ep_usb_txlen = endpt_sel_ep1 ? ext_usb_txlen : fifo_ep_usb_txlen;
-    assign ep_usb_txdat = endpt_sel_ep1 ? ext_usb_txdata : fifo_ep_usb_txdat;
 
 
     usb_fifo usb_fifo_u (
@@ -617,12 +636,6 @@ module AHB_USBDevice #(
                  .o_usb_txcork(fifo_ep_usb_txcork),
                  .o_usb_txlen(fifo_ep_usb_txlen),
                  .o_usb_txdat(fifo_ep_usb_txdat),
-
-                 // WinUSB OUT
-                 .i_ep2_rx_clk(hclk),
-                 .i_ep2_rx_rdy(winusb_out_tready),
-                 .o_ep2_rx_dval(winusb_out_tvalid),
-                 .o_ep2_rx_data(winusb_out_tdata),
 
                  // SWO IN
                  .i_ep6_rx_clk(hclk),
