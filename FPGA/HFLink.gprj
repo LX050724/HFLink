@@ -14,6 +14,7 @@
         <File path="src/DAP_Controller/interface/DAP_GPIO.v" type="file.verilog" enable="1"/>
         <File path="src/DAP_Controller/interface/DAP_Seqence.v" type="file.verilog" enable="1"/>
         <File path="src/DAP_Controller/interface/DAP_USB_Packer.v" type="file.verilog" enable="1"/>
+        <File path="src/DAP_Controller/interface/DAP_USB_Receiver.v" type="file.verilog" enable="1"/>
         <File path="src/fifo_sc_top/fifo_sc_top.v" type="file.verilog" enable="1"/>
         <File path="src/fifo_top/fifo_top.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_dpb/gowin_dpb.v" type="file.verilog" enable="1"/>

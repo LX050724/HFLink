@@ -58,6 +58,7 @@ module DAP_Seqence (
             tx_valid_ff2 <= 1'd0;
             tx_cmd <= 16'd0;
             tx_data <= 64'd0;
+            tx_valid <= 1'd0;
         end
         else begin
             if (tx_valid_ff1 == 1 && tx_valid_ff2 == 0) begin
@@ -130,6 +131,7 @@ module DAP_Seqence (
         if (!resetn) begin
             rx_valid <= 0;
             rx_valid2 <= 0;
+            rx_shift_reg <= 64'd0;
             tx_shift_reg <= 64'd0;
             clock_oen <= 1'd0;
             clock_idle <= 1'd1;
@@ -156,6 +158,7 @@ module DAP_Seqence (
             swj_tick_cnt <= 8'd0;
         end
         else begin
+            tx_nxt <= 1'd0;
             rx_valid2 <= rx_valid;
             if (rx_valid2)
                 rx_valid <= 1'd0;

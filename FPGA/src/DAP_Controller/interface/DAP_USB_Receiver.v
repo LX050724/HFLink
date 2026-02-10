@@ -30,7 +30,7 @@ module DAP_USB_Receiver #(
 
 
     wire [12:0] fifo_ext_wptr = fifo_wptr + 13'd512;
-    assign fifo_full = (fifo_ext_wptr[12] ^ fifo_rptr[12]) && (fifo_ext_wptr[11:0] == fifo_rptr[11:0]);
+    assign fifo_full = (fifo_ext_wptr[12] ^ fifo_rptr[12]) && (fifo_ext_wptr[11:0] >= fifo_rptr[11:0]);
     assign fifo_empty = (fifo_wptr == fifo_rptr);
     assign usb_rxrdy = !fifo_full;
     

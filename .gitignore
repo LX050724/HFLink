@@ -49,3 +49,7 @@ FPGA/HFLink.gprj.user
 /Hardware/plus/GERBER
 *.html
 Hardware/plus/HFLink_Plus.step
+
+*.ninja_log
+*.wave
+*.vcd
