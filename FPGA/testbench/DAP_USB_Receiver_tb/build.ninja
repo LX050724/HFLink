@@ -6,5 +6,5 @@ rule vvp
 
 build .wave: compile DAP_USB_Reveiver_tb.v ../../src/DAP_Controller/interface/DAP_USB_Receiver.v
 
-build test.vcd: vvp .wave
+build all: vvp .wave
 
