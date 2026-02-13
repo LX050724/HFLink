@@ -1,5 +1,7 @@
 module DAP_USB_Receiver #(
-        parameter [3:0] P_ENDPOINT = 4'd2
+        parameter [3:0] P_ENDPOINT = 4'd2,
+        parameter integer FIFO_DEPTH = 4096,
+        parameter integer FIFO_BUFFER_LEN = 512
     ) (
         input clk,
         input resetn,
@@ -18,15 +20,19 @@ module DAP_USB_Receiver #(
         output axis_tvaild,
         input axis_tready
     );
+
+    localparam FIFO_ADDR_LEN = $clog2(FIFO_DEPTH);
+
     wire ep_selected = (P_ENDPOINT == usb_endpt);
     wire usb_rx_active = usb_rxact & ep_selected;
     wire usb_rx_valid = usb_rxval & ep_selected;
-    reg [7:0] ram [0:4095];
+    wire usb_rx_pktval = usb_rxpktval & ep_selected;
+    reg [7:0] ram [0:FIFO_DEPTH-1];
 
-    reg [12:0] fifo_wptr;
-    reg [12:0] fifo_wptr_tmp;
-    reg [12:0] fifo_rptr;
-    wire [12:0] fifo_rptr_next = fifo_rptr + 1'd1;
+    reg [FIFO_ADDR_LEN:0] fifo_wptr;
+    reg [FIFO_ADDR_LEN:0] fifo_wptr_tmp;
+    reg [FIFO_ADDR_LEN:0] fifo_rptr;
+    wire [FIFO_ADDR_LEN:0] fifo_rptr_next = fifo_rptr + 1'd1;
 
 
     wire [12:0] fifo_ext_wptr = fifo_wptr + 13'd512;
@@ -43,9 +49,9 @@ module DAP_USB_Receiver #(
 
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
-            fifo_wptr <= 12'd0;
-            fifo_wptr_tmp <= 12'd0;
-            fifo_rptr <= 12'd0;
+            fifo_wptr <= {(FIFO_ADDR_LEN+1){1'd0}};
+            fifo_wptr_tmp <= {(FIFO_ADDR_LEN+1){1'd0}};
+            fifo_rptr <= {(FIFO_ADDR_LEN+1){1'd0}};
             usb_rx_active_store <= 1'd0;
             axis_tdata <= 8'd0;
         end
@@ -56,20 +62,20 @@ module DAP_USB_Receiver #(
                 fifo_wptr_tmp <= fifo_wptr;
             end
 
-            if (ep_selected && usb_rxpktval) begin
+            if (usb_rx_pktval) begin
                 fifo_wptr <= fifo_wptr_tmp;
             end
 
-            if (usb_rx_valid) begin
-                ram[fifo_wptr_tmp[11:0]] <= usb_rxdat;
+            if (usb_rx_valid && !fifo_full) begin
+                ram[fifo_wptr_tmp[FIFO_ADDR_LEN-1:0]] <= usb_rxdat;
                 fifo_wptr_tmp <= fifo_wptr_tmp + 1'd1;
             end
 
             if (fifo_read_en) begin
                 fifo_rptr <= fifo_rptr_next;
-                axis_tdata <= ram[fifo_rptr_next[11:0]];
+                axis_tdata <= ram[fifo_rptr_next[FIFO_ADDR_LEN-1:0]];
             end else begin
-                axis_tdata <= ram[fifo_rptr[11:0]];
+                axis_tdata <= ram[fifo_rptr[FIFO_ADDR_LEN-1:0]];
             end
 
         end

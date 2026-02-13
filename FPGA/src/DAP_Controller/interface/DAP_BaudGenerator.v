@@ -25,6 +25,7 @@ module DAP_BaudGenerator#(
     reg [31:0] REG_CR;
 
     wire REG_CR_CEN = REG_CR[0];
+    wire REG_CR_SAMPLINE_EDGE = REG_CR[1]; // 0：上升沿采样；1：下降沿采样
     reg [15:0] REG_TIMING_DIV;
     reg [2:0] REG_TIMING_DELAY;
 

@@ -97,8 +97,8 @@ module DAP_Seqence (
     reg clock_idle;
     assign SWCLK_TCK_O = clock_oen ? ~sclk_out : clock_idle;
 
-    reg [31:0] MATCH_MASK;
     reg swj_busy;
+    reg delay_clk_en;
 
     reg [1:0] swj_seq_sm;
     reg [7:0] swj_seq_count;
@@ -127,6 +127,23 @@ module DAP_Seqence (
              SWCLK_TCK_O
          };
 
+    reg [3:0] swd_trans_sm;
+    reg [7:0] swd_turn_cycle;
+    reg [7:0] swd_turn_cnt;
+    reg swd_req_RnW;
+    reg [2:0] swd_ack_reg;
+    wire [7:0] swd_req_head = {
+        1'd1,                                           // park
+        1'd0,                                           // stop
+        tx_cmd[0] ^ tx_cmd[1] ^ tx_cmd[2] ^ tx_cmd[3],  // parity
+        tx_cmd[3:2],                                    // A[3:2]
+        tx_cmd[1],                                      // RnW
+        tx_cmd[0],                                      // APnDP
+        1'd1                                            // start
+    };
+
+    wire sclk_delay_pulse_en = (delay_clk_en || sclk_pulse) && sclk_delay_pulse;
+
     always @(posedge sclk or negedge resetn) begin
         if (!resetn) begin
             rx_valid <= 0;
@@ -139,10 +156,13 @@ module DAP_Seqence (
             tx_nxt <= 1'd0;
             rx_data <= 64'd0;
             SWDIO_TMS_T <= 1'd1;
-            SWDIO_TMS_O <= 1'd0;
-            MATCH_MASK <= 32'd0;
+            SWDIO_TMS_O <= 1'd1;
+            TDI_O <= 1'd1;
+            SRST_O <= 1'd1;
+            TRST_O <= 1'd1;
             swj_busy <= 1'd0;
-
+            delay_clk_en <= 1'd0;
+            
             swj_seq_sm <= 0;
             swj_seq_count <= 0;
 
@@ -156,12 +176,21 @@ module DAP_Seqence (
             swj_pin_sm <= 1'd0;
             swj_us_cnt <= 32'd0;
             swj_tick_cnt <= 8'd0;
+
+            swd_trans_sm <= 4'd0;
+            swd_turn_cycle <= 8'd0;
+            swd_ack_reg <= 3'd0;
+            swd_turn_cnt <= 8'd0;
+            swd_req_RnW <= 1'd0;
         end
         else begin
             tx_nxt <= 1'd0;
             rx_valid2 <= rx_valid;
             if (rx_valid2)
                 rx_valid <= 1'd0;
+            
+            if (sclk_pulse)
+                delay_clk_en <= 1'd1;
 
             // SEQ_CMD_SWD_SEQ
             case (swd_seq_sm)
@@ -267,6 +296,105 @@ module DAP_Seqence (
                     end
                 end
             endcase
+
+            // SEQ_CMD_SWD_TRANSFER
+            case (swd_trans_sm)
+                0: begin
+                    if (tx_valid && current_cmd == `SEQ_CMD_SWD_TRANSFER && swj_busy == 0) begin
+                        tx_nxt <= 1'd1;
+                        swj_busy <= 1'd1;
+                        tx_shift_reg <= {1'd0, tx_data[31:0], swd_req_head};
+                        swd_turn_cycle <= 0;
+                        swd_req_RnW <= tx_cmd[1];
+                        swd_turn_cnt <= 8'd0;
+                        swd_trans_sm <= 1'd1;
+                        SWDIO_TMS_T <= 1'd0;
+                    end
+                end
+
+                1,2,3,4,5,6,7,8: begin // requset
+                    if (sclk_pulse) begin
+                        clock_oen <= 1;
+                        swd_trans_sm <= swd_trans_sm + 1'd1;
+                        {tx_shift_reg[62:0], SWDIO_TMS_O} <= tx_shift_reg; // 移位输出
+                    end
+                end
+
+                9: begin // turn1
+                    if (sclk_pulse) begin
+                        SWDIO_TMS_O <= 1'd1;
+                        SWDIO_TMS_T <= 1'd1;
+                        swd_turn_cnt <= swd_turn_cnt + 1'd1;
+                        if (swd_turn_cnt == swd_turn_cycle) begin
+                            swd_turn_cnt <= 8'd0;
+                            swd_trans_sm <= 10;
+                        end
+                    end
+                    delay_clk_en <= 0;
+                end
+
+                10, 11, 12: begin // ACK
+                    if (sclk_delay_pulse_en) begin
+                        swd_ack_reg <= {SWDIO_TMS_I, swd_ack_reg[2:1]};
+                        swd_trans_sm <= swd_trans_sm + 1'd1;
+                        delay_clk_en <= 0;
+                    end
+                end
+
+                13: begin // turn2
+                    // TODO 考虑采样时刻？
+                    if (sclk_pulse) begin
+                        SWDIO_TMS_O <= 1'd1;
+                        SWDIO_TMS_T <= 1'd0;
+                        swd_turn_cnt <= swd_turn_cnt + 1'd1;
+                        if (swd_turn_cnt == swd_turn_cycle) begin
+                            if (swd_ack_reg == 3'b001 || 1) begin
+                                swd_turn_cnt <= 8'd0;
+                                swd_trans_sm <= 14;
+                            end else begin
+                                swd_trans_sm <= 15;
+                            end
+                        end
+                    end
+                    
+                end
+
+                14: begin // 数据段
+                    if (swd_req_RnW) begin
+                        if (sclk_delay_pulse_en) begin
+                            rx_shift_reg <= {rx_shift_reg[62:0], SWDIO_TMS_I};
+                            swd_turn_cnt <= swd_turn_cnt + 1'd1;
+                            if (swd_turn_cnt == 8'd32) begin
+                                swd_turn_cnt <= 8'd0;
+                                swd_trans_sm <= 15;
+                            end
+                        end
+                    end
+                    else begin
+                        if (sclk_pulse) begin
+                            {tx_shift_reg[62:0], SWDIO_TMS_O} <= tx_shift_reg; // 移位输出
+                            swd_turn_cnt <= swd_turn_cnt + 1'd1;
+                            if (swd_turn_cnt == 8'd32) begin
+                                swd_turn_cnt <= 8'd0;
+                                swd_trans_sm <= 15;
+                            end
+                        end
+                    end
+                end
+
+                15: begin //end
+                    if (sclk_pulse) begin
+                        clock_oen <= 1'd0; // 关闭时钟输出
+                        SWDIO_TMS_T <= 1'd1;
+                        rx_data <= rx_shift_reg;
+                        rx_flag <= {13'd0, swd_ack_reg};
+                        rx_valid <= 1'd1;
+                        swd_trans_sm <= 1'd0;
+                        swj_busy <= 1'd0;
+                    end
+                end
+            endcase
+
 
         end
     end

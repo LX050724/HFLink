@@ -573,7 +573,7 @@ module DAP_Controller #(
 
     assign dap_in_tready = DAP_CR_EN & (fist_decoder_tready | worker_tready | AHB_READ_DR);
 
-    wire DAP_IN_BYPASS_ACTIVE = DAP_CR_EN & dap_in_tvalid & !cmd_decoder_reslut[`CMD_TRANSFER_ABORT_SHIFT];
+    wire DAP_IN_BYPASS_ACTIVE = DAP_CR_EN & dap_in_tvalid & (dap_in_tdata != 8'h07);
 
     // 输出管道路由
     always @(*) begin
