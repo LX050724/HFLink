@@ -230,7 +230,7 @@ module DAP_Seqence (
 
                     if (sclk_sampling && swd_seq_rx_count) begin
                         swd_seq_rx_count <= swd_seq_rx_count - 7'd1;
-                        rx_shift_reg <= {SWDIO_TMS_I, rx_shift_reg[63:1]};
+                        rx_shift_reg[swd_seq_rx_count] <= SWDIO_TMS_I;
                     end
                 end
             endcase
@@ -377,7 +377,7 @@ module DAP_Seqence (
                                 swd_trans_sm <= 15;
                             end else begin
                                 swd_parity <= swd_parity ^ SWDIO_TMS_I;
-                                rx_shift_reg <= {SWDIO_TMS_I, rx_shift_reg[63:1]};
+                                rx_shift_reg[swd_turn_cnt] <= SWDIO_TMS_I;
                             end
                         end
                     end
@@ -400,7 +400,7 @@ module DAP_Seqence (
                         clock_oen <= 1'd0; // 关闭时钟输出
                         SWDIO_TMS_T <= 1'd0;
                         SWDIO_TMS_O <= 1'd0;
-                        rx_data <= rx_shift_reg[63:32];
+                        rx_data <= rx_shift_reg;
                         rx_flag <= {13'd0, swd_ack_reg};
                         rx_valid <= 1'd1;
                         swd_trans_sm <= 1'd0;
