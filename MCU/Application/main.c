@@ -105,8 +105,8 @@ int main()
     axisuart_set_baud(AXIS_UART, 115200);
     axisuart_enable(AXIS_UART);
 
-    dap_baud_set_div(DAP, 10);
-    dap_baud_set_delay(DAP, 0);
+    dap_baud_set_reload(DAP, 10);
+    dap_baud_set_simpling_cmp(DAP, 23);
     dap_baud_start(DAP);
 
     DAP->GPIO.TCK_DELAY = 60; // 750ps

@@ -15,8 +15,9 @@ module DAP_BaudGenerator#(
         input [3:0] ahb_byte_strobe,
 
         output sclk_out, // 输出到GPIO的时钟信号
-        output sclk_pulse, // 控制器置位时刻参考
-        output sclk_delay_pulse // 控制器采样时刻参考
+        output sclk_negedge, // 控制器置位时刻参考
+        input gen_samling,
+        output sclk_sampling // 控制器采样时刻参考
     );
 
     localparam [ADDRWIDTH-1:0] REG_CR_ADDR = BASE_ADDR + 0;  // RW
@@ -27,14 +28,14 @@ module DAP_BaudGenerator#(
     wire REG_CR_CEN = REG_CR[0];
     wire REG_CR_SAMPLINE_EDGE = REG_CR[1]; // 0：上升沿采样；1：下降沿采样
     reg [15:0] REG_TIMING_DIV;
-    reg [2:0] REG_TIMING_DELAY;
+    reg [15:0] REG_TIMING_SIMPLING;
 
 
     always @(posedge clk or negedge resetn) begin : ahb_mem_write_ctrl
         if (!resetn) begin
-            REG_CR <= 0;
+            REG_CR <= 32'd0;
             REG_TIMING_DIV <= 16'd0;
-            REG_TIMING_DELAY <= 3'd0;
+            REG_TIMING_SIMPLING <= 16'd0;
         end
         else begin
             if (ahb_write_en) begin
@@ -56,7 +57,9 @@ module DAP_BaudGenerator#(
                             if (ahb_byte_strobe[1])
                                 REG_TIMING_DIV[ 8+:8] <= ahb_wdata[ 8+:8];
                             if (ahb_byte_strobe[2])
-                                REG_TIMING_DELAY <= ahb_wdata[18:16];
+                                REG_TIMING_SIMPLING[ 0+:8] <= ahb_wdata[16+:8];
+                            if (ahb_byte_strobe[3])
+                                REG_TIMING_SIMPLING[ 8+:8] <= ahb_wdata[24+:8];
                         end
                     end
                 endcase
@@ -70,7 +73,7 @@ module DAP_BaudGenerator#(
                 REG_CR_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = REG_CR;
                 REG_TIMING_ADDR[ADDRWIDTH-1:2]:
-                    ahb_rdata = {13'd0, REG_TIMING_DELAY, REG_TIMING_DIV};
+                    ahb_rdata = {REG_TIMING_SIMPLING, REG_TIMING_DIV};
                 default:
                     ahb_rdata = {32{1'bx}};
             endcase
@@ -84,53 +87,39 @@ module DAP_BaudGenerator#(
     reg cen_ff1;
     reg cen;
 
-    reg [15:0] div_count;
-    reg sclk_out_reg;
-    reg sclk_pulse_reg;
+    reg [16:0] timer_cnt;
+    wire [16:0] div_count_next = timer_cnt + 1'd1;
 
-    reg [6:0] delay_reg;
-    wire [7:0] delay_chain = {delay_reg, sclk_pulse_reg};
-    wire [15:0] div_count_next = div_count + 1'd1;
-
+    assign sclk_out = (timer_cnt >= REG_TIMING_DIV);
+    assign sclk_negedge = cen && (div_count_next == (REG_TIMING_DIV * 2));
+    assign sclk_sampling = cen && (div_count_next == REG_TIMING_SIMPLING);
+    
     always @(posedge sclk_in or negedge resetn) begin
         if (!resetn) begin
-            div_count <= 16'd0;
-            sclk_out_reg <= 16'd0;
-            delay_reg <= 7'd0;
+            timer_cnt <= 16'd0;
         end
         else begin
             cen_ff1 <= REG_CR_CEN;
             cen <= cen_ff1;
 
-            sclk_pulse_reg <= 1'd0;
-
             if (cen) begin
-                div_count <= div_count_next;
-                if (div_count == REG_TIMING_DIV) begin
-                    div_count <= 16'd0;
-                    sclk_out_reg <= ~sclk_out_reg;
+                if (sclk_negedge) begin
+                    timer_cnt <= 17'd0;
                 end
-                
-                if (REG_TIMING_DIV == 0) begin
-                    sclk_pulse_reg <= sclk_out_reg;
-                end
-                else if (div_count_next == REG_TIMING_DIV) begin
-                    sclk_pulse_reg <= ~sclk_out_reg;
+                else begin
+                    timer_cnt <= div_count_next;
                 end
 
-                delay_reg <= {delay_reg[5:0], sclk_pulse_reg};
+                if (gen_samling) begin
+
+                end
             end
             else begin
-                div_count <= 16'd0;
-                delay_reg <= 7'd0;
-                sclk_out_reg <= 1'd0;
+                timer_cnt <= 17'd0;
             end
-
         end
     end
 
-    assign sclk_out = sclk_out_reg;
-    assign sclk_pulse = sclk_pulse_reg;
-    assign sclk_delay_pulse = delay_chain[REG_TIMING_DELAY];
+
 
 endmodule

@@ -517,8 +517,8 @@ typedef struct {
   __I uint32_t CURCMD;
   struct {
     __IO uint32_t CR;
-    __IO uint16_t DIV;
-    __IO uint16_t DELAY;
+    __IO uint16_t RELOAD;
+    __IO uint16_t SIMPLING_CMP;
   } BAUD_GEN;
   uint32_t RESERVED0[1];
   struct {

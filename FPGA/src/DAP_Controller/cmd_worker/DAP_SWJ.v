@@ -13,8 +13,8 @@ module DAP_SWJ #(
         // 串行时钟
         input sclk,
         input sclk_out,
-        input sclk_pulse,
-        input sclk_delay_pulse,
+        input sclk_negedge,
+        input sclk_sampling,
 
         // AHB MEM接口
         input ahb_write_en,
@@ -184,8 +184,8 @@ module DAP_SWJ #(
                     // 串行时钟
                     .sclk(sclk),
                     .sclk_out(sclk_out),
-                    .sclk_pulse(sclk_pulse),
-                    .sclk_delay_pulse(sclk_delay_pulse),
+                    .sclk_negedge(sclk_negedge),
+                    .sclk_sampling(sclk_sampling),
 
                     // 控制器输入输出
                     .seq_tx_valid(seq_tx_valid),
@@ -578,7 +578,7 @@ module DAP_SWJ #(
             if (start[`CMD_TRANSFER_BLOCK_SHIFT] && SWJ_CR_MODE == 1'd0) begin
                 case (swd_block_trans_sm)
                     SWD_BTRANS_SM_READ_INDEX: begin // 读取DAP Index抛弃
-                        ram_write_addr <= 10'd3;
+                        ram_write_addr <= 10'd2;
                         packet_len <= 10'd3;
                         swd_block_trans_err_flag <= 1'd0;
                         if (dap_in_tvalid) begin
@@ -587,7 +587,7 @@ module DAP_SWJ #(
                     end
                     SWD_BTRANS_SM_READ_COUNT_L, SWD_BTRANS_SM_READ_COUNT_H: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_request_cnt <= {swd_block_trans_request_cnt[7:0], dap_in_tdata};
+                            swd_block_trans_request_cnt <= {dap_in_tdata, swd_block_trans_request_cnt[15:8]};
                             swd_block_trans_sm <= swd_block_trans_sm + 1'd1;
                         end
                     end
@@ -603,14 +603,14 @@ module DAP_SWJ #(
                             // 写请求触发读fifo数据
                             buf64_rbit_len <= 7'd32;
                             buf64_start <= 1'd1;
-                            swd_block_trans_sm <= SWD_BTRANS_SM_TRANSFER;
+                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA;
                         end
                         else if (!swd_block_trans_err_flag) begin
                             // 读请求直接驱动SWD
                             seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_block_trans_req};
                             seq_tx_data <= buf64;
                             seq_tx_valid <= 1'd1;
-                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA;
+                            swd_block_trans_sm <= SWD_BTRANS_SM_TRANSFER;
                         end
                     end
                     SWD_BTRANS_SM_READ_DATA: begin // 写请求数据读取完成，驱动SWD
@@ -625,59 +625,51 @@ module DAP_SWJ #(
                         end
                     end
                     SWD_BTRANS_SM_TRANSFER: begin // 等待传输完成
-                        if (!swd_block_trans_err_flag && seq_rx_valid) begin
-                            // 正常传输完成
-
+                        if (!swd_block_trans_err_flag && (seq_rx_valid && seq_rx_flag[2:0] == 3'b001)) begin // 正常传输完成
                             // 请求计数-1
                             swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
+                            // 响应计数+1
+                            swd_block_trans_response_cnt <= swd_block_trans_response_cnt + 1'd1;
 
-                            if (seq_rx_flag[2:0] == 3'b001) begin
-                                // ACK OK
-
-                                // 响应计数+1
-                                swd_block_trans_response_cnt <= swd_block_trans_response_cnt + 1'd1;
-
-                                case (swd_block_trans_req[1:0])
-                                    2'b11: begin // Read AP
-                                        if (swd_block_trans_response_cnt == 16'd0) begin
-                                            // 第一次传输
-                                            swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
-                                        end
-                                        else begin
-                                            swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_0;
-                                        end
+                            case (swd_block_trans_req[1:0])
+                                2'b11: begin // Read AP
+                                    if (swd_block_trans_response_cnt == 16'd0) begin
+                                        // 第一次传输
+                                        swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
                                     end
-                                    2'b01: begin // Write AP
-                                        if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
-                                            // 最后一次传输
-                                            swd_block_trans_req <= 4'b1110;
-                                            seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, 4'b1110}; // RDBUFF
-                                            seq_tx_valid <= 1'd1;
-                                            swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
-                                        end
-                                        else begin
-                                            swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
-                                        end
-                                    end
-                                    2'b10: begin // Read DP
+                                    else begin
                                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_0;
                                     end
-                                    2'b00: begin // Write DP
-                                        if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
-                                            // 完成
-                                            swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
-                                        end
-                                        else begin
-                                            swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
-                                        end
+                                end
+                                2'b01: begin // Write AP
+                                    if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
+                                        // 最后一次传输
+                                        swd_block_trans_req <= 4'b1110;
+                                        seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, 4'b1110}; // RDBUFF
+                                        seq_tx_valid <= 1'd1;
+                                        swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
                                     end
-                                endcase
-                            end
-                            else begin
-                                swd_block_trans_err_flag <= 1'd1;
-                            end
+                                    else begin
+                                        swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                                    end
+                                end
+                                2'b10: begin // Read DP
+                                    swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_0;
+                                end
+                                2'b00: begin // Write DP
+                                    if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
+                                        // 完成
+                                        swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
+                                    end
+                                    else begin
+                                        swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                                    end
+                                end
+                            endcase
                         end
-                        else if (swd_block_trans_err_flag) begin // 错误状态
+                        
+                        
+                        if (swd_block_trans_err_flag || (seq_rx_valid && seq_rx_flag[2:0] != 3'b001)) begin // 错误状态
                             swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
                             if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
                                 swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
@@ -701,28 +693,24 @@ module DAP_SWJ #(
 
                     SWD_BTRANS_SM_WRITE_DATA_0: begin
                         ram_write_addr <= ram_write_addr + 1'd1;
-                        packet_len <= ram_write_addr + 1'd1;
                         ram_write_data <= seq_rx_data[7:0];
                         ram_write_en <= 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_1;
                     end
                     SWD_BTRANS_SM_WRITE_DATA_1: begin
                         ram_write_addr <= ram_write_addr + 1'd1;
-                        packet_len <= ram_write_addr + 1'd1;
                         ram_write_data <= seq_rx_data[15:8];
                         ram_write_en <= 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_2;
                     end
                     SWD_BTRANS_SM_WRITE_DATA_2: begin
                         ram_write_addr <= ram_write_addr + 1'd1;
-                        packet_len <= ram_write_addr + 1'd1;
                         ram_write_data <= seq_rx_data[23:16];
                         ram_write_en <= 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_3;
                     end
                     SWD_BTRANS_SM_WRITE_DATA_3: begin
                         ram_write_addr <= ram_write_addr + 1'd1;
-                        packet_len <= ram_write_addr + 1'd1;
                         ram_write_data <= seq_rx_data[31:24];
                         ram_write_en <= 1'd1;
 
@@ -745,14 +733,13 @@ module DAP_SWJ #(
                                 swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
                             end
                         end
-
-                        swd_block_trans_sm <= 10;
                     end
 
                     SWD_BTRANS_SM_WRITE_COUNT_L: begin
                         ram_write_addr <= 0;
                         ram_write_data <= swd_block_trans_response_cnt[7:0];
                         ram_write_en <= 1'd1;
+                        packet_len <= ram_write_addr + 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_H;
                     end
                     SWD_BTRANS_SM_WRITE_COUNT_H: begin

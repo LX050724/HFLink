@@ -311,7 +311,7 @@ module HFLink_TOP(
                        .hresps(AHB2HRESP[0]),
                        .hrdatas(AHB2HRDATA),
 
-                       .dap_clk(clkout1),
+                       .sclk(clkout1),
 
                        .usb_endpt(ext_usb_endpt),
                        .usb_txact(ext_usb_txact),

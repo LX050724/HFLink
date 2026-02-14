@@ -45,14 +45,14 @@ inline static void dap_baud_start(DAP_TypeDef *dap)
     dap->BAUD_GEN.CR |= 1;
 }
 
-inline static void dap_baud_set_div(DAP_TypeDef *dap, uint16_t div)
+inline static void dap_baud_set_reload(DAP_TypeDef *dap, uint16_t div)
 {
-    dap->BAUD_GEN.DIV = div;
+    dap->BAUD_GEN.RELOAD = div;
 }
 
-inline static void dap_baud_set_delay(DAP_TypeDef *dap, uint8_t delay)
+inline static void dap_baud_set_simpling_cmp(DAP_TypeDef *dap, uint16_t cmp)
 {
-    dap->BAUD_GEN.DIV = delay;
+    dap->BAUD_GEN.SIMPLING_CMP = cmp;
 }
 
 inline static void dap_gpio_enable_directio(DAP_TypeDef *dap, uint8_t index)

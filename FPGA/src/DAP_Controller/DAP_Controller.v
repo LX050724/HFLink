@@ -5,7 +5,7 @@ module DAP_Controller #(
         parameter [5:0] CLOCK_FREQ_M = 60,
         parameter GPIO_NUM = 4
     ) (
-        input  wire                  dap_clk,
+        input  wire                  sclk,
         input  wire                  hclk,       // clock
         input  wire                  hresetn,    // reset
 
@@ -454,8 +454,8 @@ module DAP_Controller #(
     wire SWD_MODE;
 
     wire sclk_out;
-    wire sclk_pulse;
-    wire sclk_delay_pulse;
+    wire sclk_negedge;
+    wire sclk_sampling;
 
     wire [31:0] swj_hrdatas;
     DAP_SWJ #(
@@ -468,10 +468,10 @@ module DAP_Controller #(
                 .us_timer(us_timer),
                 .enable(DAP_CR_EN),
 
-                .sclk(dap_clk),
+                .sclk(sclk),
                 .sclk_out(sclk_out),
-                .sclk_pulse(sclk_pulse),
-                .sclk_delay_pulse(sclk_delay_pulse),
+                .sclk_negedge(sclk_negedge),
+                .sclk_sampling(sclk_sampling),
 
                 .ahb_write_en(write_en),
                 .ahb_read_en(read_en),
@@ -632,7 +632,7 @@ module DAP_Controller #(
                       ) dap_baudgenerator_inst (
                           .clk(hclk),
                           .resetn(hresetn),
-                          .sclk_in(dap_clk),
+                          .sclk_in(sclk),
                           .ahb_write_en(write_en),
                           .ahb_read_en(read_en),
                           .ahb_addr(addr),
@@ -641,8 +641,8 @@ module DAP_Controller #(
                           .ahb_byte_strobe(byte_strobe_reg),
 
                           .sclk_out(sclk_out),
-                          .sclk_pulse(sclk_pulse),
-                          .sclk_delay_pulse(sclk_delay_pulse)
+                          .sclk_negedge(sclk_negedge),
+                          .sclk_sampling(sclk_sampling)
                       );
 
     wire [31:0] gpio_hrdatas;
