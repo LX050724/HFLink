@@ -55,23 +55,28 @@ module DAP_SWJ #(
     integer i;
 
     localparam [ADDRWIDTH-1:0] SWJ_CR_ADDR            = BASE_ADDR + 12'h000;  // RW
-    localparam [ADDRWIDTH-1:0] SWJ_SWD_CR_ADDR        = BASE_ADDR + 12'h004;  // RW
-    localparam [ADDRWIDTH-1:0] SWJ_JTAG_CR_ADDR       = BASE_ADDR + 12'h008;  // RW
-    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF0_ADDR = BASE_ADDR + 12'h00C;  // RW
-    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF1_ADDR = BASE_ADDR + 12'h010;  // RW
-    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF2_ADDR = BASE_ADDR + 12'h014;  // RW
-    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF3_ADDR = BASE_ADDR + 12'h018;  // RW
-    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF4_ADDR = BASE_ADDR + 12'h01C;  // RW
-    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF5_ADDR = BASE_ADDR + 12'h020;  // RW
-    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF6_ADDR = BASE_ADDR + 12'h024;  // RW
-    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF7_ADDR = BASE_ADDR + 12'h028;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_WAIT_RETRY_ADDR    = BASE_ADDR + 12'h004;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_MATCH_RETRY_ADDR   = BASE_ADDR + 12'h006;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_SWD_CR_ADDR        = BASE_ADDR + 12'h008;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_JTAG_CR_ADDR       = BASE_ADDR + 12'h00C;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF0_ADDR = BASE_ADDR + 12'h010;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF1_ADDR = BASE_ADDR + 12'h014;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF2_ADDR = BASE_ADDR + 12'h018;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF3_ADDR = BASE_ADDR + 12'h01C;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF4_ADDR = BASE_ADDR + 12'h020;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF5_ADDR = BASE_ADDR + 12'h024;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF6_ADDR = BASE_ADDR + 12'h028;  // RW
+    localparam [ADDRWIDTH-1:0] SWJ_JTAG_IR_CONF7_ADDR = BASE_ADDR + 12'h02C;  // RW
 
     localparam [1:0] SEQ_STATUS_IDLE = 2'd0;
     localparam [1:0] SEQ_STATUS_BUSY = 2'd1;
     localparam [1:0] SEQ_STATUS_DONE = 2'd2;
 
-    reg [31:0] SWJ_CR;
-    wire SWJ_CR_MODE = SWJ_CR[0]; // 0: SWD; 1: JTAG
+    reg SWJ_CR;
+    reg [15:0] SWJ_WAIT_RETRY;
+    reg [15:0] SWJ_MATCH_RETRY;
+    wire SWJ_CR_MODE = SWJ_CR; // 0: SWD; 1: JTAG
+
 
     reg [8:0] SWJ_SWD_CR;
     reg [7:0] SWJ_JTAG_CR;
@@ -106,8 +111,21 @@ module DAP_SWJ #(
         else begin
             if (ahb_write_en) begin
                 case (ahb_addr[ADDRWIDTH-1:2])
-                    SWJ_CR_ADDR[ADDRWIDTH-1:2]:
-                        AHB_WRITE_REG32(SWJ_CR);
+                    SWJ_CR_ADDR[ADDRWIDTH-1:2]: begin
+                        if (ahb_byte_strobe[0]) begin
+                            SWJ_CR <= ahb_wdata[0];
+                        end
+                    end
+                    SWJ_WAIT_RETRY_ADDR[ADDRWIDTH-1:2]: begin
+                        if (ahb_byte_strobe[0])
+                            SWJ_WAIT_RETRY[0+:8] = ahb_wdata[ 0+:8];
+                        if (ahb_byte_strobe[1])
+                            SWJ_WAIT_RETRY[8+:8] = ahb_wdata[ 8+:8];
+                        if (ahb_byte_strobe[2])
+                            SWJ_MATCH_RETRY[0+:8] = ahb_wdata[16+:8];
+                        if (ahb_byte_strobe[3])
+                            SWJ_MATCH_RETRY[8+:8] = ahb_wdata[24+:8];
+                    end
                     SWJ_SWD_CR_ADDR[ADDRWIDTH-1:2]:
                         AHB_WRITE_REG32(SWJ_SWD_CR);
                     SWJ_JTAG_CR_ADDR[ADDRWIDTH-1:2]:
@@ -137,7 +155,9 @@ module DAP_SWJ #(
         if (ahb_read_en) begin
             case (ahb_addr[ADDRWIDTH-1:2])
                 SWJ_CR_ADDR[ADDRWIDTH-1:2]:
-                    ahb_rdata = SWJ_CR;
+                    ahb_rdata = {31'd0, SWJ_CR};
+                SWJ_WAIT_RETRY_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = {SWJ_MATCH_RETRY, SWJ_WAIT_RETRY};
                 SWJ_SWD_CR_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = SWJ_SWD_CR;
                 SWJ_JTAG_CR_ADDR[ADDRWIDTH-1:2]:
@@ -608,7 +628,7 @@ module DAP_SWJ #(
                         else if (!swd_block_trans_err_flag) begin
                             // 读请求直接驱动SWD
                             seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_block_trans_req};
-                            seq_tx_data <= buf64;
+                            seq_tx_data <= {8'd0, SWD_CONF_TURN, SWJ_WAIT_RETRY, buf64[31:0]};
                             seq_tx_valid <= 1'd1;
                             swd_block_trans_sm <= SWD_BTRANS_SM_TRANSFER;
                         end
@@ -618,7 +638,7 @@ module DAP_SWJ #(
                             if (!swd_block_trans_err_flag) begin
                                 // 非错误状态驱动，错误状态不驱动
                                 seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_block_trans_req};
-                                seq_tx_data <= buf64;
+                                seq_tx_data <= {8'd0, SWD_CONF_TURN, SWJ_WAIT_RETRY, buf64[31:0]};
                                 seq_tx_valid <= 1'd1;
                             end
                             swd_block_trans_sm <= SWD_BTRANS_SM_TRANSFER;
@@ -667,9 +687,9 @@ module DAP_SWJ #(
                                 end
                             endcase
                         end
-                        
-                        
+
                         if (swd_block_trans_err_flag || (seq_rx_valid && seq_rx_flag[2:0] != 3'b001)) begin // 错误状态
+                            swd_block_trans_err_flag <= 1'd1;
                             swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
                             if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
                                 swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;

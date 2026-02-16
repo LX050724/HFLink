@@ -538,6 +538,8 @@ typedef struct {
   } GPIO;
   struct {
     __IO uint32_t CR;
+    __IO uint16_t WAIT_RETRY;
+    __IO uint16_t MATCH_RETRY;
     __IO uint32_t SWD_CR;
     __IO uint32_t JTAG_CR;
     struct {

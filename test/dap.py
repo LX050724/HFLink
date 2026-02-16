@@ -25,6 +25,15 @@ class DAP:
     DAP_PORT_SWD=1
     DAP_PORT_JTAG=2
 
+    DAP_TRANS_AP = 1
+    DAP_TRANS_DP = 0
+    DAP_TRANS_READ = 2
+    DAP_TRANS_WRITE = 0
+    DAP_TRANS_A0 = 0
+    DAP_TRANS_A4 = 4
+    DAP_TRANS_A8 = 8
+    DAP_TRANS_AC = 12
+
     def __init__(self, dev: usb.core.Device):
         cfg = dev.get_active_configuration()
         dap_intf = cfg[(0,0)]
@@ -167,11 +176,18 @@ class DAP:
             cmd += item.cmd
             if item.dir == DAP_SWD_Seqence.DIR_INPUT:
                 rd_len += item.byte_num
-        if rd_len > 512:
+        if rd_len > 512 or len(cmd) > 512:
             raise RuntimeError("报文超长")
         self._write(cmd)
         # self._read(rd_len)
         return rd_len
+
+    def swd_transfer_block(self, trans_num, requse, data:bytes=None):
+        cmd = b'\x06\x00' + int.to_bytes(trans_num, 2, 'little') + int.to_bytes(requse)
+        if requse & self.DAP_TRANS_WRITE:
+            cmd += data[0:trans_num*4]
+        self._write(cmd)
+        self._read()
 
     def read(self, n=512, timeout=10):
         self._read(n, timeout)

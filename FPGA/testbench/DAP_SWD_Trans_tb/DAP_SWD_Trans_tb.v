@@ -1,7 +1,7 @@
 `timescale 1 ns/ 10 ps
 `include "DAP_Cmd.v"
 
-`define DELAY_TIME 3
+`define DELAY_TIME 10
 
 module DAP_SWD_Trans_tb();
     reg clk;
@@ -26,9 +26,9 @@ module DAP_SWD_Trans_tb();
 
         forever begin
             clk_x2 <= 1;
-            #8.333333;
+            #(8.333333/2);
             clk_x2 <= 0;
-            #8.333333;
+            #(8.333333/2);
             clk <= !clk;
         end
     end
@@ -65,19 +65,25 @@ module DAP_SWD_Trans_tb();
                 0: begin
                     ahb_write_en <= 1;
                     ahb_addr <= 12'h004;
-                    ahb_wdata <= 32'h0005_0004;
+                    ahb_wdata <= 32'h0001_0001;
                     ahb_byte_strobe <= 4'hf;
                 end
                 1: begin
+                    ahb_write_en <= 1;
+                    ahb_addr <= 12'h080 + 12'h004;
+                    ahb_wdata <= 32'h0004_0004;
+                    ahb_byte_strobe <= 4'hf;
+                end
+                2: begin
                     ahb_write_en <= 1;
                     ahb_addr <= 12'h000;
                     ahb_wdata <= 32'h0000_0001;
                     ahb_byte_strobe <= 4'hf;
                 end
-                2: begin
+                3: begin
                     start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd1;
                 end
-                3: begin
+                4: begin
                     if (done[`CMD_TRANSFER_BLOCK_SHIFT]) begin
                         start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
                     end
@@ -139,7 +145,7 @@ module DAP_SWD_Trans_tb();
     wire ram_write_en;
     wire [9:0] packet_len;
 
-    DAP_SWJ #(12, 12'h80)
+    DAP_SWJ #(12, 12'h080)
             inst(
                 .clk(clk),
                 .resetn(resetn),
@@ -204,9 +210,27 @@ module DAP_SWD_Trans_tb();
             for (i = 0; i < packet_len; i = i + 1) begin
                 $display("%08x: %02x", i, output_data[i]);
             end
-            $finish(1);
+            // $finish(1);
         end
     end
+
+    localparam [3:0] SWD_TRANS_IO_START = 4'd0;
+    localparam [3:0] SWD_TRANS_IO_APnDP = 4'd1;
+    localparam [3:0] SWD_TRANS_IO_RnW = 4'd2;
+    localparam [3:0] SWD_TRANS_IO_A2 = 4'd3;
+    localparam [3:0] SWD_TRANS_IO_A3 = 4'd4;
+    localparam [3:0] SWD_TRANS_IO_PARITY = 4'd5;
+    localparam [3:0] SWD_TRANS_IO_STOP = 4'd6;
+    localparam [3:0] SWD_TRANS_IO_PARK = 4'd7;
+    localparam [3:0] SWD_TRANS_IO_TURN1 = 4'd8;
+    localparam [3:0] SWD_TRANS_IO_ACK0 = 4'd9;
+    localparam [3:0] SWD_TRANS_IO_ACK1  = 4'd10;
+    localparam [3:0] SWD_TRANS_IO_ACK2 = 4'd11;
+    localparam [3:0] SWD_TRANS_IO_TURN2 = 4'd12;
+    localparam [3:0] SWD_TRANS_IO_DATA = 4'd13;
+    localparam [3:0] SWD_TRANS_IO_DATA_PATIYY = 4'd14;
+    localparam [3:0] SWD_TRANS_IO_DONE = 4'd15;
+
 
     reg [7:0] swd_sm;
     reg APnDP;
@@ -216,6 +240,7 @@ module DAP_SWD_Trans_tb();
     reg [31:0] data;
     reg [7:0] data_cnt;
     reg DataParity;
+    reg [2:0] tx_ack;
 
     initial begin
         SWDIO_TMS_I = 0;
@@ -226,62 +251,80 @@ module DAP_SWD_Trans_tb();
         Parity = 0;
         data = 0;
         DataParity = 0;
+        // tx_ack = 3'b001;
+        tx_ack = 3'b010;
+        // tx_ack = 3'b100;
     end
 
     wire swdio_i = SWDIO_TMS_T ? 1'd1 : SWDIO_TMS_O;
 
     always @(posedge SWCLK_TCK_O) begin
         case (swd_sm)
-            0: begin
+            SWD_TRANS_IO_START: begin
                 DataParity <= 0;
                 if (swdio_i) begin
                     swd_sm <= swd_sm + 1;
                 end
             end
-            1: begin
+            SWD_TRANS_IO_APnDP: begin
                 APnDP <= swdio_i;
                 swd_sm <= swd_sm + 1;
             end
-            2: begin
+            SWD_TRANS_IO_RnW: begin
                 RnW <= swdio_i;
                 swd_sm <= swd_sm + 1;
             end
-            3: begin
+            SWD_TRANS_IO_A2: begin
                 Addr[2] <= swdio_i;
                 swd_sm <= swd_sm + 1;
             end
-            4: begin
+            SWD_TRANS_IO_A3: begin
                 Addr[3] <= swdio_i;
                 swd_sm <= swd_sm + 1;
             end
-            5: begin
+            SWD_TRANS_IO_PARITY: begin
                 Parity <= swdio_i;
                 swd_sm <= swd_sm + 1;
             end
-            6, 7, 8: begin // stop, park, tm
+            SWD_TRANS_IO_STOP, SWD_TRANS_IO_PARK, SWD_TRANS_IO_TURN1: begin // stop, park, tm
                 swd_sm <= swd_sm + 1;
             end
-            9: begin // ack 0
-                SWDIO_TMS_I <= #`DELAY_TIME 1'd1;
+            SWD_TRANS_IO_ACK0: begin // ack 0
+                SWDIO_TMS_I <= #`DELAY_TIME tx_ack[0];
                 swd_sm <= swd_sm + 1;
             end
-            10: begin // ack 1
-                SWDIO_TMS_I <= #`DELAY_TIME 1'd0;
+            SWD_TRANS_IO_ACK1: begin // ack 1
+                SWDIO_TMS_I <= #`DELAY_TIME tx_ack[1];
                 swd_sm <= swd_sm + 1;
             end
-            11: begin // ack 2
-                SWDIO_TMS_I <= #`DELAY_TIME 1'd0;
+            SWD_TRANS_IO_ACK2: begin // ack 2
+                SWDIO_TMS_I <= #`DELAY_TIME tx_ack[2];
                 data_cnt <= 0;
-                swd_sm <= RnW ? 13 : 12;
+
+                if (tx_ack == 3'b001) begin
+                    // 读请求ACK后跟数据段
+                    // 写请求ACK后跟TURN
+                    swd_sm <= RnW ? SWD_TRANS_IO_DATA : SWD_TRANS_IO_TURN2;
+                end else begin
+                    swd_sm <= SWD_TRANS_IO_TURN2;
+                    tx_ack <= RnW ? 3'b001 : tx_ack;
+                end
             end
-            12: begin // turn
+            SWD_TRANS_IO_TURN2: begin // turn
                 SWDIO_TMS_I <= #`DELAY_TIME 1'd0;
-                swd_sm <= swd_sm + 1;
+                if (tx_ack == 3'b001) begin
+                    // 读请求TURN2位于末尾，转到结束
+                    // 写请求位于数据段前，转到数据段
+                    swd_sm <= RnW ? SWD_TRANS_IO_START : SWD_TRANS_IO_DATA;
+                end else begin
+                    swd_sm <= SWD_TRANS_IO_START;
+                    tx_ack <= 3'b001;
+                end
             end
-            13: begin // data
+            SWD_TRANS_IO_DATA: begin // data
                 data_cnt <= data_cnt + 1;
                 if (data_cnt == 31) begin
-                    swd_sm <= 14;
+                    swd_sm <= SWD_TRANS_IO_DATA_PATIYY;
                 end
                 if (RnW) begin
                     SWDIO_TMS_I <= #`DELAY_TIME data[data_cnt];
@@ -290,9 +333,9 @@ module DAP_SWD_Trans_tb();
                     data[data_cnt] <= SWDIO_TMS_O;
                 end
             end
-            14: begin // p
+            SWD_TRANS_IO_DATA_PATIYY: begin // p
                 DataParity = (parity_32(data) == swdio_i);
-                swd_sm <= 0;
+                swd_sm <= RnW ? SWD_TRANS_IO_TURN2 : SWD_TRANS_IO_START;
             end
         endcase
     end

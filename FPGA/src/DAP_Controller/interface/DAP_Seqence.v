@@ -127,21 +127,44 @@ module DAP_Seqence (
              SWCLK_TCK_O
          };
 
-    reg [3:0] swd_trans_sm;
-    reg [7:0] swd_turn_cycle;
-    reg [7:0] swd_turn_cnt;
-    reg swd_req_RnW;
-    reg [2:0] swd_ack_reg;
-    reg swd_parity;
-    wire [7:0] swd_req_head = {
-             1'd1,                                           // park
-             1'd0,                                           // stop
-             tx_cmd[0] ^ tx_cmd[1] ^ tx_cmd[2] ^ tx_cmd[3],  // parity
-             tx_cmd[3:2],                                    // A[3:2]
-             tx_cmd[1],                                      // RnW
-             tx_cmd[0],                                      // APnDP
-             1'd1                                            // start
-         };
+    localparam [1:0] SWD_TRANS_SM_IDLE = 2'd0;
+    localparam [1:0] SWD_TRANS_SM_WORKING = 2'd1;
+    localparam [1:0] SWD_TRANS_SM_CHECK = 2'd2;
+
+    localparam [3:0] SWD_TRANS_IO_START = 4'd0;
+    localparam [3:0] SWD_TRANS_IO_APnDP = 4'd1;
+    localparam [3:0] SWD_TRANS_IO_RnW = 4'd2;
+    localparam [3:0] SWD_TRANS_IO_A2 = 4'd3;
+    localparam [3:0] SWD_TRANS_IO_A3 = 4'd4;
+    localparam [3:0] SWD_TRANS_IO_PARITY = 4'd5;
+    localparam [3:0] SWD_TRANS_IO_STOP = 4'd6;
+    localparam [3:0] SWD_TRANS_IO_PARK = 4'd7;
+    localparam [3:0] SWD_TRANS_IO_TURN1 = 4'd8;
+    localparam [3:0] SWD_TRANS_IO_ACK0 = 4'd9;
+    localparam [3:0] SWD_TRANS_IO_ACK1  = 4'd10;
+    localparam [3:0] SWD_TRANS_IO_ACK2 = 4'd11;
+    localparam [3:0] SWD_TRANS_IO_TURN2 = 4'd12;
+    localparam [3:0] SWD_TRANS_IO_DATA = 4'd13;
+    localparam [3:0] SWD_TRANS_IO_DATA_PATIYY = 4'd14;
+    localparam [3:0] SWD_TRANS_IO_DONE = 4'd15;
+
+    reg [1:0] swd_trans_sm;
+    reg [4:0] swd_trans_turn_cycle;
+    reg [15:0] swd_trans_retry_max;
+    reg [15:0] swd_trans_retry_cnt;
+
+    reg [3:0] swd_trans_tx_sm;
+    reg [4:0] swd_trans_tx_cnt;
+    reg swd_trans_tx_APnDP;
+    reg swd_trans_tx_RnW;
+    reg [3:2] swd_trans_tx_ADDR;
+    reg swd_trans_tx_parity;
+
+    reg [3:0] swd_trans_rx_sm;
+    reg [4:0] swd_trans_rx_cnt;
+    reg [31:0] swd_trans_rx_data;
+    reg swd_trans_rx_parity;
+    reg [2:0] swd_trans_rx_ack;
 
     wire sclk_sampling_en = (delay_clk_en || sclk_negedge) && sclk_sampling;
 
@@ -178,12 +201,23 @@ module DAP_Seqence (
             swj_us_cnt <= 32'd0;
             swj_tick_cnt <= 8'd0;
 
-            swd_trans_sm <= 4'd0;
-            swd_turn_cycle <= 8'd0;
-            swd_ack_reg <= 3'd0;
-            swd_turn_cnt <= 8'd0;
-            swd_req_RnW <= 1'd0;
-            swd_parity <= 1'd0;
+
+            swd_trans_sm <= 2'd0;
+            swd_trans_turn_cycle <= 5'd0;
+            swd_trans_retry_max <= 16'd0;
+            swd_trans_retry_cnt <= 16'd0;
+            swd_trans_tx_sm <= 4'd0;
+            swd_trans_tx_cnt <= 5'd0;
+            swd_trans_tx_APnDP <= 1'd0;
+            swd_trans_tx_RnW <= 1'd0;
+            swd_trans_tx_ADDR <= 2'd0;
+            swd_trans_tx_parity <= 1'd0;
+            swd_trans_rx_sm <= 4'd0;
+            swd_trans_rx_cnt <= 5'd0;
+            swd_trans_rx_data <= 32'd0;
+            swd_trans_rx_parity <= 1'd0;
+            swd_trans_rx_ack <= 3'd0;
+
         end
         else begin
             tx_nxt <= 1'd0;
@@ -206,6 +240,7 @@ module DAP_Seqence (
                         swd_seq_tx_count <= tx_cmd[6:0];
                         swd_seq_rx_count <= tx_cmd[6:0];
                         swd_seq_sm <= 2'd1;
+                        delay_clk_en <= 0;
                     end
                 end
                 1'd1: begin
@@ -228,7 +263,7 @@ module DAP_Seqence (
                         end
                     end
 
-                    if (sclk_sampling && swd_seq_rx_count) begin
+                    if (sclk_sampling_en && swd_seq_rx_count) begin
                         swd_seq_rx_count <= swd_seq_rx_count - 7'd1;
                         rx_shift_reg[swd_seq_rx_count] <= SWDIO_TMS_I;
                     end
@@ -302,108 +337,233 @@ module DAP_Seqence (
 
             // SEQ_CMD_SWD_TRANSFER
             case (swd_trans_sm)
-                0: begin
+                SWD_TRANS_SM_IDLE: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_SWD_TRANSFER && swj_busy == 0) begin
                         tx_nxt <= 1'd1;
                         swj_busy <= 1'd1;
-                        tx_shift_reg <= {tx_data[31:0], swd_req_head};
-                        swd_turn_cycle <= 0;
-                        swd_req_RnW <= tx_cmd[1];
-                        swd_turn_cnt <= 8'd0;
-                        swd_trans_sm <= 1'd1;
-                        swd_parity <= 1'd0;
+
+                        // 装载数据
+                        tx_shift_reg <= tx_data[31:0];
+                        // 装载配置信息
+                        swd_trans_retry_cnt <= 16'd0;
+                        swd_trans_retry_max <= tx_data[47:32];
+                        swd_trans_turn_cycle <= tx_data[55:48];
+                        // 装载请求头
+                        swd_trans_tx_APnDP <= tx_cmd[0];
+                        swd_trans_tx_RnW <= tx_cmd[1];
+                        swd_trans_tx_ADDR <= tx_cmd[3:2];
+
+                        delay_clk_en <= 0; // 复位延迟时钟标志
+                        swd_trans_sm <= SWD_TRANS_SM_WORKING;
                     end
                 end
 
-                1,2,3,4,5,6,7,8: begin // requset
+                SWD_TRANS_SM_WORKING: begin
                     if (sclk_negedge) begin
-                        clock_oen <= 1;
-                        SWDIO_TMS_O <= 1'd1;
-                        SWDIO_TMS_T <= 1'd0;
-                        swd_trans_sm <= swd_trans_sm + 1'd1;
-                        {tx_shift_reg[62:0], SWDIO_TMS_O} <= tx_shift_reg; // 移位输出
-                    end
-                end
-
-                9: begin // turn1
-                    if (sclk_negedge) begin
-                        SWDIO_TMS_O <= 1'd1;
-                        SWDIO_TMS_T <= 1'd1;
-                        swd_turn_cnt <= swd_turn_cnt + 1'd1;
-                        if (swd_turn_cnt == swd_turn_cycle) begin
-                            swd_turn_cnt <= 8'd0;
-                            swd_trans_sm <= 10;
-                        end
-                    end
-                    delay_clk_en <= 0;
-                end
-
-                10, 11, 12: begin // ACK
-                    if (sclk_sampling_en) begin
-                        swd_ack_reg <= {SWDIO_TMS_I, swd_ack_reg[2:1]};
-                        swd_trans_sm <= swd_trans_sm + 1'd1;
-                        delay_clk_en <= 0;
-                    end
-                end
-
-                13: begin // turn2
-                    // TODO 考虑采样时刻？
-                    if (sclk_negedge) begin
-                        SWDIO_TMS_O <= 1'd1;
-                        SWDIO_TMS_T <= 1'd0;
-                        swd_turn_cnt <= swd_turn_cnt + 1'd1;
-                        if (swd_turn_cnt == swd_turn_cycle) begin
-                            if (swd_ack_reg == 3'b001 || 1) begin
-                                swd_turn_cnt <= 8'd0;
-                                swd_trans_sm <= 14;
+                        swd_trans_tx_sm <= swd_trans_tx_sm + 4'd1;
+                        case (swd_trans_tx_sm)
+                            SWD_TRANS_IO_START: begin
+                                swd_trans_tx_cnt <= 5'd0;
+                                clock_oen <= 1'd1;
+                                SWDIO_TMS_O <= 1'd1;
+                                SWDIO_TMS_T <= 1'd0;
+                                delay_clk_en <= 0;
                             end
-                            else begin
-                                swd_trans_sm <= 15;
+
+                            SWD_TRANS_IO_APnDP: begin
+                                SWDIO_TMS_O <= swd_trans_tx_APnDP;
                             end
-                        end
-                    end
 
-                end
+                            SWD_TRANS_IO_RnW: begin
+                                SWDIO_TMS_O <= swd_trans_tx_RnW;
+                            end
 
-                14: begin // 数据段
-                    if (swd_req_RnW) begin
-                        if (sclk_sampling_en) begin
-                            swd_turn_cnt <= swd_turn_cnt + 1'd1;
-                            if (swd_turn_cnt == 8'd32) begin
-                                if (swd_parity ^ SWDIO_TMS_I) begin
-                                    swd_ack_reg <= 3'b111;
+                            SWD_TRANS_IO_A2: begin
+                                SWDIO_TMS_O <= swd_trans_tx_ADDR[2];
+                            end
+
+                            SWD_TRANS_IO_A3: begin
+                                SWDIO_TMS_O <= swd_trans_tx_ADDR[3];
+                            end
+
+                            SWD_TRANS_IO_PARITY: begin
+                                SWDIO_TMS_O <= swd_trans_tx_APnDP ^ swd_trans_tx_RnW ^ swd_trans_tx_ADDR[2] ^ swd_trans_tx_ADDR[3];
+                            end
+
+                            SWD_TRANS_IO_STOP: begin
+                                SWDIO_TMS_O <= 1'd0;
+                            end
+
+                            SWD_TRANS_IO_PARK: begin
+                                SWDIO_TMS_O <= 1'd1;
+                                swd_trans_tx_parity <= 1'd0;
+                            end
+
+                            SWD_TRANS_IO_TURN1: begin
+                                SWDIO_TMS_T <= 1'd1;
+                                if (swd_trans_tx_cnt == swd_trans_turn_cycle) begin
+                                    swd_trans_tx_cnt <= 5'd0;
                                 end
-                                swd_turn_cnt <= 8'd0;
-                                swd_trans_sm <= 15;
-                            end else begin
-                                swd_parity <= swd_parity ^ SWDIO_TMS_I;
-                                rx_shift_reg[swd_turn_cnt] <= SWDIO_TMS_I;
+                                else begin
+                                    swd_trans_tx_cnt <= swd_trans_tx_cnt + 1'd1;
+                                    swd_trans_tx_sm <= SWD_TRANS_IO_TURN1;
+                                end
+                            end
+                            // SWD_TRANS_IO_ACK0: // Nothing
+                            // SWD_TRANS_IO_ACK1: // Nothing
+                            SWD_TRANS_IO_ACK2: begin
+                                // 读请求ACK后跟数据段
+                                // 写请求ACK后跟TURN
+                                swd_trans_tx_sm <= swd_trans_tx_RnW ? SWD_TRANS_IO_DATA : SWD_TRANS_IO_TURN2;
+                            end
+                            SWD_TRANS_IO_TURN2: begin
+                                if (swd_trans_tx_cnt == swd_trans_turn_cycle) begin
+                                    swd_trans_tx_cnt <= 5'd0;
+
+                                    // 判断RX ACK状态
+                                    if (swd_trans_rx_ack == 3'd001) begin // OK
+                                        // 读请求TURN2位于末尾，转到结束
+                                        // 写请求位于数据段前，转到数据段
+                                        if (swd_trans_tx_RnW) begin
+                                            swd_trans_tx_sm <= SWD_TRANS_IO_DONE;
+                                        end
+                                        else begin
+                                            swd_trans_tx_sm <= SWD_TRANS_IO_DATA;
+                                        end
+                                    end
+                                    else begin // Wait / Error / Other
+                                        swd_trans_tx_sm <= SWD_TRANS_IO_DONE;
+                                    end
+                                end
+                                else begin
+                                    swd_trans_tx_cnt <= swd_trans_tx_cnt + 1'd1;
+                                    swd_trans_tx_sm <= SWD_TRANS_IO_TURN2;
+                                end
+                            end
+                            SWD_TRANS_IO_DATA: begin
+                                {tx_shift_reg[62:0], SWDIO_TMS_O} <= tx_shift_reg; // 移位输出
+                                swd_trans_tx_parity <= swd_trans_tx_parity ^ tx_shift_reg[0];
+                                if (swd_trans_tx_cnt == 5'd31) begin
+                                    swd_trans_tx_cnt <= 5'd0;
+                                end
+                                else begin
+                                    swd_trans_tx_cnt <= swd_trans_tx_cnt + 1'd1;
+                                    swd_trans_tx_sm <= SWD_TRANS_IO_DATA;
+                                end
+                            end
+                            SWD_TRANS_IO_DATA_PATIYY: begin
+                                SWDIO_TMS_O <= swd_trans_tx_parity;
+                                if (swd_trans_tx_RnW) begin
+                                    swd_trans_tx_sm <= SWD_TRANS_IO_TURN2;
+                                end
+                            end
+                            SWD_TRANS_IO_DONE: begin
+                                swd_trans_tx_sm <= SWD_TRANS_IO_DONE;
+                                clock_oen <= 1'd0;
+                                SWDIO_TMS_O <= 1'd0;
+                                SWDIO_TMS_T <= 1'd0;
+                            end
+                        endcase
+                    end
+
+                    if (sclk_sampling_en) begin
+                        swd_trans_rx_sm <= swd_trans_rx_sm + 4'd1;
+                        case (swd_trans_rx_sm)
+                            SWD_TRANS_IO_START: begin
+                                swd_trans_rx_cnt <= 5'd0;
+                                swd_trans_rx_ack <= 3'd0;
+                            end
+                            SWD_TRANS_IO_TURN1: begin
+                                if (swd_trans_rx_cnt == swd_trans_turn_cycle) begin
+                                    swd_trans_rx_cnt <= 5'd0;
+                                end
+                                else begin
+                                    swd_trans_rx_cnt <= swd_trans_rx_cnt + 1'd1;
+                                    swd_trans_tx_sm <= SWD_TRANS_IO_TURN1;
+                                end
+                            end
+                            SWD_TRANS_IO_ACK0: begin
+                                swd_trans_rx_ack[0] <= SWDIO_TMS_I;
+                            end
+                            SWD_TRANS_IO_ACK1: begin
+                                swd_trans_rx_ack[1] <= SWDIO_TMS_I;
+                            end
+                            SWD_TRANS_IO_ACK2: begin
+                                swd_trans_rx_ack[2] <= SWDIO_TMS_I;
+                                SWDIO_TMS_T <= swd_trans_tx_RnW;
+                                swd_trans_rx_parity <= 1'd0;
+                                if ({SWDIO_TMS_I, swd_trans_rx_ack[1:0]} == 3'b001) begin
+                                    // OK
+                                    // 读请求ACK后跟数据段
+                                    // 写请求ACK后无读取内容
+                                    swd_trans_rx_sm <= swd_trans_tx_RnW ? SWD_TRANS_IO_DATA : SWD_TRANS_IO_DONE;
+                                end
+                                else begin
+                                    // WAIT / ERROR / Other
+                                    swd_trans_rx_sm <= SWD_TRANS_IO_DONE;
+                                end
+                            end
+                            SWD_TRANS_IO_DATA: begin
+                                swd_trans_rx_data <= {SWDIO_TMS_I, swd_trans_rx_data[31:1]};
+                                swd_trans_rx_parity <= swd_trans_rx_parity ^ SWDIO_TMS_I;
+                                if (swd_trans_rx_cnt == 8'd31) begin
+                                    swd_trans_rx_cnt <= 8'd0;
+                                end
+                                else begin
+                                    swd_trans_rx_cnt <= swd_trans_rx_cnt + 1'd1;
+                                    swd_trans_rx_sm <= SWD_TRANS_IO_DATA;
+                                end
+                            end
+                            SWD_TRANS_IO_DATA_PATIYY: begin
+                                swd_trans_rx_parity <= swd_trans_rx_parity ^ SWDIO_TMS_I;
+                            end
+                            SWD_TRANS_IO_DONE: begin
+                                swd_trans_rx_sm <= SWD_TRANS_IO_DONE;
+                            end
+                        endcase
+                    end
+
+                    if (sclk_negedge) begin
+                        if (swd_trans_tx_RnW) begin
+                            // 读模式下rx结束但ACK错误结束
+                            if (swd_trans_rx_sm == SWD_TRANS_IO_DONE && swd_trans_rx_ack != 3'b001) begin
+                                swd_trans_sm <= SWD_TRANS_SM_CHECK;
                             end
                         end
+                        else begin
+                            // 写模式下tx结束但ACK错误结束
+                            if (swd_trans_tx_sm == SWD_TRANS_IO_DONE && swd_trans_rx_ack != 3'b001) begin
+                                swd_trans_sm <= SWD_TRANS_SM_CHECK;
+                            end
+                        end
+
+                        if (swd_trans_tx_sm == SWD_TRANS_IO_DONE && swd_trans_rx_sm == SWD_TRANS_IO_DONE) begin
+                            swd_trans_sm <= SWD_TRANS_SM_CHECK;
+                        end
+                    end
+                end
+
+                SWD_TRANS_SM_CHECK: begin
+                    swd_trans_tx_sm <= SWD_TRANS_IO_START;
+                    swd_trans_rx_sm <= SWD_TRANS_IO_START;
+                    if (swd_trans_rx_ack == 3'b010 && swd_trans_retry_cnt != swd_trans_retry_max) begin
+                        // WAIT 重试
+                        swd_trans_retry_cnt <= swd_trans_retry_cnt + 1'd1;
+                        delay_clk_en <= 1'd0;
+                        swd_trans_sm <= SWD_TRANS_SM_WORKING;
                     end
                     else begin
-                        if (sclk_negedge) begin
-                            {tx_shift_reg[62:0], SWDIO_TMS_O} <= tx_shift_reg; // 移位输出
-                            swd_parity <= swd_parity ^ tx_shift_reg[0];
-                            swd_turn_cnt <= swd_turn_cnt + 1'd1;
-                            if (swd_turn_cnt == 8'd32) begin
-                                SWDIO_TMS_O <= swd_parity;
-                                swd_turn_cnt <= 8'd0;
-                                swd_trans_sm <= 15;
-                            end
-                        end
-                    end
-                end
+                        // OK / WAIT Timeout / ERROR / Other
+                        swd_trans_sm <= SWD_TRANS_SM_IDLE;
 
-                15: begin //end
-                    if (sclk_negedge) begin
-                        clock_oen <= 1'd0; // 关闭时钟输出
-                        SWDIO_TMS_T <= 1'd0;
-                        SWDIO_TMS_O <= 1'd0;
-                        rx_data <= rx_shift_reg;
-                        rx_flag <= {13'd0, swd_ack_reg};
+                        rx_data <= {32'd0, swd_trans_rx_data};
+                        case (swd_trans_rx_ack)
+                            3'b001, 3'b010, 3'b100:
+                                rx_flag <= {13'd0, swd_trans_rx_ack};
+                            default:
+                                rx_flag <= {13'd0, 3'b111};
+                        endcase
                         rx_valid <= 1'd1;
-                        swd_trans_sm <= 1'd0;
                         swj_busy <= 1'd0;
                     end
                 end
