@@ -2,6 +2,7 @@
 `include "DAP_Cmd.v"
 
 `define DELAY_TIME 10
+`define TRUN_CYCLE 8'd5
 
 module DAP_SWD_Trans_tb();
     reg clk;
@@ -76,14 +77,20 @@ module DAP_SWD_Trans_tb();
                 end
                 2: begin
                     ahb_write_en <= 1;
+                    ahb_addr <= 12'h080 + 12'h008;
+                    ahb_wdata <= {24'd0, `TRUN_CYCLE};
+                    ahb_byte_strobe <= 4'hf;
+                end
+                3: begin
+                    ahb_write_en <= 1;
                     ahb_addr <= 12'h000;
                     ahb_wdata <= 32'h0000_0001;
                     ahb_byte_strobe <= 4'hf;
                 end
-                3: begin
+                4: begin
                     start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd1;
                 end
-                4: begin
+                5: begin
                     if (done[`CMD_TRANSFER_BLOCK_SHIFT]) begin
                         start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
                     end
@@ -241,6 +248,7 @@ module DAP_SWD_Trans_tb();
     reg [7:0] data_cnt;
     reg DataParity;
     reg [2:0] tx_ack;
+    reg [4:0] trun_cnt;
 
     initial begin
         SWDIO_TMS_I = 0;
@@ -251,6 +259,7 @@ module DAP_SWD_Trans_tb();
         Parity = 0;
         data = 0;
         DataParity = 0;
+        trun_cnt = 0;
         // tx_ack = 3'b001;
         tx_ack = 3'b010;
         // tx_ack = 3'b100;
@@ -286,8 +295,17 @@ module DAP_SWD_Trans_tb();
                 Parity <= swdio_i;
                 swd_sm <= swd_sm + 1;
             end
-            SWD_TRANS_IO_STOP, SWD_TRANS_IO_PARK, SWD_TRANS_IO_TURN1: begin // stop, park, tm
+            SWD_TRANS_IO_STOP, SWD_TRANS_IO_PARK: begin // stop, park, tm
                 swd_sm <= swd_sm + 1;
+            end
+            SWD_TRANS_IO_TURN1: begin
+                if (trun_cnt == `TRUN_CYCLE) begin
+                    trun_cnt <= 8'd0;
+                    swd_sm <= SWD_TRANS_IO_ACK0;
+                end
+                else begin
+                    trun_cnt <= trun_cnt + 1'd1;
+                end
             end
             SWD_TRANS_IO_ACK0: begin // ack 0
                 SWDIO_TMS_I <= #`DELAY_TIME tx_ack[0];
@@ -305,21 +323,32 @@ module DAP_SWD_Trans_tb();
                     // 读请求ACK后跟数据段
                     // 写请求ACK后跟TURN
                     swd_sm <= RnW ? SWD_TRANS_IO_DATA : SWD_TRANS_IO_TURN2;
-                end else begin
+                end
+                else begin
                     swd_sm <= SWD_TRANS_IO_TURN2;
                     tx_ack <= RnW ? 3'b001 : tx_ack;
                 end
             end
             SWD_TRANS_IO_TURN2: begin // turn
-                SWDIO_TMS_I <= #`DELAY_TIME 1'd0;
-                if (tx_ack == 3'b001) begin
-                    // 读请求TURN2位于末尾，转到结束
-                    // 写请求位于数据段前，转到数据段
-                    swd_sm <= RnW ? SWD_TRANS_IO_START : SWD_TRANS_IO_DATA;
-                end else begin
-                    swd_sm <= SWD_TRANS_IO_START;
-                    tx_ack <= 3'b001;
+                if (trun_cnt == `TRUN_CYCLE) begin
+                    trun_cnt <= 8'd0;
+
+                    SWDIO_TMS_I <= #`DELAY_TIME 1'd0;
+                    if (tx_ack == 3'b001) begin
+                        // 读请求TURN2位于末尾，转到结束
+                        // 写请求位于数据段前，转到数据段
+                        swd_sm <= RnW ? SWD_TRANS_IO_START : SWD_TRANS_IO_DATA;
+                    end
+                    else begin
+                        swd_sm <= SWD_TRANS_IO_START;
+                        tx_ack <= 3'b001;
+                    end
                 end
+                else begin
+                    trun_cnt <= trun_cnt + 1'd1;
+                end
+
+
             end
             SWD_TRANS_IO_DATA: begin // data
                 data_cnt <= data_cnt + 1;

@@ -479,7 +479,7 @@ module DAP_Seqence (
                                 end
                                 else begin
                                     swd_trans_rx_cnt <= swd_trans_rx_cnt + 1'd1;
-                                    swd_trans_tx_sm <= SWD_TRANS_IO_TURN1;
+                                    swd_trans_rx_sm <= SWD_TRANS_IO_TURN1;
                                 end
                             end
                             SWD_TRANS_IO_ACK0: begin
@@ -516,6 +516,8 @@ module DAP_Seqence (
                             end
                             SWD_TRANS_IO_DATA_PATIYY: begin
                                 swd_trans_rx_parity <= swd_trans_rx_parity ^ SWDIO_TMS_I;
+                                SWDIO_TMS_O <= 1'd0;
+                                SWDIO_TMS_T <= 1'd0;
                             end
                             SWD_TRANS_IO_DONE: begin
                                 swd_trans_rx_sm <= SWD_TRANS_IO_DONE;
