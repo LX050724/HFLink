@@ -10,3 +10,36 @@
 06
 07
 08
+00 // DAP index  DAP_Transfer
+07 // Transfer Count
+80 // Transfer Request W DP0
+12
+34
+56
+78
+83 // Transfer Request R AP0
+8D // Transfer Request W AP3
+AA
+BB
+CC
+DD
+20 // Write Match Mask
+FF
+FF
+00
+00
+93 // Value Match AP0
+BB
+AA
+00
+00
+80 // Transfer Request W DP0
+12
+34
+56
+78
+80 // Transfer Request W DP0
+12
+34
+56
+78

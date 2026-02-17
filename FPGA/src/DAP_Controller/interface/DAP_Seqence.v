@@ -158,6 +158,7 @@ module DAP_Seqence (
     reg swd_trans_tx_APnDP;
     reg swd_trans_tx_RnW;
     reg [3:2] swd_trans_tx_ADDR;
+    reg [31:0] swd_trans_tx_data;
     reg swd_trans_tx_parity;
 
     reg [3:0] swd_trans_rx_sm;
@@ -212,6 +213,7 @@ module DAP_Seqence (
             swd_trans_tx_RnW <= 1'd0;
             swd_trans_tx_ADDR <= 2'd0;
             swd_trans_tx_parity <= 1'd0;
+            swd_trans_tx_data <= 32'd0;
             swd_trans_rx_sm <= 4'd0;
             swd_trans_rx_cnt <= 5'd0;
             swd_trans_rx_data <= 32'd0;
@@ -234,7 +236,7 @@ module DAP_Seqence (
                     if (tx_valid && current_cmd == `SEQ_CMD_SWD_SEQ && swj_busy == 0) begin
                         tx_nxt <= 1'd1;
                         tx_shift_reg <= tx_data;
-                        tx_shift_reg[32] <= 0;
+                        // tx_shift_reg[32] <= 0;
                         swd_seq_cmd <= tx_cmd;
                         SWDIO_TMS_T <= tx_cmd[7];
                         swd_seq_tx_count <= tx_cmd[6:0];
@@ -248,7 +250,7 @@ module DAP_Seqence (
                         if (swd_seq_tx_count) begin
                             clock_oen <= 1'd1;
                             swd_seq_tx_count <= swd_seq_tx_count - 7'd1;
-                            {tx_shift_reg[62:0], SWDIO_TMS_O} <= tx_shift_reg; // 移位输出
+                            {tx_shift_reg, SWDIO_TMS_O} <= {1'd0, tx_shift_reg}; // 移位输出
                         end
                         else begin
                             clock_oen <= 1'd0; // 关闭时钟输出
@@ -265,7 +267,8 @@ module DAP_Seqence (
 
                     if (sclk_sampling_en && swd_seq_rx_count) begin
                         swd_seq_rx_count <= swd_seq_rx_count - 7'd1;
-                        rx_shift_reg[swd_seq_rx_count] <= SWDIO_TMS_I;
+                        rx_shift_reg <= {SWDIO_TMS_I, rx_shift_reg[63:1]};
+                        // rx_shift_reg[swd_seq_rx_count] <= SWDIO_TMS_I;
                     end
                 end
             endcase
@@ -343,7 +346,7 @@ module DAP_Seqence (
                         swj_busy <= 1'd1;
 
                         // 装载数据
-                        tx_shift_reg <= tx_data[31:0];
+                        swd_trans_tx_data <= tx_data[31:0];
                         // 装载配置信息
                         swd_trans_retry_cnt <= 16'd0;
                         swd_trans_retry_max <= tx_data[47:32];
@@ -441,8 +444,8 @@ module DAP_Seqence (
                                 end
                             end
                             SWD_TRANS_IO_DATA: begin
-                                {tx_shift_reg[62:0], SWDIO_TMS_O} <= tx_shift_reg; // 移位输出
-                                swd_trans_tx_parity <= swd_trans_tx_parity ^ tx_shift_reg[0];
+                                {swd_trans_tx_data, SWDIO_TMS_O} <= {1'd0, swd_trans_tx_data}; // 移位输出
+                                swd_trans_tx_parity <= swd_trans_tx_parity ^ swd_trans_tx_data[0];
                                 if (swd_trans_tx_cnt == 5'd31) begin
                                     swd_trans_tx_cnt <= 5'd0;
                                 end

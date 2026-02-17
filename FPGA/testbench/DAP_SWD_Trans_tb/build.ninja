@@ -1,5 +1,5 @@
 rule compile
-    command = iverilog.exe -I../../src/DAP_Controller -o $out $in
+    command = iverilog.exe -I../../src/DAP_Controller -DSIMULATION -o $out $in
 
 rule vvp
     command = vvp $in

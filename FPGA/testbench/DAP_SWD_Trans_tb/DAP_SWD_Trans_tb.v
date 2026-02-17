@@ -2,7 +2,7 @@
 `include "DAP_Cmd.v"
 
 `define DELAY_TIME 10
-`define TRUN_CYCLE 8'd5
+`define TRUN_CYCLE 8'd0
 
 module DAP_SWD_Trans_tb();
     reg clk;
@@ -45,6 +45,7 @@ module DAP_SWD_Trans_tb();
     wire [`CMD_REAL_NUM-1:0] done;
     wire read_en = dap_in_tready & start ? 1'd1 : 1'd0;
 
+    assign done[1:0] = 0;
 
     reg [31:0] cnt;
     always @(posedge clk or negedge resetn) begin
@@ -93,9 +94,30 @@ module DAP_SWD_Trans_tb();
                 5: begin
                     if (done[`CMD_TRANSFER_BLOCK_SHIFT]) begin
                         start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
+                        #1
+                        $display("packet_len: %d", packet_len);
+                        for (i = 0; i < packet_len; i = i + 1) begin
+                            $display("%08x: %02x", i, output_data[i]);
+                        end
                     end
                     else begin
-                        cnt <= 3;
+                        cnt <= 5;
+                    end
+                end
+                6: begin
+                    start[`CMD_TRANSFER_SHIFT] <= 1'd1;
+                end
+                7: begin
+                    if (done[`CMD_TRANSFER_SHIFT]) begin
+                        start[`CMD_TRANSFER_SHIFT] <= 1'd0;
+                        #1
+                        $display("packet_len: %d", packet_len);
+                        for (i = 0; i < packet_len; i = i + 1) begin
+                            $display("%08x: %02x", i, output_data[i]);
+                        end
+                    end
+                    else begin
+                        cnt <= 7;
                     end
                 end
             endcase
@@ -110,12 +132,15 @@ module DAP_SWD_Trans_tb();
     reg dap_in_tvalid;
     wire [`CMD_REAL_NUM-1:0] dap_in_tready;
     wire [7:0] dap_in_tdata = test_data[ram_address];
+    reg [31:0] timestamp;
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
             ram_address <= 0;
             dap_in_tvalid <= 0;
+            timestamp <= 0;
         end
         else begin
+            timestamp <= timestamp + 1;
             dap_in_tvalid <= 1;
             if (read_en)
                 ram_address <= ram_address + 1;
@@ -157,7 +182,7 @@ module DAP_SWD_Trans_tb();
                 .clk(clk),
                 .resetn(resetn),
                 .us_tick(),
-                .us_timer(),
+                .us_timer(timestamp),
                 .enable(1'd1),
 
                 //串行时钟
@@ -211,14 +236,7 @@ module DAP_SWD_Trans_tb();
             $display("write %08x %02x", ram_write_addr, ram_write_data);
         end
 
-        if (done & start) begin
-            #1;
-            $display("packet_len: %d", packet_len);
-            for (i = 0; i < packet_len; i = i + 1) begin
-                $display("%08x: %02x", i, output_data[i]);
-            end
-            // $finish(1);
-        end
+
     end
 
     localparam [3:0] SWD_TRANS_IO_START = 4'd0;
@@ -248,7 +266,7 @@ module DAP_SWD_Trans_tb();
     reg [7:0] data_cnt;
     reg DataParity;
     reg [2:0] tx_ack;
-    reg [4:0] trun_cnt;
+    reg [4:0] turn_cnt;
 
     initial begin
         SWDIO_TMS_I = 0;
@@ -259,7 +277,7 @@ module DAP_SWD_Trans_tb();
         Parity = 0;
         data = 0;
         DataParity = 0;
-        trun_cnt = 0;
+        turn_cnt = 0;
         // tx_ack = 3'b001;
         tx_ack = 3'b010;
         // tx_ack = 3'b100;
@@ -299,12 +317,12 @@ module DAP_SWD_Trans_tb();
                 swd_sm <= swd_sm + 1;
             end
             SWD_TRANS_IO_TURN1: begin
-                if (trun_cnt == `TRUN_CYCLE) begin
-                    trun_cnt <= 8'd0;
+                if (turn_cnt == `TRUN_CYCLE) begin
+                    turn_cnt <= 8'd0;
                     swd_sm <= SWD_TRANS_IO_ACK0;
                 end
                 else begin
-                    trun_cnt <= trun_cnt + 1'd1;
+                    turn_cnt <= turn_cnt + 1'd1;
                 end
             end
             SWD_TRANS_IO_ACK0: begin // ack 0
@@ -330,8 +348,8 @@ module DAP_SWD_Trans_tb();
                 end
             end
             SWD_TRANS_IO_TURN2: begin // turn
-                if (trun_cnt == `TRUN_CYCLE) begin
-                    trun_cnt <= 8'd0;
+                if (turn_cnt == `TRUN_CYCLE) begin
+                    turn_cnt <= 8'd0;
 
                     SWDIO_TMS_I <= #`DELAY_TIME 1'd0;
                     if (tx_ack == 3'b001) begin
@@ -345,7 +363,7 @@ module DAP_SWD_Trans_tb();
                     end
                 end
                 else begin
-                    trun_cnt <= trun_cnt + 1'd1;
+                    turn_cnt <= turn_cnt + 1'd1;
                 end
 
 

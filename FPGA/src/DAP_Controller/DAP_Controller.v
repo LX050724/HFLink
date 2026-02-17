@@ -694,7 +694,7 @@ module DAP_Controller #(
 
     always @(*) begin
         if (read_en) begin
-            casez (addr[ADDRWIDTH-1:2])
+            casez (addr[ADDRWIDTH-1:2]) /*synthesis parallel_case*/
                 DAP_CR_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = dap_ctrl_reg;
                     hreadyouts = 1'd1;

@@ -69,7 +69,7 @@ module DAP_BaudGenerator#(
 
     always @(*) begin : ahb_mem_read_ctrl
         if (ahb_read_en) begin
-            case (ahb_addr[ADDRWIDTH-1:2])
+            case (ahb_addr[ADDRWIDTH-1:2]) /*synthesis parallel_case*/
                 REG_CR_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = REG_CR;
                 REG_TIMING_ADDR[ADDRWIDTH-1:2]:

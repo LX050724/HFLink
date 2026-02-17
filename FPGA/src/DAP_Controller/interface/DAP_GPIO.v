@@ -210,7 +210,7 @@ module DAP_GPIO #(
 
     always @(*) begin : ahb_mem_read_ctrl
         if (ahb_read_en) begin
-            case (ahb_addr[ADDRWIDTH-1:2])
+            case (ahb_addr[ADDRWIDTH-1:2]) /*synthesis parallel_case*/
                 GPIO_CR_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = {SWDIO_TMS_O_DELAY, SWDIO_TMS_T_DELAY, SWCLK_TCK_O_DELAY, GPIO_REG_CR};
                 SWDIO_TMS_I_DELAY_ADDR[ADDRWIDTH-1:2]:
