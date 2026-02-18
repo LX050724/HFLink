@@ -181,8 +181,7 @@ module DAP_SWD_Trans_tb();
             inst(
                 .clk(clk),
                 .resetn(resetn),
-                .us_tick(),
-                .us_timer(timestamp),
+                .clk_timer(timestamp),
                 .enable(1'd1),
 
                 //串行时钟

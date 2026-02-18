@@ -1,10 +1,11 @@
-module DAP_Delay(
+module DAP_Delay #(
+        parameter [5:0] CLOCK_FREQ_M = 60
+    )(
         input clk,       // clock
         input resetn,
-        input us_tick,
         input enable,
         input start,
-        
+
         input wire dap_in_tvalid,
         output wire dap_in_tready,
         input wire [7:0] dap_in_tdata,
@@ -17,7 +18,10 @@ module DAP_Delay(
         output done
     );
 
-    
+    // reg [31:0] us_timer;  // us定时器
+    reg [ 5:0] us_timer_div;
+    wire us_tick = us_timer_div == (CLOCK_FREQ_M - 6'd1);
+
     reg [15:0] delay_time;
     reg delay_rx_tready;
     reg delay_tx_tvalid;
@@ -29,6 +33,7 @@ module DAP_Delay(
             delay_sm <= 2'd0;
             delay_tx_tvalid <= 1'd0;
             delay_tx_tdata <= 8'd0;
+            us_timer_div <= 6'd0;
         end
         else begin
             if (start) begin
@@ -43,18 +48,24 @@ module DAP_Delay(
                             delay_time[15:8] <= dap_in_tdata;
                             delay_sm <= 2'd2;
                         end
-                    2'd2: // delay
+                    2'd2: begin// delay
                         if (us_tick) begin
-                            if (delay_time != 16'd0) begin
-                                delay_time <= delay_time - 16'd1;
-                            end
-                            else begin
+                            us_timer_div <= 6'd0;
+                        end
+                        else begin
+                            us_timer_div <= us_timer_div + 1;
+                        end
+
+                        if (us_tick) begin
+                            delay_time <= delay_time - 16'd1;
+                            if ((delay_time - 16'd1) == 16'd0) begin
                                 // 发OK
                                 delay_sm <= 2'd3;
                                 delay_tx_tvalid <= 1'd1;
                                 delay_tx_tdata <= 8'h00;
                             end
                         end
+                    end
                     2'd3: begin
                         delay_tx_tvalid <= 1'd0;
                         delay_tx_tdata <= 8'h00;

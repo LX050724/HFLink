@@ -6,8 +6,7 @@ module DAP_SWJ #(
     )(
         input clk,
         input resetn,
-        input us_tick,
-        input [31:0] us_timer,
+        input [31:0] clk_timer,
         input enable,
 
         // 串行时钟
@@ -1131,7 +1130,7 @@ module DAP_SWJ #(
                         endcase
 `endif
 
-                        swd_trans_timestamp <= us_timer;
+                        swd_trans_timestamp <= clk_timer;
                         swd_block_trans_sm <= SWD_TRANS_SM_WAIT;
                         seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_trans_trig_requset};
                         seq_tx_data <= {32'd0, swd_trans_wdata};

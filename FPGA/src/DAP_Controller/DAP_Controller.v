@@ -219,30 +219,15 @@ module DAP_Controller #(
     end
 
     reg [31:0] clk_timer; // 原始时钟时间戳定时器
-    reg [31:0] us_timer;  // us定时器
-    reg [ 5:0] us_timer_div;
-    wire us_tick = us_timer_div == (CLOCK_FREQ_M - 6'd1);
     always @(posedge hclk or negedge hresetn) begin
         if (!hresetn) begin
             clk_timer <= 32'd0;
-            us_timer <= 32'd0;
-            us_timer_div <= 6'd0;
         end
         else begin
             clk_timer <= clk_timer + 1;
-            if (us_tick) begin
-                us_timer_div <= 6'd0;
-                us_timer <= us_timer + 32'd1;
-            end
-            else begin
-                us_timer_div <= us_timer_div + 6'd1;
-            end
-
             // TIME寄存器写操作复位定时器
             if (write_en && addr_equ(addr, DAP_TIME_ADDR)) begin
                 clk_timer <= 32'd0;
-                us_timer <= 32'd0;
-                us_timer_div <= 6'd0;
             end
         end
     end
@@ -421,10 +406,9 @@ module DAP_Controller #(
     end
 
     /************************************************** DELAY *************************************************/
-    DAP_Delay DAP_Delay_inst (
+    DAP_Delay #(CLOCK_FREQ_M) DAP_Delay_inst (
                   .clk(hclk),
                   .resetn(hresetn),
-                  .us_tick(us_tick),
                   .enable(DAP_CR_EN),
 
                   .start(worker_start_flags[`CMD_DELAY_SHIFT]),
@@ -464,8 +448,7 @@ module DAP_Controller #(
             ) DAP_SWJ_inst(
                 .clk(hclk),
                 .resetn(hresetn),
-                .us_tick(us_tick),
-                .us_timer(us_timer),
+                .clk_timer(clk_timer),
                 .enable(DAP_CR_EN),
 
                 .sclk(sclk),
