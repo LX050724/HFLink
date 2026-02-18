@@ -14,12 +14,12 @@ module DAP_Seqence (
         // 控制器输入输出
         input seq_tx_valid,
         input [15:0] seq_tx_cmd,
-        input [63:0] seq_tx_data,
+        input [31:0] seq_tx_data,
         output seq_tx_full,
 
         output seq_rx_valid,
         output [15:0] seq_rx_flag,
-        output [63:0] seq_rx_data,
+        output [31:0] seq_rx_data,
 
         input [15:0] DAP_TRANS_WAIT_RETRY,
         input [11:0] SWD_TURN_CYCLE,
@@ -59,14 +59,10 @@ module DAP_Seqence (
         end
     end
 
-
-    reg [63:0] tx_shift_reg;
-    reg [63:0] rx_shift_reg;
-
     reg rx_valid;
     reg rx_valid2;
     reg [15:0] rx_flag;
-    reg [63:0] rx_data;
+    reg [31:0] rx_data;
 
 
     reg tx_valid_ff1;
@@ -74,13 +70,13 @@ module DAP_Seqence (
     reg tx_valid;
     reg tx_nxt;
     reg [15:0] tx_cmd;
-    reg [63:0] tx_data;
+    reg [31:0] tx_data;
     always @(posedge sclk or negedge resetn) begin
         if (!resetn) begin
             tx_valid_ff1 <= 1'd0;
             tx_valid_ff2 <= 1'd0;
             tx_cmd <= 16'd0;
-            tx_data <= 64'd0;
+            tx_data <= 32'd0;
             tx_valid <= 1'd0;
         end
         else begin
@@ -139,9 +135,9 @@ module DAP_Seqence (
     reg [7:0] swj_pin_output_reg;
     reg [31:0] swj_us_cnt;
     reg [7:0] swj_tick_cnt;
-    wire [7:0] swj_pin_output = seq_tx_data[7:0];
-    wire [7:0] swj_pin_select = seq_tx_data[15:8];
-    wire [31:0] swj_pin_delay = seq_tx_data[47:16];
+    wire [7:0] swj_pin_output = {tx_cmd[10], 1'd0, tx_cmd[11], 1'd0, tx_cmd[9:6]};
+    wire [7:0] swj_pin_select = {tx_cmd[ 4], 1'd0, tx_cmd[ 5], 1'd0, tx_cmd[3:0]};
+    wire [31:0] swj_pin_delay = seq_tx_data;
     wire [7:0] swj_pin_read = {
              SRST_I,
              1'd0,
@@ -199,8 +195,6 @@ module DAP_Seqence (
         if (!resetn) begin
             rx_valid <= 0;
             rx_valid2 <= 0;
-            rx_shift_reg <= 64'd0;
-            tx_shift_reg <= 64'd0;
             clock_oen <= 1'd0;
             clock_idle <= 1'd1;
             rx_flag <= 16'd0;
@@ -264,7 +258,6 @@ module DAP_Seqence (
                 1'd0: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_SWD_SEQ && swj_busy == 0) begin
                         tx_nxt <= 1'd1;
-                        tx_shift_reg <= tx_data;
                         swd_seq_num <= tx_cmd[3:0];
                         swd_seq_dir <= tx_cmd[4];
                         swd_seq_tx_count <= 4'd0;

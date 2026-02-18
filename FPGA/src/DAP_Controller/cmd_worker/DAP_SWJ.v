@@ -187,13 +187,13 @@ module DAP_SWJ #(
     end
 
     reg [15:0] seq_tx_cmd;
-    reg [63:0] seq_tx_data;
+    reg [31:0] seq_tx_data;
     reg seq_tx_valid;
     wire seq_tx_full;
 
     wire seq_rx_valid;
     wire [15:0] seq_rx_flag;
-    wire [63:0] seq_rx_data;
+    wire [31:0] seq_rx_data;
 
     DAP_Seqence dap_seqence_inst(
                     // 控制器时钟
@@ -375,7 +375,7 @@ module DAP_SWJ #(
         casez ({start, 2'd0}) /* synthesis parallel_case */
             `CMD_TRANSFER_BLOCK: begin
                 seq_tx_cmd = {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_block_trans_req};
-                seq_tx_data = {32'd0, swd_block_trans_data};
+                seq_tx_data = swd_block_trans_data;
                 seq_tx_valid = swd_block_trans_seq_tx_valid;
 
                 // ram_write_addr
@@ -385,17 +385,17 @@ module DAP_SWJ #(
             end
             `CMD_TRANSFER: begin
                 seq_tx_cmd = {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_trans_trig_requset};
-                seq_tx_data = {32'd0, swd_trans_wdata};
+                seq_tx_data = swd_trans_wdata;
                 seq_tx_valid = (swd_trans_sm & SWD_TRANS_SM_TRIGGER) != 27'd0;
             end
             `CMD_WRITE_ABORT: begin
                 seq_tx_cmd = 16'd0;
-                seq_tx_data = 64'd0;
+                seq_tx_data = 32'd0;
                 seq_tx_valid = 1'd0;
             end
             `CMD_SWJ_PINS: begin
                 seq_tx_cmd = {`SEQ_CMD_SWJ_PINS, swj_pins_output, swj_pins_select};
-                seq_tx_data = {31'd0, swj_pins_wait_time};
+                seq_tx_data = swj_pins_wait_time;
                 seq_tx_valid = (swj_pins_sm == SWJ_PINS_SM_READ_WAIT3) && dap_in_tvalid;
 
                 // ram_write_addr <= 10'd0;
@@ -405,17 +405,17 @@ module DAP_SWJ #(
             end
             `CMD_SWJ_SEQUENCE: begin
                 seq_tx_cmd = {`SEQ_CMD_SWD_SEQ, 7'd0, 1'd0, swj_seq_trans_num};
-                seq_tx_data = {56'd0, swj_seq_data};
+                seq_tx_data = {24'd0, swj_seq_data};
                 seq_tx_valid = swj_seq_tx_valid;
             end
             `CMD_SWD_SEQUENCE: begin
                 seq_tx_cmd = {`SEQ_CMD_SWD_SEQ, 7'd0, swd_seq_dir, swd_seq_trans_num};
-                seq_tx_data = {56'd0, swd_seq_send_data};
+                seq_tx_data = {24'd0, swd_seq_send_data};
                 seq_tx_valid = swd_seq_tx_valid;
             end
             default: begin
                 seq_tx_cmd = 16'd0;
-                seq_tx_data = 64'd0;
+                seq_tx_data = 32'd0;
                 seq_tx_valid = 1'd0;
             end
         endcase
