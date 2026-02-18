@@ -2,7 +2,7 @@
 `include "DAP_Cmd.v"
 
 `define DELAY_TIME 10
-`define TRUN_CYCLE 8'd0
+`define TRUN_CYCLE 12'd0
 
 module DAP_SWD_Trans_tb();
     reg clk;
@@ -79,7 +79,7 @@ module DAP_SWD_Trans_tb();
                 2: begin
                     ahb_write_en <= 1;
                     ahb_addr <= 12'h080 + 12'h008;
-                    ahb_wdata <= {24'd0, `TRUN_CYCLE};
+                    ahb_wdata <= {1'd0, 19'd0, `TRUN_CYCLE};
                     ahb_byte_strobe <= 4'hf;
                 end
                 3: begin
@@ -266,7 +266,7 @@ module DAP_SWD_Trans_tb();
     reg [7:0] data_cnt;
     reg DataParity;
     reg [2:0] tx_ack;
-    reg [4:0] turn_cnt;
+    reg [11:0] turn_cnt;
 
     initial begin
         SWDIO_TMS_I = 0;
@@ -283,7 +283,7 @@ module DAP_SWD_Trans_tb();
         // tx_ack = 3'b100;
     end
 
-    wire swdio_i = SWDIO_TMS_T ? 1'd1 : SWDIO_TMS_O;
+    wire swdio_i = SWDIO_TMS_O;
 
     always @(posedge SWCLK_TCK_O) begin
         case (swd_sm)
@@ -318,7 +318,7 @@ module DAP_SWD_Trans_tb();
             end
             SWD_TRANS_IO_TURN1: begin
                 if (turn_cnt == `TRUN_CYCLE) begin
-                    turn_cnt <= 8'd0;
+                    turn_cnt <= 12'd0;
                     swd_sm <= SWD_TRANS_IO_ACK0;
                 end
                 else begin
@@ -349,7 +349,7 @@ module DAP_SWD_Trans_tb();
             end
             SWD_TRANS_IO_TURN2: begin // turn
                 if (turn_cnt == `TRUN_CYCLE) begin
-                    turn_cnt <= 8'd0;
+                    turn_cnt <= 12'd0;
 
                     SWDIO_TMS_I <= #`DELAY_TIME 1'd0;
                     if (tx_ack == 3'b001) begin

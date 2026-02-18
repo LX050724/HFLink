@@ -78,12 +78,12 @@ module DAP_SWJ #(
     wire SWJ_CR_MODE = SWJ_CR; // 0: SWD; 1: JTAG
 
 
-    reg [8:0] SWJ_SWD_CR;
+    reg [31:0] SWJ_SWD_CR;
     reg [7:0] SWJ_JTAG_CR;
     reg [31:0] SWJ_JTAG_IR_CONF_REG [0:7];
 
-    wire [7:0] SWD_CONF_TURN = SWJ_SWD_CR[7:0];
-    wire SWD_CONF_FORCE_DATA = SWJ_SWD_CR[8];
+    wire [11:0] SWD_CONF_TURN = SWJ_SWD_CR[11:0];
+    wire SWD_CONF_FORCE_DATA = SWJ_SWD_CR[31];
 
     wire [7:0] JTAG_CR_COUNT = SWJ_JTAG_CR[7:0];
     wire [13:0] JTAG_IR_BEFORE_CONF [0:7];
@@ -217,6 +217,8 @@ module DAP_SWJ #(
                     .seq_rx_flag(seq_rx_flag),
                     .seq_rx_data(seq_rx_data),
 
+                    .DAP_TRANS_WAIT_RETRY(SWJ_WAIT_RETRY),
+                    .SWD_TURN_CYCLE(SWD_CONF_TURN),
 
                     // GPIO
                     .SWCLK_TCK_O(SWCLK_TCK_O),
@@ -342,63 +344,63 @@ module DAP_SWJ #(
 
     reg [1:0] swj_pin_sm;
 
-    localparam [3:0] SWD_BTRANS_SM_READ_INDEX = 4'd0;
-    localparam [3:0] SWD_BTRANS_SM_READ_COUNT_L = 4'd1;
-    localparam [3:0] SWD_BTRANS_SM_READ_COUNT_H = 4'd2;
-    localparam [3:0] SWD_BTRANS_SM_READ_REQUSET = 4'd3;
-    localparam [3:0] SWD_BTRANS_SM_PROCESS_REQ = 4'd4;
-    localparam [3:0] SWD_BTRANS_SM_READ_DATA = 4'd5;
-    localparam [3:0] SWD_BTRANS_SM_TRANSFER = 4'd6;
-    localparam [3:0] SWD_BTRANS_SM_WAIT_RDBUFF = 4'd7;
-    localparam [3:0] SWD_BTRANS_SM_WRITE_DATA_0 = 4'd8;
-    localparam [3:0] SWD_BTRANS_SM_WRITE_DATA_1 = 4'd9;
-    localparam [3:0] SWD_BTRANS_SM_WRITE_DATA_2 = 4'd10;
-    localparam [3:0] SWD_BTRANS_SM_WRITE_DATA_3 = 4'd11;
-    localparam [3:0] SWD_BTRANS_SM_WRITE_COUNT_L = 4'd12;
-    localparam [3:0] SWD_BTRANS_SM_WRITE_COUNT_H = 4'd13;
-    localparam [3:0] SWD_BTRANS_SM_WRITE_RESPONSE = 4'd14;
-    localparam [3:0] SWD_BTRANS_SM_END = 4'd15;
+    localparam [17:0] SWD_BTRANS_SM_READ_INDEX          = 20'h0_0001;
+    localparam [17:0] SWD_BTRANS_SM_READ_COUNT_L        = 20'h0_0002;
+    localparam [17:0] SWD_BTRANS_SM_READ_COUNT_H        = 20'h0_0004;
+    localparam [17:0] SWD_BTRANS_SM_READ_REQUSET        = 20'h0_0008;
+    localparam [17:0] SWD_BTRANS_SM_READ_DATA0          = 20'h0_0010;
+    localparam [17:0] SWD_BTRANS_SM_READ_DATA1          = 20'h0_0020;
+    localparam [17:0] SWD_BTRANS_SM_READ_DATA2          = 20'h0_0040;
+    localparam [17:0] SWD_BTRANS_SM_READ_DATA3          = 20'h0_0080;
+    localparam [17:0] SWD_BTRANS_SM_PROCESS_REQ         = 20'h0_0100;
+    localparam [17:0] SWD_BTRANS_SM_TRANSFER            = 20'h0_0200;
+    localparam [17:0] SWD_BTRANS_SM_WAIT_RDBUFF         = 20'h0_0400;
+    localparam [17:0] SWD_BTRANS_SM_WRITE_DATA_0        = 20'h0_0800;
+    localparam [17:0] SWD_BTRANS_SM_WRITE_DATA_1        = 20'h0_1000;
+    localparam [17:0] SWD_BTRANS_SM_WRITE_DATA_2        = 20'h0_2000;
+    localparam [17:0] SWD_BTRANS_SM_WRITE_DATA_3        = 20'h0_4000;
+    localparam [17:0] SWD_BTRANS_SM_WRITE_COUNT_L       = 20'h0_8000;
+    localparam [17:0] SWD_BTRANS_SM_WRITE_COUNT_H       = 20'h1_0000;
+    localparam [17:0] SWD_BTRANS_SM_WRITE_RESPONSE      = 20'h2_0000;
+    localparam [17:0] SWD_BTRANS_SM_END                 = 20'h0_0000;
 
 
-    reg [3:0] swd_block_trans_sm;
+    reg [17:0] swd_block_trans_sm /*synthesis syn_encoding="onehot"*/;
     reg [15:0] swd_block_trans_request_cnt;
     reg [15:0] swd_block_trans_response_cnt;
     reg [3:0] swd_block_trans_req;
+    reg [31:0] swd_block_trans_data;
     reg swd_block_trans_RnW;
     reg swd_block_trans_err_flag;
 
-    localparam SWD_TRANS_SM_READ_INDEX          = 27'h000_0001;
-    localparam SWD_TRANS_SM_READ_COUNT          = 27'h000_0002;
-    localparam SWD_TRANS_SM_READ_REQUSET        = 27'h000_0004;
-    localparam SWD_TRANS_SM_READ_DATA0          = 27'h000_0008;
-    localparam SWD_TRANS_SM_READ_DATA1          = 27'h000_0010;
-    localparam SWD_TRANS_SM_READ_DATA2          = 27'h000_0020;
-    localparam SWD_TRANS_SM_READ_DATA3          = 27'h000_0040;
-
-    localparam SWD_TRANS_SM_CHECK_POSTREAD      = 27'h000_0080;
-
-    localparam SWD_TRANS_SM_READ_AP             = 27'h000_0100;
-    localparam SWD_TRANS_SM_READ_DP             = 27'h000_0200;
-    localparam SWD_TRANS_SM_WRITE_APDP          = 27'h000_0400;
-    localparam SWD_TRANS_SM_MATCH_STEP1         = 27'h000_0800;
-    localparam SWD_TRANS_SM_MATCH_STEP2         = 27'h000_1000;
-    localparam SWD_TRANS_SM_MATCH_STEP3         = 27'h000_2000;
-
-    localparam SWD_TRANS_SM_CHECK_WIRTE         = 27'h000_4000;
-    localparam SWD_TRANS_SM_WRTE_COUNT          = 27'h000_8000;
-    localparam SWD_TRANS_SM_WRTE_STATUS         = 27'h001_0000;
-
-    localparam SWD_TRANS_SM_TRIGGER             = 27'h002_0000;
-    localparam SWD_TRANS_SM_WAIT                = 27'h004_0000;
-    localparam SWD_TRANS_SM_WRITE_DATA0         = 27'h008_0000;
-    localparam SWD_TRANS_SM_WRITE_DATA1         = 27'h010_0000;
-    localparam SWD_TRANS_SM_WRITE_DATA2         = 27'h020_0000;
-    localparam SWD_TRANS_SM_WRITE_DATA3         = 27'h040_0000;
-    localparam SWD_TRANS_SM_WRITE_TIME0         = 27'h080_0000;
-    localparam SWD_TRANS_SM_WRITE_TIME1         = 27'h100_0000;
-    localparam SWD_TRANS_SM_WRITE_TIME2         = 27'h200_0000;
-    localparam SWD_TRANS_SM_WRITE_TIME3         = 27'h400_0000;
-    localparam SWD_TRANS_SM_DONE                = 27'h000_0000;
+    localparam [26:0] SWD_TRANS_SM_READ_INDEX          = 27'h000_0001;
+    localparam [26:0] SWD_TRANS_SM_READ_COUNT          = 27'h000_0002;
+    localparam [26:0] SWD_TRANS_SM_READ_REQUSET        = 27'h000_0004;
+    localparam [26:0] SWD_TRANS_SM_READ_DATA0          = 27'h000_0008;
+    localparam [26:0] SWD_TRANS_SM_READ_DATA1          = 27'h000_0010;
+    localparam [26:0] SWD_TRANS_SM_READ_DATA2          = 27'h000_0020;
+    localparam [26:0] SWD_TRANS_SM_READ_DATA3          = 27'h000_0040;
+    localparam [26:0] SWD_TRANS_SM_CHECK_POSTREAD      = 27'h000_0080;
+    localparam [26:0] SWD_TRANS_SM_READ_AP             = 27'h000_0100;
+    localparam [26:0] SWD_TRANS_SM_READ_DP             = 27'h000_0200;
+    localparam [26:0] SWD_TRANS_SM_WRITE_APDP          = 27'h000_0400;
+    localparam [26:0] SWD_TRANS_SM_MATCH_STEP1         = 27'h000_0800;
+    localparam [26:0] SWD_TRANS_SM_MATCH_STEP2         = 27'h000_1000;
+    localparam [26:0] SWD_TRANS_SM_MATCH_STEP3         = 27'h000_2000;
+    localparam [26:0] SWD_TRANS_SM_CHECK_WIRTE         = 27'h000_4000;
+    localparam [26:0] SWD_TRANS_SM_WRTE_COUNT          = 27'h000_8000;
+    localparam [26:0] SWD_TRANS_SM_WRTE_STATUS         = 27'h001_0000;
+    localparam [26:0] SWD_TRANS_SM_TRIGGER             = 27'h002_0000;
+    localparam [26:0] SWD_TRANS_SM_WAIT                = 27'h004_0000;
+    localparam [26:0] SWD_TRANS_SM_WRITE_DATA0         = 27'h008_0000;
+    localparam [26:0] SWD_TRANS_SM_WRITE_DATA1         = 27'h010_0000;
+    localparam [26:0] SWD_TRANS_SM_WRITE_DATA2         = 27'h020_0000;
+    localparam [26:0] SWD_TRANS_SM_WRITE_DATA3         = 27'h040_0000;
+    localparam [26:0] SWD_TRANS_SM_WRITE_TIME0         = 27'h080_0000;
+    localparam [26:0] SWD_TRANS_SM_WRITE_TIME1         = 27'h100_0000;
+    localparam [26:0] SWD_TRANS_SM_WRITE_TIME2         = 27'h200_0000;
+    localparam [26:0] SWD_TRANS_SM_WRITE_TIME3         = 27'h400_0000;
+    localparam [26:0] SWD_TRANS_SM_DONE                = 27'h000_0000;
 
 
 
@@ -461,10 +463,11 @@ module DAP_SWJ #(
 
             swj_pin_sm <= 2'd0;
 
-            swd_block_trans_sm <= 4'd0;
+            swd_block_trans_sm <= SWD_BTRANS_SM_READ_INDEX;
             swd_block_trans_request_cnt <= 16'd0;
             swd_block_trans_response_cnt <= 16'd0;
             swd_block_trans_req <= 4'd0;
+            swd_block_trans_data <= 32'd0;
             swd_block_trans_RnW <= 1'd0;
             swd_block_trans_err_flag <= 1'd0;
 
@@ -693,44 +696,61 @@ module DAP_SWJ #(
                             swd_block_trans_sm <= SWD_BTRANS_SM_READ_COUNT_L;
                         end
                     end
-                    SWD_BTRANS_SM_READ_COUNT_L, SWD_BTRANS_SM_READ_COUNT_H: begin
+                    SWD_BTRANS_SM_READ_COUNT_L: begin
                         if (dap_in_tvalid) begin
                             swd_block_trans_request_cnt <= {dap_in_tdata, swd_block_trans_request_cnt[15:8]};
-                            swd_block_trans_sm <= swd_block_trans_sm + 1'd1;
+                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_COUNT_H;
+                        end
+                    end
+                    SWD_BTRANS_SM_READ_COUNT_H: begin
+                        if (dap_in_tvalid) begin
+                            swd_block_trans_request_cnt <= {dap_in_tdata, swd_block_trans_request_cnt[15:8]};
+                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_REQUSET;
                         end
                     end
                     SWD_BTRANS_SM_READ_REQUSET: begin // 读requset
                         if (dap_in_tvalid) begin
                             swd_block_trans_req <= dap_in_tdata[3:0];
                             swd_block_trans_RnW <= dap_in_tdata[1];
+                            if (dap_in_tdata[1]) begin
+                                swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                            end else begin
+                                swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA0;
+                            end
+                        end
+                    end
+                    SWD_TRANS_SM_READ_DATA0: begin
+                        if (dap_in_tvalid) begin
+                            swd_block_trans_data <= {dap_in_tdata, swd_block_trans_data[31:8]};
+                            swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA1;
+                        end
+                    end
+                    SWD_TRANS_SM_READ_DATA1: begin
+                        if (dap_in_tvalid) begin
+                            swd_block_trans_data <= {dap_in_tdata, swd_block_trans_data[31:8]};
+                            swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA2;
+                        end
+                    end
+                    SWD_TRANS_SM_READ_DATA2: begin
+                        if (dap_in_tvalid) begin
+                            swd_block_trans_data <= {dap_in_tdata, swd_block_trans_data[31:8]};
+                            swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA3;
+                        end
+                    end
+                    SWD_TRANS_SM_READ_DATA3: begin
+                        if (dap_in_tvalid) begin
+                            swd_block_trans_data <= {dap_in_tdata, swd_block_trans_data[31:8]};
                             swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
                         end
                     end
                     SWD_BTRANS_SM_PROCESS_REQ: begin // 循环开始位置，根据请求类型触发读fifo数据或驱动SWD
-                        if (swd_block_trans_req[1] == 1'd0) begin
-                            // 写请求触发读fifo数据
-                            buf64_rbit_len <= 7'd32;
-                            buf64_start <= 1'd1;
-                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA;
-                        end
-                        else if (!swd_block_trans_err_flag) begin
+                        if (!swd_block_trans_err_flag) begin
                             // 读请求直接驱动SWD
                             seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_block_trans_req};
-                            seq_tx_data <= {8'd0, SWD_CONF_TURN, SWJ_WAIT_RETRY, buf64[31:0]};
+                            seq_tx_data <= {32'd0, swd_block_trans_data};
                             seq_tx_valid <= 1'd1;
-                            swd_block_trans_sm <= SWD_BTRANS_SM_TRANSFER;
                         end
-                    end
-                    SWD_BTRANS_SM_READ_DATA: begin // 写请求数据读取完成，驱动SWD
-                        if (buf64_finish) begin
-                            if (!swd_block_trans_err_flag) begin
-                                // 非错误状态驱动，错误状态不驱动
-                                seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_block_trans_req};
-                                seq_tx_data <= {8'd0, SWD_CONF_TURN, SWJ_WAIT_RETRY, buf64[31:0]};
-                                seq_tx_valid <= 1'd1;
-                            end
-                            swd_block_trans_sm <= SWD_BTRANS_SM_TRANSFER;
-                        end
+                        swd_block_trans_sm <= SWD_BTRANS_SM_TRANSFER;
                     end
                     SWD_BTRANS_SM_TRANSFER: begin // 等待传输完成
                         if (!swd_block_trans_err_flag && (seq_rx_valid && seq_rx_flag[2:0] == 3'b001)) begin // 正常传输完成
@@ -754,7 +774,7 @@ module DAP_SWJ #(
                                         // 最后一次传输
                                         swd_block_trans_req <= 4'b1110;
                                         seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, 4'b1110}; // RDBUFF
-                                        seq_tx_data <= {8'd0, SWD_CONF_TURN, SWJ_WAIT_RETRY, buf64[31:0]};
+                                        // seq_tx_data <= {32'd0, swd_block_trans_data};
                                         seq_tx_valid <= 1'd1;
                                         swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
                                     end
@@ -835,7 +855,7 @@ module DAP_SWJ #(
                             if (swd_block_trans_request_cnt == 16'd0) begin // 最后一次读AP接RDBUFF
                                 swd_block_trans_req <= 4'b1110;
                                 seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, 4'b1110}; // RDBUFF
-                                seq_tx_data <= {8'd0, SWD_CONF_TURN, SWJ_WAIT_RETRY, buf64[31:0]};
+                                seq_tx_data <= {32'd0, buf64[31:0]};
                                 seq_tx_valid <= 1'd1;
                                 swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
                             end
@@ -1114,7 +1134,7 @@ module DAP_SWJ #(
                         swd_trans_timestamp <= us_timer;
                         swd_block_trans_sm <= SWD_TRANS_SM_WAIT;
                         seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_trans_trig_requset};
-                        seq_tx_data <= {8'd0, SWD_CONF_TURN, SWJ_WAIT_RETRY, swd_trans_wdata};
+                        seq_tx_data <= {32'd0, swd_trans_wdata};
                         seq_tx_valid <= 1'd1;
                         swd_trans_sm <= SWD_TRANS_SM_WAIT;
                     end
@@ -1227,7 +1247,7 @@ module DAP_SWJ #(
     assign dap_in_tready[`CMD_SWD_SEQUENCE_SHIFT] = (swd_seq_recv_sm == 2'd0) || buf64_tready;
     assign dap_in_tready[`CMD_SWJ_PINS_SHIFT] = buf64_tready;
     assign dap_in_tready[`CMD_TRANSFER_BLOCK_SHIFT] = (SWJ_CR_MODE == 1'd0) ?
-           ((swd_block_trans_sm <= SWD_BTRANS_SM_READ_REQUSET) || buf64_tready) :
+           (swd_block_trans_sm[7:0] != 8'd0):
            1'd0;
     assign dap_in_tready[`CMD_TRANSFER_SHIFT] = (SWJ_CR_MODE == 1'd0) ?
            (swd_trans_sm[2] ? (swd_trans_num != 8'd0) : swd_trans_sm[6:0] != 7'd0):

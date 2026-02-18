@@ -21,6 +21,9 @@ module DAP_Seqence (
         output [15:0] seq_rx_flag,
         output [63:0] seq_rx_data,
 
+        input [15:0] DAP_TRANS_WAIT_RETRY,
+        input [11:0] SWD_TURN_CYCLE,
+
 
         // GPIO
         output SWCLK_TCK_O,
@@ -35,6 +38,26 @@ module DAP_Seqence (
         input TRST_I,
         output reg TRST_O
     );
+
+    reg [15:0] dap_trans_wait_retry_ff;
+    reg [11:0] swd_turn_cycle_ff;
+    // reg [15:0] dap_trans_wait_retry;
+    // reg [7:0] swd_turn_cycle;
+
+    always @(posedge sclk or negedge resetn) begin
+        if (!resetn) begin
+            dap_trans_wait_retry_ff <= 0;
+            swd_turn_cycle_ff <= 0;
+            // dap_trans_wait_retry <= 0;
+            // swd_turn_cycle <= 0;
+        end
+        else begin
+            dap_trans_wait_retry_ff <= DAP_TRANS_WAIT_RETRY;
+            swd_turn_cycle_ff <= SWD_TURN_CYCLE;
+            // dap_trans_wait_retry <= dap_trans_wait_retry_ff;
+            // swd_turn_cycle <= swd_turn_cycle_ff;
+        end
+    end
 
 
     reg [63:0] tx_shift_reg;
@@ -149,12 +172,12 @@ module DAP_Seqence (
     localparam [3:0] SWD_TRANS_IO_DONE = 4'd15;
 
     reg [1:0] swd_trans_sm;
-    reg [4:0] swd_trans_turn_cycle;
+    reg [11:0] swd_trans_turn_cycle;
     reg [15:0] swd_trans_retry_max;
     reg [15:0] swd_trans_retry_cnt;
 
     reg [3:0] swd_trans_tx_sm;
-    reg [4:0] swd_trans_tx_cnt;
+    reg [11:0] swd_trans_tx_cnt;
     reg swd_trans_tx_APnDP;
     reg swd_trans_tx_RnW;
     reg [3:2] swd_trans_tx_ADDR;
@@ -162,7 +185,7 @@ module DAP_Seqence (
     reg swd_trans_tx_parity;
 
     reg [3:0] swd_trans_rx_sm;
-    reg [4:0] swd_trans_rx_cnt;
+    reg [11:0] swd_trans_rx_cnt;
     reg [31:0] swd_trans_rx_data;
     reg swd_trans_rx_parity;
     reg [2:0] swd_trans_rx_ack;
@@ -204,18 +227,18 @@ module DAP_Seqence (
 
 
             swd_trans_sm <= 2'd0;
-            swd_trans_turn_cycle <= 5'd0;
+            swd_trans_turn_cycle <= 12'd0;
             swd_trans_retry_max <= 16'd0;
             swd_trans_retry_cnt <= 16'd0;
             swd_trans_tx_sm <= 4'd0;
-            swd_trans_tx_cnt <= 5'd0;
+            swd_trans_tx_cnt <= 12'd0;
             swd_trans_tx_APnDP <= 1'd0;
             swd_trans_tx_RnW <= 1'd0;
             swd_trans_tx_ADDR <= 2'd0;
             swd_trans_tx_parity <= 1'd0;
             swd_trans_tx_data <= 32'd0;
             swd_trans_rx_sm <= 4'd0;
-            swd_trans_rx_cnt <= 5'd0;
+            swd_trans_rx_cnt <= 12'd0;
             swd_trans_rx_data <= 32'd0;
             swd_trans_rx_parity <= 1'd0;
             swd_trans_rx_ack <= 3'd0;
@@ -274,7 +297,7 @@ module DAP_Seqence (
             endcase
 
             // SEQ_CMD_SWJ_PINS
-            case (swj_pin_sm)
+            case (swj_pin_sm) /*synthesis parallel_case*/
                 0: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_SWJ_PINS && swj_busy == 0) begin
                         // 位 0：SWCLK/TCK
@@ -339,7 +362,7 @@ module DAP_Seqence (
             endcase
 
             // SEQ_CMD_SWD_TRANSFER
-            case (swd_trans_sm)
+            case (swd_trans_sm) /*synthesis parallel_case*/
                 SWD_TRANS_SM_IDLE: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_SWD_TRANSFER && swj_busy == 0) begin
                         tx_nxt <= 1'd1;
@@ -349,8 +372,8 @@ module DAP_Seqence (
                         swd_trans_tx_data <= tx_data[31:0];
                         // 装载配置信息
                         swd_trans_retry_cnt <= 16'd0;
-                        swd_trans_retry_max <= tx_data[47:32];
-                        swd_trans_turn_cycle <= tx_data[55:48];
+                        swd_trans_retry_max <= dap_trans_wait_retry_ff;
+                        swd_trans_turn_cycle <= swd_turn_cycle_ff;
                         // 装载请求头
                         swd_trans_tx_APnDP <= tx_cmd[0];
                         swd_trans_tx_RnW <= tx_cmd[1];
@@ -366,7 +389,7 @@ module DAP_Seqence (
                         swd_trans_tx_sm <= swd_trans_tx_sm + 4'd1;
                         case (swd_trans_tx_sm)
                             SWD_TRANS_IO_START: begin
-                                swd_trans_tx_cnt <= 5'd0;
+                                swd_trans_tx_cnt <= 12'd0;
                                 clock_oen <= 1'd1;
                                 SWDIO_TMS_O <= 1'd1;
                                 SWDIO_TMS_T <= 1'd0;
@@ -405,7 +428,7 @@ module DAP_Seqence (
                             SWD_TRANS_IO_TURN1: begin
                                 SWDIO_TMS_T <= 1'd1;
                                 if (swd_trans_tx_cnt == swd_trans_turn_cycle) begin
-                                    swd_trans_tx_cnt <= 5'd0;
+                                    swd_trans_tx_cnt <= 12'd0;
                                 end
                                 else begin
                                     swd_trans_tx_cnt <= swd_trans_tx_cnt + 1'd1;
@@ -414,25 +437,16 @@ module DAP_Seqence (
                             end
                             // SWD_TRANS_IO_ACK0: // Nothing
                             // SWD_TRANS_IO_ACK1: // Nothing
-                            SWD_TRANS_IO_ACK2: begin
-                                // 读请求ACK后跟数据段
-                                // 写请求ACK后跟TURN
-                                swd_trans_tx_sm <= swd_trans_tx_RnW ? SWD_TRANS_IO_DATA : SWD_TRANS_IO_TURN2;
-                            end
+                            // SWD_TRANS_IO_ACK2: // Nothing
                             SWD_TRANS_IO_TURN2: begin
+                                // 无论读写都进入SWD_TRANS_IO_TURN2
+                                // 读模式下用于等待ACK结果，ACK失败生成TURN数量时钟后退出，ACK成功生成TURN段之后进入数据段生成全部时钟
                                 if (swd_trans_tx_cnt == swd_trans_turn_cycle) begin
-                                    swd_trans_tx_cnt <= 5'd0;
+                                    swd_trans_tx_cnt <= 12'd0;
 
                                     // 判断RX ACK状态
                                     if (swd_trans_rx_ack == 3'd001) begin // OK
-                                        // 读请求TURN2位于末尾，转到结束
-                                        // 写请求位于数据段前，转到数据段
-                                        if (swd_trans_tx_RnW) begin
-                                            swd_trans_tx_sm <= SWD_TRANS_IO_DONE;
-                                        end
-                                        else begin
-                                            swd_trans_tx_sm <= SWD_TRANS_IO_DATA;
-                                        end
+                                        swd_trans_tx_sm <= SWD_TRANS_IO_DATA;
                                     end
                                     else begin // Wait / Error / Other
                                         swd_trans_tx_sm <= SWD_TRANS_IO_DONE;
@@ -446,8 +460,8 @@ module DAP_Seqence (
                             SWD_TRANS_IO_DATA: begin
                                 {swd_trans_tx_data, SWDIO_TMS_O} <= {1'd0, swd_trans_tx_data}; // 移位输出
                                 swd_trans_tx_parity <= swd_trans_tx_parity ^ swd_trans_tx_data[0];
-                                if (swd_trans_tx_cnt == 5'd31) begin
-                                    swd_trans_tx_cnt <= 5'd0;
+                                if (swd_trans_tx_cnt == 12'd31) begin
+                                    swd_trans_tx_cnt <= 12'd0;
                                 end
                                 else begin
                                     swd_trans_tx_cnt <= swd_trans_tx_cnt + 1'd1;
@@ -456,9 +470,6 @@ module DAP_Seqence (
                             end
                             SWD_TRANS_IO_DATA_PATIYY: begin
                                 SWDIO_TMS_O <= swd_trans_tx_parity;
-                                if (swd_trans_tx_RnW) begin
-                                    swd_trans_tx_sm <= SWD_TRANS_IO_TURN2;
-                                end
                             end
                             SWD_TRANS_IO_DONE: begin
                                 swd_trans_tx_sm <= SWD_TRANS_IO_DONE;
@@ -473,12 +484,12 @@ module DAP_Seqence (
                         swd_trans_rx_sm <= swd_trans_rx_sm + 4'd1;
                         case (swd_trans_rx_sm)
                             SWD_TRANS_IO_START: begin
-                                swd_trans_rx_cnt <= 5'd0;
+                                swd_trans_rx_cnt <= 12'd0;
                                 swd_trans_rx_ack <= 3'd0;
                             end
                             SWD_TRANS_IO_TURN1: begin
                                 if (swd_trans_rx_cnt == swd_trans_turn_cycle) begin
-                                    swd_trans_rx_cnt <= 5'd0;
+                                    swd_trans_rx_cnt <= 12'd0;
                                 end
                                 else begin
                                     swd_trans_rx_cnt <= swd_trans_rx_cnt + 1'd1;
@@ -493,13 +504,13 @@ module DAP_Seqence (
                             end
                             SWD_TRANS_IO_ACK2: begin
                                 swd_trans_rx_ack[2] <= SWDIO_TMS_I;
-                                SWDIO_TMS_T <= swd_trans_tx_RnW;
                                 swd_trans_rx_parity <= 1'd0;
                                 if ({SWDIO_TMS_I, swd_trans_rx_ack[1:0]} == 3'b001) begin
                                     // OK
                                     // 读请求ACK后跟数据段
                                     // 写请求ACK后无读取内容
                                     swd_trans_rx_sm <= swd_trans_tx_RnW ? SWD_TRANS_IO_DATA : SWD_TRANS_IO_DONE;
+                                    SWDIO_TMS_T <= swd_trans_tx_RnW;
                                 end
                                 else begin
                                     // WAIT / ERROR / Other
@@ -509,8 +520,8 @@ module DAP_Seqence (
                             SWD_TRANS_IO_DATA: begin
                                 swd_trans_rx_data <= {SWDIO_TMS_I, swd_trans_rx_data[31:1]};
                                 swd_trans_rx_parity <= swd_trans_rx_parity ^ SWDIO_TMS_I;
-                                if (swd_trans_rx_cnt == 8'd31) begin
-                                    swd_trans_rx_cnt <= 8'd0;
+                                if (swd_trans_rx_cnt == 12'd31) begin
+                                    swd_trans_rx_cnt <= 12'd0;
                                 end
                                 else begin
                                     swd_trans_rx_cnt <= swd_trans_rx_cnt + 1'd1;
