@@ -1,4 +1,42 @@
+ff // Sequence Bit Count // DAP_SWJ_Sequence
 00
+01
+02
+03
+04
+05
+06
+07
+08
+09
+0A
+0B
+0C
+0D
+0E
+0F
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+1A
+1B
+1C
+1D
+1E
+1F
+02 // Sequence Count // DAP_SWD_Sequence
+0f // Output 15b
+55
+AA
+8f // Input 15b
+00 // DAP index DAP_TransferBlock
 02
 00
 01

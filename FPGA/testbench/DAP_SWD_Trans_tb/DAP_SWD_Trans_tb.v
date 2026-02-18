@@ -89,9 +89,46 @@ module DAP_SWD_Trans_tb();
                     ahb_byte_strobe <= 4'hf;
                 end
                 4: begin
-                    start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd1;
+                    start[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd1;
+                    $display("TEST: DAP_SWJ_Sequence");
                 end
                 5: begin
+                    if (done[`CMD_SWJ_SEQUENCE_SHIFT]) begin
+                        start[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd0;
+                        swd_sm <= 0;
+                        #1
+                        $display("packet_len: %d", packet_len);
+                        for (i = 0; i < packet_len; i = i + 1) begin
+                            $display("%08x: %02x", i, output_data[i]);
+                        end
+                    end
+                    else begin
+                        cnt <= cnt;
+                    end
+                end
+                6: begin
+                    start[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd1;
+                    $display("TEST: DAP_SWD_Sequence");
+                end
+                7: begin
+                    if (done[`CMD_SWD_SEQUENCE_SHIFT]) begin
+                        start[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd0;
+                        swd_sm <= 0;
+                        #1
+                        $display("packet_len: %d", packet_len);
+                        for (i = 0; i < packet_len; i = i + 1) begin
+                            $display("%08x: %02x", i, output_data[i]);
+                        end
+                    end
+                    else begin
+                        cnt <= cnt;
+                    end
+                end
+                8: begin
+                    start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd1;
+                    $display("TEST: DAP_TransferBlock");
+                end
+                9: begin
                     if (done[`CMD_TRANSFER_BLOCK_SHIFT]) begin
                         start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
                         #1
@@ -101,13 +138,14 @@ module DAP_SWD_Trans_tb();
                         end
                     end
                     else begin
-                        cnt <= 5;
+                        cnt <= cnt;
                     end
                 end
-                6: begin
+                10: begin
                     start[`CMD_TRANSFER_SHIFT] <= 1'd1;
+                    $display("TEST: DAP_Transfer");
                 end
-                7: begin
+                11: begin
                     if (done[`CMD_TRANSFER_SHIFT]) begin
                         start[`CMD_TRANSFER_SHIFT] <= 1'd0;
                         #1
@@ -117,7 +155,7 @@ module DAP_SWD_Trans_tb();
                         end
                     end
                     else begin
-                        cnt <= 7;
+                        cnt <= cnt;
                     end
                 end
             endcase

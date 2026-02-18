@@ -48,10 +48,10 @@
 
 /**
  * SWD_Sequence
- * | 15 14 13 12 | 11 10  9  8 |    7 | 6  5  4  3  2  1  0 |
- * |  0  0  0  1 |  0  0  0  0 | mode |    Number of cycles |
+ * | 15 14 13 12 | 11 10  9  8  7  6  5 |    4 |       3  2  1  0 |
+ * |  0  0  0  1 |  0  0  0  0  0  0  0 | mode | Number of cycles |
  * mode 0: output; 1: input
- * Number of cycles [1-64]
+ * Number of cycles [0-7]
  */
 `define SEQ_CMD_SWD_SEQ             4'd1
 
@@ -100,7 +100,14 @@
 
 /**
  * SWJ_Pins
- * | 15 14 13 12 | 11 10  9  8  7  6  5  4  3  2  1  0 |
- * |  1  1  1  1 |  0  0  0  0  0  0  0  0  0  0  0  0 |
+ * | 15 14 13 12 | 11 10  9  8  7  6 | 5  4  3  2  1  0 |
+ * |  1  1  1  1 |            Output |           Select |
+ * Output / Select:
+ *  Bit 0: SWCLK/TCK
+ *  Bit 1: SWDIO/TMS
+ *  Bit 2: TDI
+ *  Bit 3: TDO
+ *  Bit 4: nRESET (bit7)
+ *  Bit 5: nTRST
  */
 `define SEQ_CMD_SWJ_PINS                4'd15

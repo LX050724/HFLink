@@ -233,115 +233,46 @@ module DAP_SWJ #(
                     .TRST_O(TRST_O)
                 );
 
-    reg [7:0] buf64_reg [0:7]; // 64位串转并缓存
-    wire [63:0] buf64 = {
-             buf64_reg[7],
-             buf64_reg[6],
-             buf64_reg[5],
-             buf64_reg[4],
-             buf64_reg[3],
-             buf64_reg[2],
-             buf64_reg[1],
-             buf64_reg[0]
-         };
+    localparam [1:0] SWJ_SEQ_SM_READ_NUM = 2'd0;
+    localparam [1:0] SWJ_SEQ_SM_READ_DATA = 2'd1;
+    localparam [1:0] SWJ_SEQ_SM_WAIT = 2'd2;
+    localparam [1:0] SWJ_SEQ_SM_DONE = 2'd3;
 
-    reg buf64_start;
-    reg [6:0] buf64_rbit_len; // 设定的读取位数量
-    reg buf64_finish_reg;
-    wire buf64_finish = buf64_finish_reg && !buf64_start;
-
-    // 写入索引
-    wire [3:0] buf64_write_index = buf64_start ? 4'd0 : buf64_rbyte_num;
-    reg [3:0] buf64_rbyte_num;
-    wire [3:0] buf64_rbyte_num_next = buf64_write_index + 1'd1;
-    wire buf64_tready = buf64_finish_reg == 1'd0 || buf64_start;
-    always @(posedge clk or negedge resetn) begin
-        if (!resetn) begin
-            buf64_reg[7] <= 8'd0;
-            buf64_reg[6] <= 8'd0;
-            buf64_reg[5] <= 8'd0;
-            buf64_reg[4] <= 8'd0;
-            buf64_reg[3] <= 8'd0;
-            buf64_reg[2] <= 8'd0;
-            buf64_reg[1] <= 8'd0;
-            buf64_reg[0] <= 8'd0;
-            buf64_finish_reg <= 1'd1;
-            buf64_rbyte_num <= 4'd0;
-        end
-        else begin
-            if (buf64_start) begin
-                buf64_finish_reg <= 1'd0;
-                buf64_rbyte_num <= 1'd0;
-            end
-
-            if (buf64_finish_reg == 1'd0 || buf64_start) begin
-                if (dap_in_tvalid) begin
-                    buf64_reg[buf64_write_index] <= dap_in_tdata;
-                    if (buf64_rbyte_num_next >= ((buf64_rbit_len + 7) >> 3)) begin
-                        buf64_finish_reg <= 1'd1;
-                    end
-                    buf64_rbyte_num <= buf64_rbyte_num_next;
-                end
-            end
-        end
-    end
-
-    reg [1:0] seq_status_reg;
-    always @(posedge clk or negedge resetn) begin
-        if (!resetn) begin
-            seq_status_reg <= 2'd0;
-        end
-        else if (start) begin
-            case (seq_status_reg)
-                SEQ_STATUS_IDLE, SEQ_STATUS_DONE: begin // 未启动状态，传输完成状态
-                    if (seq_tx_valid) begin
-                        seq_status_reg <= SEQ_STATUS_BUSY;
-                    end
-                end
-                SEQ_STATUS_BUSY: begin // 正在传输状态
-                    if (seq_rx_valid) begin
-                        seq_status_reg <= SEQ_STATUS_DONE;
-                    end
-                end
-            endcase
-        end
-        else begin
-            seq_status_reg <= 2'd0;
-        end
-    end
-
-    reg [1:0] seq_status;
-    always @(*) begin
-        if (start) begin
-            case (seq_status_reg) /*synthesis full_case*/
-                SEQ_STATUS_IDLE, SEQ_STATUS_DONE:
-                    seq_status = seq_tx_valid ? SEQ_STATUS_BUSY : seq_status_reg;
-                SEQ_STATUS_BUSY:
-                    seq_status = seq_rx_valid ? SEQ_STATUS_DONE : seq_status_reg;
-            endcase
-        end
-        else begin
-            seq_status = SEQ_STATUS_IDLE;
-        end
-    end
 
     reg [8:0] swj_seq_bit_num;
+    reg [3:0] swj_seq_trans_num;
     reg [1:0] swj_seq_sm;
-    wire [8:0] swj_seq_bit_num_next = (swj_seq_bit_num >= 9'd64 ? (swj_seq_bit_num - 9'd64) : 9'd0);
+    reg [7:0] swj_seq_data;
+    reg swj_seq_tx_valid;
 
-    reg swd_seq_start;
-    reg [7:0] swd_seq_recv_count;
-    reg [7:0] swd_seq_send_count;
-    reg [7:0] swd_seq_info;
-    reg [1:0] swd_seq_recv_sm;
-    reg [1:0] swd_seq_send_sm;
-    reg [6:0] swd_seq_send_data_byte;
-    reg [63:0] swd_seq_send_data;
-    wire [7:0] swd_seq_info_next;
-    assign swd_seq_info_next[7] = dap_in_tdata[7];
-    assign swd_seq_info_next[6:0] = (dap_in_tdata[5:0] == 0) ? 7'd64 : {1'd0, dap_in_tdata[5:0]};
+    localparam [2:0] SWD_SEQ_SM_READ_SEQ_NUM = 3'd0;
+    localparam [2:0] SWD_SEQ_SM_READ_SEQ_INFO = 3'd1;
+    localparam [2:0] SWD_SEQ_SM_READ_DATA = 3'd2;
+    localparam [2:0] SWD_SEQ_SM_WAIT = 3'd3;
+    localparam [2:0] SWD_SEQ_SM_DONE = 3'd4;
 
-    reg [1:0] swj_pin_sm;
+    reg [2:0] swd_seq_sm;
+    reg [7:0] swd_seq_num;
+    reg swd_seq_dir;
+    reg [6:0] swd_seq_bit_num;
+    reg [3:0] swd_seq_trans_num;
+    reg [7:0] swd_seq_send_data;
+    reg swd_seq_tx_valid;
+
+
+    localparam [2:0] SWJ_PINS_SM_READ_OUTPUT = 3'd0;
+    localparam [2:0] SWJ_PINS_SM_READ_SELECT = 3'd1;
+    localparam [2:0] SWJ_PINS_SM_READ_WAIT0 = 3'd2;
+    localparam [2:0] SWJ_PINS_SM_READ_WAIT1 = 3'd3;
+    localparam [2:0] SWJ_PINS_SM_READ_WAIT2 = 3'd4;
+    localparam [2:0] SWJ_PINS_SM_READ_WAIT3 = 3'd5;
+    localparam [2:0] SWJ_PINS_SM_READ_WAIT_RESPONE = 3'd6;
+    localparam [2:0] SWJ_PINS_SM_READ_DONE = 3'd7;
+
+    reg [2:0] swj_pins_sm;
+    reg [5:0] swj_pins_output;
+    reg [5:0] swj_pins_select;
+    reg [31:0] swj_pins_wait_time;
 
     localparam [17:0] SWD_BTRANS_SM_READ_INDEX          = 20'h0_0001;
     localparam [17:0] SWD_BTRANS_SM_READ_COUNT_L        = 20'h0_0002;
@@ -369,6 +300,7 @@ module DAP_SWJ #(
     reg [15:0] swd_block_trans_response_cnt;
     reg [3:0] swd_block_trans_req;
     reg [31:0] swd_block_trans_data;
+    reg swd_block_trans_seq_tx_valid;
     reg swd_block_trans_RnW;
     reg swd_block_trans_err_flag;
 
@@ -415,6 +347,7 @@ module DAP_SWJ #(
     reg [7:0] swd_trans_requset;
     reg [31:0] swd_trans_timestamp;
     reg [15:0] swd_trans_match_cnt;
+    reg swd_trans_seq_tx_valid;
 
     reg [3:0] swd_trans_trig_requset;
     reg [26:0] swd_trans_trig_ret_sm;
@@ -437,43 +370,98 @@ module DAP_SWJ #(
     wire swd_trans_requset_TIMESTAMP = swd_trans_requset[7];
 
 
+
+    always @(*) begin
+        casez ({start, 2'd0}) /* synthesis parallel_case */
+            `CMD_TRANSFER_BLOCK: begin
+                seq_tx_cmd = {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_block_trans_req};
+                seq_tx_data = {32'd0, swd_block_trans_data};
+                seq_tx_valid = swd_block_trans_seq_tx_valid;
+
+                // ram_write_addr
+                // ram_write_data
+                // ram_write_en
+                // packet_len
+            end
+            `CMD_TRANSFER: begin
+                seq_tx_cmd = {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_trans_trig_requset};
+                seq_tx_data = {32'd0, swd_trans_wdata};
+                seq_tx_valid = (swd_trans_sm & SWD_TRANS_SM_TRIGGER) != 27'd0;
+            end
+            `CMD_WRITE_ABORT: begin
+                seq_tx_cmd = 16'd0;
+                seq_tx_data = 64'd0;
+                seq_tx_valid = 1'd0;
+            end
+            `CMD_SWJ_PINS: begin
+                seq_tx_cmd = {`SEQ_CMD_SWJ_PINS, swj_pins_output, swj_pins_select};
+                seq_tx_data = {31'd0, swj_pins_wait_time};
+                seq_tx_valid = (swj_pins_sm == SWJ_PINS_SM_READ_WAIT3) && dap_in_tvalid;
+
+                // ram_write_addr <= 10'd0;
+                // ram_write_data <= seq_rx_data[7:0];
+                // ram_write_en <= (swj_pins_sm == SWJ_PINS_SM_READ_WAIT_RESPONE) && seq_rx_valid;
+                // packet_len <= 1'd1;
+            end
+            `CMD_SWJ_SEQUENCE: begin
+                seq_tx_cmd = {`SEQ_CMD_SWD_SEQ, 7'd0, 1'd0, swj_seq_trans_num};
+                seq_tx_data = {56'd0, swj_seq_data};
+                seq_tx_valid = swj_seq_tx_valid;
+            end
+            `CMD_SWD_SEQUENCE: begin
+                seq_tx_cmd = {`SEQ_CMD_SWD_SEQ, 7'd0, swd_seq_dir, swd_seq_trans_num};
+                seq_tx_data = {56'd0, swd_seq_send_data};
+                seq_tx_valid = swd_seq_tx_valid;
+            end
+            default: begin
+                seq_tx_cmd = 16'd0;
+                seq_tx_data = 64'd0;
+                seq_tx_valid = 1'd0;
+            end
+        endcase
+    end
+
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
-            seq_tx_cmd <= 16'd0;
-            seq_tx_data <= 64'd0;
-            seq_tx_valid <= 1'd0;
             ram_write_en <= 1'd0;
             ram_write_data <= 8'd0;
             ram_write_addr <= 10'd0;
             done <= 0;
             packet_len <= 1'd0;
 
-            swj_seq_bit_num <= 9'd0;
-            swj_seq_sm <= 2'd0;
+            swj_seq_bit_num <= 0;
+            swj_seq_trans_num <= 0;
+            swj_seq_sm <= 0;
+            swj_seq_data <= 0;
+            swj_seq_tx_valid <= 0;
 
-            swd_seq_start <= 1'd0;
-            swd_seq_recv_count <= 8'd0;
-            swd_seq_send_count <= 8'd0;
-            swd_seq_info <= 8'd0;
-            swd_seq_recv_sm <= 2'd0;
-            swd_seq_send_sm <= 2'd0;
-            swd_seq_send_data_byte <= 7'd0;
-            swd_seq_send_data <= 64'd0;
+            swd_seq_sm <= 0;
+            swd_seq_num <= 0;
+            swd_seq_dir <= 0;
+            swd_seq_bit_num <= 0;
+            swd_seq_trans_num <= 0;
+            swd_seq_send_data <= 0;
+            swd_seq_tx_valid <= 0;
 
-            swj_pin_sm <= 2'd0;
+            swj_pins_sm <= SWJ_PINS_SM_READ_OUTPUT;
+            swj_pins_output <= 6'd0;
+            swj_pins_select <= 6'd0;
+            swj_pins_wait_time <= 32'd0;
 
             swd_block_trans_sm <= SWD_BTRANS_SM_READ_INDEX;
             swd_block_trans_request_cnt <= 16'd0;
             swd_block_trans_response_cnt <= 16'd0;
             swd_block_trans_req <= 4'd0;
             swd_block_trans_data <= 32'd0;
+            swd_block_trans_seq_tx_valid <= 1'd0;
             swd_block_trans_RnW <= 1'd0;
             swd_block_trans_err_flag <= 1'd0;
 
             swd_trans_post_read <= 0;
             swd_trans_check_write <= 0;
             swd_trans_has_error <= 0;
-            swd_trans_wdata <= 26'd0;
+            swd_trans_match_failed <= 1'd0;
+            swd_trans_wdata <= 32'd0;
             swd_trans_sm <= SWD_TRANS_SM_READ_INDEX;
             swd_trans_match_mask <= 32'd0;
             swd_trans_num <= 8'd0;
@@ -481,7 +469,7 @@ module DAP_SWJ #(
             swd_trans_requset <= 8'd0;
             swd_trans_timestamp <= 1'd0;
             swd_trans_match_cnt <= 1'd0;
-            swd_trans_match_failed <= 1'd0;
+            swd_trans_seq_tx_valid <= 1'd0;
             swd_trans_trig_requset <= 4'd0;
             swd_trans_trig_ret_sm <= 26'd0;
             swd_trans_trig_en_wdata <= 1'd0;
@@ -490,198 +478,177 @@ module DAP_SWJ #(
             swd_trans_trig_wtime_first <= 1'd0;
         end
         else begin
-            buf64_start <= 1'd0;
-            seq_tx_valid <= 1'd0;
             ram_write_en <= 1'd0;
-
-
+            swd_trans_seq_tx_valid <= 1'd0;
+            swd_block_trans_seq_tx_valid <= 1'd0;
+            swj_seq_tx_valid <= 1'd0;
+            swd_seq_tx_valid <= 1'd0;
 
             if (start[`CMD_SWJ_SEQUENCE_SHIFT]) begin
-                case (swj_seq_sm)
-                    0: begin
+                case (swj_seq_sm) /* synthesis parallel_case */
+                    SWJ_SEQ_SM_READ_NUM: begin
                         if (dap_in_tvalid) begin
-                            if (dap_in_tdata == 0) begin
+                            if (dap_in_tdata == 8'd0) begin
                                 swj_seq_bit_num <= 9'd256;
-                                buf64_rbit_len <= 7'd64;
                             end
                             else begin
                                 swj_seq_bit_num <= dap_in_tdata;
-                                buf64_rbit_len <= dap_in_tdata > 8'd64 ? 7'd64 : dap_in_tdata[6:0];
                             end
-                            buf64_start <= 1'd1;
-                            swj_seq_sm <= 1;
+                            swj_seq_sm <= SWJ_SEQ_SM_READ_DATA;
                         end
                     end
-
-                    1: begin
-                        if (buf64_finish) begin
-                            seq_tx_cmd <= {`SEQ_CMD_SWD_SEQ, 5'd0, buf64_rbit_len};
-                            seq_tx_data <= buf64;
-                            seq_tx_valid <= 1'd1;
-
-                            swj_seq_bit_num <= swj_seq_bit_num_next;
-                            if (swj_seq_bit_num_next > 9'd64) begin
-                                buf64_rbit_len <= 7'd64;
-                                buf64_start <= 1'd1;
-                            end
-                            else if (swj_seq_bit_num_next != 0) begin
-                                buf64_rbit_len <= swj_seq_bit_num_next[6:0];
-                                buf64_start <= 1'd1;
-                            end
-
-                            swj_seq_sm <= 2;
+                    SWJ_SEQ_SM_READ_DATA: begin
+                        if (dap_in_tvalid) begin
+                            swj_seq_data <= dap_in_tdata;
+                            swj_seq_tx_valid <= 1'd1;
+                            swj_seq_trans_num <= (swj_seq_bit_num > 9'd8) ? 4'd8 : swj_seq_bit_num;
+                            swj_seq_sm <= SWJ_SEQ_SM_WAIT;
                         end
                     end
-                    2: begin
+                    SWJ_SEQ_SM_WAIT: begin
                         if (seq_rx_valid) begin
-                            if (swj_seq_bit_num == 0) begin
-                                swj_seq_sm <= 3;
+                            swj_seq_bit_num <= swj_seq_bit_num - swj_seq_trans_num;
+                            if ((swj_seq_bit_num - swj_seq_trans_num) != 9'd0) begin
+                                swj_seq_sm <= SWJ_SEQ_SM_READ_DATA;
+                            end
+                            else begin
                                 ram_write_addr <= 10'd0;
                                 ram_write_data <= 8'd0;
                                 packet_len <= 1'd1;
                                 ram_write_en <= 1'd1;
+                                swj_seq_sm <= SWJ_SEQ_SM_DONE;
                                 done[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd1;
                             end
-                            else begin
-                                swj_seq_sm <= 1;
-                            end
                         end
+                    end
+                    SWJ_SEQ_SM_DONE: begin
                     end
                 endcase
             end
             else begin
+                swj_seq_sm <= SWJ_SEQ_SM_READ_NUM;
                 done[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd0;
-                swj_seq_sm <= 2'd0;
             end
-
 
             if (start[`CMD_SWD_SEQUENCE_SHIFT]) begin
-                if (!swd_seq_start) begin
-                    if (dap_in_tvalid) begin
-                        swd_seq_start <= 1'd1;
-                        swd_seq_recv_count <= dap_in_tdata;
-                        swd_seq_send_count <= dap_in_tdata;
-                        // 不存在失败情况，提前写入状态
-                        ram_write_addr <= 10'd0;
-                        ram_write_data <= 8'd0;
-                        ram_write_en <= 1'd1;
+                case (swd_seq_sm) /* synthesis parallel_case */
+                    SWD_SEQ_SM_READ_SEQ_NUM: begin
+                        if (dap_in_tvalid) begin
+                            ram_write_addr <= 10'd0;
+                            ram_write_data <= 8'd0;
+                            ram_write_en <= 1'd1;
+
+                            swd_seq_num <= dap_in_tdata;
+                            swd_seq_sm <= SWD_SEQ_SM_READ_SEQ_INFO;
+                        end
                     end
-                end
-                else begin
-                    case (swd_seq_recv_sm)
-                        0: begin
-                            if (dap_in_tvalid) begin // 接收seq info段
-                                swd_seq_info <= swd_seq_info_next;
-                                if (swd_seq_info_next[7] == 1'd0) begin // output
-                                    buf64_rbit_len <= swd_seq_info_next[6:0];
-                                    buf64_start <= 1'd1;
-                                    swd_seq_recv_sm <= 2'd1;
-                                end
-                                else if (seq_status != SEQ_STATUS_BUSY) begin // trans空闲触发
-                                    swd_seq_recv_count <= swd_seq_recv_count - 8'd1;
-                                    seq_tx_cmd <= {`SEQ_CMD_SWD_SEQ, 4'd0, swd_seq_info_next};
-                                    seq_tx_data <= buf64;
-                                    seq_tx_valid <= 1'd1;
-
-                                    if (swd_seq_recv_count - 8'd1 == 0) begin
-                                        swd_seq_recv_sm <= 2'd3; // 最后一个
-                                    end
-                                end
-                                else begin // trans忙等待
-                                    swd_seq_recv_sm <= 2'd1;
-                                end
-                            end
+                    SWD_SEQ_SM_READ_SEQ_INFO: begin
+                        if (dap_in_tvalid) begin
+                            swd_seq_dir <= dap_in_tdata[7];
+                            swd_seq_bit_num <= (dap_in_tdata[5:0] == 6'd0) ? 7'd64 : dap_in_tdata[5:0];
+                            swd_seq_sm <= SWD_SEQ_SM_READ_DATA;
                         end
-
-                        1: begin // 接收数据段
-                            if (buf64_finish && seq_status != SEQ_STATUS_BUSY) begin
-                                swd_seq_recv_count <= swd_seq_recv_count - 8'd1;
-                                seq_tx_cmd <= {`SEQ_CMD_SWD_SEQ, 4'd0, swd_seq_info};
-                                seq_tx_data <= buf64;
-                                seq_tx_valid <= 1'd1;
-
-                                if (swd_seq_recv_count - 8'd1 == 0) begin
-                                    swd_seq_recv_sm <= 2'd3; // 最后一个
-                                end
-                                else begin
-                                    swd_seq_recv_sm <= 2'd0;
-                                end
-                            end
+                    end
+                    SWD_SEQ_SM_READ_DATA: begin
+                        if (dap_in_tvalid || swd_seq_dir) begin
+                            swd_seq_trans_num <= (swd_seq_bit_num > 9'd8) ? 4'd8 : swd_seq_bit_num;
+                            swd_seq_send_data <= dap_in_tdata;
+                            swd_seq_tx_valid <= 1'd1;
+                            swd_seq_sm <= SWD_SEQ_SM_WAIT;
                         end
-                    endcase
+                    end
+                    SWD_SEQ_SM_WAIT: begin
+                        if (seq_rx_valid) begin
+                            swd_seq_bit_num <= swd_seq_bit_num - swd_seq_trans_num;
 
-
-                    case (swd_seq_send_sm)
-                        0: begin
-                            if (seq_rx_valid) begin
-                                if (seq_rx_flag[7] == 1'd1) begin // 有数据段
-                                    swd_seq_send_data_byte <= (seq_rx_flag[6:0] + 3'd7) >> 3;
-                                    swd_seq_send_data <= seq_rx_data;
-                                    swd_seq_send_sm <= 2'd1;
-                                end
-                                else begin
-                                    swd_seq_send_count <= swd_seq_send_count - 8'd1;
-                                end
-                            end
-                        end
-                        1: begin
-                            if (swd_seq_send_data_byte) begin
-                                swd_seq_send_data_byte <= swd_seq_send_data_byte - 1;
+                            if (swd_seq_dir) begin
+                                packet_len <= ram_write_addr + 10'd1;
                                 ram_write_addr <= ram_write_addr + 10'd1;
-                                ram_write_data <= swd_seq_send_data[7:0];
+                                ram_write_data <= seq_rx_data[7:0];
                                 ram_write_en <= 1'd1;
-                                swd_seq_send_data <= {8'd0, swd_seq_send_data[63:8]};
+                            end
+
+                            if ((swd_seq_bit_num - swd_seq_trans_num) != 7'd0) begin
+                                swd_seq_sm <= SWD_SEQ_SM_READ_DATA;
                             end
                             else begin
-                                swd_seq_send_count <= swd_seq_send_count - 8'd1;
-                                swd_seq_send_sm <= 2'd0;
+                                if (swd_seq_num - 1'd1 != 8'd0) begin
+                                    swd_seq_num = swd_seq_num - 1'd1;
+                                    swd_seq_sm <= SWD_SEQ_SM_READ_SEQ_INFO;
+                                end
+                                else begin
+                                    swd_seq_sm <= SWD_SEQ_SM_DONE;
+                                    done[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd1;
+                                end
                             end
-                        end
-                    endcase
 
-                    if (swd_seq_recv_count == 0 && swd_seq_send_count == 0) begin
-                        packet_len <= ram_write_addr + 10'd1;
-                        done[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd1;
+                        end
                     end
-                end
+
+                    default: begin
+                    end
+                endcase
             end
             else begin
+                swd_seq_sm <= SWD_SEQ_SM_READ_SEQ_NUM;
                 done[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd0;
-                swd_seq_start <= 1'd0;
-                swd_seq_recv_sm <= 2'd0;
-                swd_seq_send_sm <= 2'd0;
             end
 
 
             if (start[`CMD_SWJ_PINS_SHIFT]) begin
-                case(swj_pin_sm)
-                    0: begin
-                        buf64_rbit_len <= 7'd48;
-                        buf64_start <= 1'd1;
-                        swj_pin_sm <= 2'd1;
-                    end
-                    1: begin
-                        if (buf64_finish) begin
-                            seq_tx_cmd <= {`SEQ_CMD_SWJ_PINS, 12'd0};
-                            seq_tx_data <= buf64;
-                            seq_tx_valid <= 1'd1;
-                            swj_pin_sm <= 2'd2;
+                case(swj_pins_sm) /* synthesis parallel_case */
+                    SWJ_PINS_SM_READ_OUTPUT: begin
+                        if (dap_in_tvalid) begin
+                            swj_pins_output <= {dap_in_tdata[5], dap_in_tdata[7], dap_in_tdata[3:0]};
+                            swj_seq_sm <= SWJ_PINS_SM_READ_SELECT;
                         end
                     end
-                    2: begin
+                    SWJ_PINS_SM_READ_SELECT: begin
+                        if (dap_in_tvalid) begin
+                            swj_pins_select <= {dap_in_tdata[5], dap_in_tdata[7], dap_in_tdata[3:0]};
+                            swj_seq_sm <= SWJ_PINS_SM_READ_WAIT0;
+                        end
+                    end
+                    SWJ_PINS_SM_READ_WAIT0: begin
+                        if (dap_in_tvalid) begin
+                            swj_pins_wait_time[7:0] <= dap_in_tdata;
+                            swj_seq_sm <= SWJ_PINS_SM_READ_WAIT1;
+                        end
+                    end
+                    SWJ_PINS_SM_READ_WAIT1: begin
+                        if (dap_in_tvalid) begin
+                            swj_pins_wait_time[15:8] <= dap_in_tdata;
+                            swj_seq_sm <= SWJ_PINS_SM_READ_WAIT2;
+                        end
+                    end
+                    SWJ_PINS_SM_READ_WAIT2: begin
+                        if (dap_in_tvalid) begin
+                            swj_pins_wait_time[23:16] <= dap_in_tdata;
+                            swj_seq_sm <= SWJ_PINS_SM_READ_WAIT3;
+                        end
+                    end
+                    SWJ_PINS_SM_READ_WAIT3: begin
+                        if (dap_in_tvalid) begin
+                            swj_pins_wait_time[31:24] <= dap_in_tdata;
+                            swj_seq_sm <= SWJ_PINS_SM_READ_WAIT_RESPONE;
+                        end
+                    end
+                    SWJ_PINS_SM_READ_WAIT_RESPONE: begin
                         if (seq_rx_valid) begin
-                            done[`CMD_SWJ_PINS_SHIFT] <= 1'd1;
                             ram_write_addr <= 10'd0;
                             ram_write_data <= seq_rx_data[7:0];
                             ram_write_en <= 1'd1;
                             packet_len <= 1'd1;
-                            swj_pin_sm <= 2'd3;
+                            done[`CMD_SWJ_PINS_SHIFT] <= 1'd1;
+                            swj_pins_sm <= SWJ_PINS_SM_READ_DONE;
                         end
+                    end
+                    default: begin
                     end
                 endcase
             end
             else begin
-                swj_pin_sm <= 2'd0;
+                swj_pins_sm <= SWJ_PINS_SM_READ_OUTPUT;
                 done[`CMD_SWJ_PINS_SHIFT] <= 1'd0;
             end
 
@@ -713,41 +680,40 @@ module DAP_SWJ #(
                             swd_block_trans_RnW <= dap_in_tdata[1];
                             if (dap_in_tdata[1]) begin
                                 swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
-                            end else begin
+                            end
+                            else begin
                                 swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA0;
                             end
                         end
                     end
                     SWD_TRANS_SM_READ_DATA0: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_data <= {dap_in_tdata, swd_block_trans_data[31:8]};
+                            swd_block_trans_data[7:0] <= dap_in_tdata;
                             swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA1;
                         end
                     end
                     SWD_TRANS_SM_READ_DATA1: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_data <= {dap_in_tdata, swd_block_trans_data[31:8]};
+                            swd_block_trans_data[15:8] <= dap_in_tdata;
                             swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA2;
                         end
                     end
                     SWD_TRANS_SM_READ_DATA2: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_data <= {dap_in_tdata, swd_block_trans_data[31:8]};
+                            swd_block_trans_data[23:16] <= dap_in_tdata;
                             swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA3;
                         end
                     end
                     SWD_TRANS_SM_READ_DATA3: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_data <= {dap_in_tdata, swd_block_trans_data[31:8]};
+                            swd_block_trans_data[31:24] <= dap_in_tdata;
                             swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
                         end
                     end
                     SWD_BTRANS_SM_PROCESS_REQ: begin // 循环开始位置，根据请求类型触发读fifo数据或驱动SWD
                         if (!swd_block_trans_err_flag) begin
                             // 读请求直接驱动SWD
-                            seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_block_trans_req};
-                            seq_tx_data <= {32'd0, swd_block_trans_data};
-                            seq_tx_valid <= 1'd1;
+                            swd_block_trans_seq_tx_valid <= 1'd1;
                         end
                         swd_block_trans_sm <= SWD_BTRANS_SM_TRANSFER;
                     end
@@ -772,9 +738,7 @@ module DAP_SWJ #(
                                     if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
                                         // 最后一次传输
                                         swd_block_trans_req <= 4'b1110;
-                                        seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, 4'b1110}; // RDBUFF
-                                        // seq_tx_data <= {32'd0, swd_block_trans_data};
-                                        seq_tx_valid <= 1'd1;
+                                        swd_block_trans_seq_tx_valid <= 1'd1;
                                         swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
                                     end
                                     else begin
@@ -853,9 +817,7 @@ module DAP_SWJ #(
                         else begin // 读AP
                             if (swd_block_trans_request_cnt == 16'd0) begin // 最后一次读AP接RDBUFF
                                 swd_block_trans_req <= 4'b1110;
-                                seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, 4'b1110}; // RDBUFF
-                                seq_tx_data <= {32'd0, buf64[31:0]};
-                                seq_tx_valid <= 1'd1;
+                                swd_block_trans_seq_tx_valid <= 1'd1;
                                 swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
                             end
                             else begin
@@ -1132,9 +1094,6 @@ module DAP_SWJ #(
 
                         swd_trans_timestamp <= clk_timer;
                         swd_block_trans_sm <= SWD_TRANS_SM_WAIT;
-                        seq_tx_cmd <= {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_trans_trig_requset};
-                        seq_tx_data <= {32'd0, swd_trans_wdata};
-                        seq_tx_valid <= 1'd1;
                         swd_trans_sm <= SWD_TRANS_SM_WAIT;
                     end
                     SWD_TRANS_SM_WAIT: begin
@@ -1225,31 +1184,32 @@ module DAP_SWJ #(
                     end
                 endcase
 
-
                 if (swd_trans_sm == SWD_TRANS_SM_DONE) begin
                     done[`CMD_TRANSFER_SHIFT] <= 1'd1;
                 end
             end
             else begin
-                done[`CMD_TRANSFER_SHIFT] <= 1'd0;
                 swd_trans_sm <= SWD_TRANS_SM_READ_INDEX;
-            end
-
-            if (!start || done) begin
-                ram_write_addr <= 10'd0;
-                ram_write_data <= 8'd0;
+                done[`CMD_TRANSFER_SHIFT] <= 1'd0;
             end
         end
     end
 
-    assign dap_in_tready[`CMD_SWJ_SEQUENCE_SHIFT] = (swj_seq_sm == 2'd0) || buf64_tready;
-    assign dap_in_tready[`CMD_SWD_SEQUENCE_SHIFT] = (swd_seq_recv_sm == 2'd0) || buf64_tready;
-    assign dap_in_tready[`CMD_SWJ_PINS_SHIFT] = buf64_tready;
+    assign dap_in_tready[`CMD_SWJ_SEQUENCE_SHIFT] = ~swj_seq_sm[1];
+
+    assign dap_in_tready[`CMD_SWD_SEQUENCE_SHIFT] =
+           (swd_seq_sm == SWD_SEQ_SM_READ_SEQ_NUM) ||
+           (swd_seq_sm == SWD_SEQ_SM_READ_SEQ_INFO) ||
+           (swd_seq_sm == SWD_SEQ_SM_READ_DATA && swd_seq_dir == 1'd0);
+
+    assign dap_in_tready[`CMD_SWJ_PINS_SHIFT] = swj_pins_sm < SWJ_PINS_SM_READ_WAIT_RESPONE;
+
     assign dap_in_tready[`CMD_TRANSFER_BLOCK_SHIFT] = (SWJ_CR_MODE == 1'd0) ?
-           (swd_block_trans_sm[7:0] != 8'd0):
+           (swd_block_trans_sm[7:0] != 8'd0) :
            1'd0;
+
     assign dap_in_tready[`CMD_TRANSFER_SHIFT] = (SWJ_CR_MODE == 1'd0) ?
-           (swd_trans_sm[2] ? (swd_trans_num != 8'd0) : swd_trans_sm[6:0] != 7'd0):
+           (swd_trans_sm[2] ? (swd_trans_num != 8'd0) : swd_trans_sm[6:0] != 7'd0) :
            1'd0;
 
     task AHB_WRITE_REG32;

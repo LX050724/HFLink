@@ -127,9 +127,12 @@ module DAP_Seqence (
     reg [7:0] swj_seq_count;
 
     reg swd_seq_sm;
-    reg [7:0] swd_seq_cmd;
-    reg [6:0] swd_seq_tx_count;
-    reg [6:0] swd_seq_rx_count;
+    reg swd_seq_dir;
+    reg [3:0] swd_seq_num;
+    reg [7:0] swd_seq_tx_data;
+    reg [7:0] swd_seq_rx_data;
+    reg [3:0] swd_seq_tx_count;
+    reg [3:0] swd_seq_rx_count;
 
     reg swj_pin_sm;
     reg [7:0] swj_pin_select_reg;
@@ -215,9 +218,12 @@ module DAP_Seqence (
             swj_seq_count <= 0;
 
             swd_seq_sm <= 1'd0;
-            swd_seq_cmd <= 8'd0;
-            swd_seq_tx_count <= 7'd0;
-            swd_seq_rx_count <= 7'd0;
+            swd_seq_dir <= 1'd0;
+            swd_seq_num <= 4'd0;
+            swd_seq_tx_data <= 8'd0;
+            swd_seq_rx_data <= 8'd0;
+            swd_seq_tx_count <= 4'd0;
+            swd_seq_rx_count <= 4'd0;
 
             swj_pin_select_reg <= 8'd0;
             swj_pin_output_reg <= 8'd0;
@@ -259,39 +265,50 @@ module DAP_Seqence (
                     if (tx_valid && current_cmd == `SEQ_CMD_SWD_SEQ && swj_busy == 0) begin
                         tx_nxt <= 1'd1;
                         tx_shift_reg <= tx_data;
-                        // tx_shift_reg[32] <= 0;
-                        swd_seq_cmd <= tx_cmd;
-                        SWDIO_TMS_T <= tx_cmd[7];
-                        swd_seq_tx_count <= tx_cmd[6:0];
-                        swd_seq_rx_count <= tx_cmd[6:0];
+                        swd_seq_num <= tx_cmd[3:0];
+                        swd_seq_dir <= tx_cmd[4];
+                        swd_seq_tx_count <= 4'd0;
+                        swd_seq_rx_count <= 4'd0;
+                        swd_seq_tx_data <= tx_data[7:0];
+                        swd_seq_rx_data <= 8'd0;
+
                         swd_seq_sm <= 2'd1;
-                        delay_clk_en <= 0;
+                        delay_clk_en <= 1'd0;
                     end
                 end
                 1'd1: begin
                     if (sclk_negedge) begin
-                        if (swd_seq_tx_count) begin
+                        if (swd_seq_tx_count != swd_seq_num) begin
+                            swd_seq_tx_count <= swd_seq_tx_count + 1'd1;
+                            {swd_seq_tx_data, SWDIO_TMS_O} <= {1'd0, swd_seq_tx_data};
+
+                            delay_clk_en <= !(swd_seq_tx_count == 4'd0);
+                            SWDIO_TMS_T <= swd_seq_dir;
                             clock_oen <= 1'd1;
-                            swd_seq_tx_count <= swd_seq_tx_count - 7'd1;
-                            {tx_shift_reg, SWDIO_TMS_O} <= {1'd0, tx_shift_reg}; // 移位输出
                         end
                         else begin
-                            clock_oen <= 1'd0; // 关闭时钟输出
-                            SWDIO_TMS_T <= 1'd1;
-                            if (swd_seq_rx_count == 7'd0) begin
-                                rx_data <= rx_shift_reg;
-                                rx_flag <= swd_seq_cmd;
-                                rx_valid <= 1'd1;
-                                swd_seq_sm <= 1'd0;
-                                swj_busy <= 1'd0;
-                            end
+                            clock_oen <= 1'd0;
                         end
                     end
 
-                    if (sclk_sampling_en && swd_seq_rx_count) begin
-                        swd_seq_rx_count <= swd_seq_rx_count - 7'd1;
-                        rx_shift_reg <= {SWDIO_TMS_I, rx_shift_reg[63:1]};
-                        // rx_shift_reg[swd_seq_rx_count] <= SWDIO_TMS_I;
+                    if (sclk_sampling_en) begin
+                        if (swd_seq_rx_count != swd_seq_num) begin
+                            swd_seq_rx_count <= swd_seq_rx_count + 1'd1;
+                            swd_seq_rx_data[swd_seq_rx_count] <= SWDIO_TMS_I;
+                        end
+                        else begin
+                            // swd_seq_rx_done <= 1'd1;
+                            SWDIO_TMS_T <= 1'd0;
+                            SWDIO_TMS_O <= 1'd0;
+                        end
+
+                        if (swd_seq_tx_count == swd_seq_num && swd_seq_rx_count == swd_seq_num) begin
+                            rx_data[7:0] <= swd_seq_rx_data;
+                            rx_flag <= swd_seq_num;
+                            rx_valid <= 1'd1;
+                            swj_busy <= 1'd0;
+                            swd_seq_sm <= 1'd0;
+                        end
                     end
                 end
             endcase
