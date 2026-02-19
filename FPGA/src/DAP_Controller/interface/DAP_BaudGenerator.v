@@ -14,10 +14,9 @@ module DAP_BaudGenerator#(
         input [31:0] ahb_wdata,
         input [3:0] ahb_byte_strobe,
 
-        output sclk_out, // 输出到GPIO的时钟信号
-        output sclk_negedge, // 控制器置位时刻参考
-        input gen_samling,
-        output sclk_sampling // 控制器采样时刻参考
+        output reg sclk_out, // 输出到GPIO的时钟信号
+        output reg sclk_negedge, // 控制器置位时刻参考
+        output reg sclk_sampling // 控制器采样时刻参考
     );
 
     localparam [ADDRWIDTH-1:0] REG_CR_ADDR = BASE_ADDR + 0;  // RW
@@ -90,33 +89,37 @@ module DAP_BaudGenerator#(
     reg [16:0] timer_cnt;
     wire [16:0] div_count_next = timer_cnt + 1'd1;
 
-    assign sclk_out = (timer_cnt >= REG_TIMING_DIV);
-    assign sclk_negedge = cen && (div_count_next == (REG_TIMING_DIV * 2));
-    assign sclk_sampling = cen && (div_count_next == REG_TIMING_SIMPLING);
+    wire sclk_out_w = (timer_cnt >= REG_TIMING_DIV);
+    wire sclk_negedge_w = cen && (div_count_next == (REG_TIMING_DIV * 2));
+    wire sclk_sampling_w = cen && (div_count_next == REG_TIMING_SIMPLING);
     
     always @(posedge sclk_in or negedge resetn) begin
         if (!resetn) begin
             timer_cnt <= 16'd0;
+            sclk_out <= 1'd0;
+            sclk_negedge <= 1'd0;
+            sclk_sampling <= 1'd0;
         end
         else begin
             cen_ff1 <= REG_CR_CEN;
             cen <= cen_ff1;
 
             if (cen) begin
-                if (sclk_negedge) begin
+                if (sclk_negedge_w) begin
                     timer_cnt <= 17'd0;
                 end
                 else begin
                     timer_cnt <= div_count_next;
                 end
 
-                if (gen_samling) begin
-
-                end
             end
             else begin
                 timer_cnt <= 17'd0;
             end
+
+            sclk_out <= sclk_out_w;
+            sclk_negedge <= sclk_negedge_w;
+            sclk_sampling <= sclk_sampling_w;
         end
     end
 

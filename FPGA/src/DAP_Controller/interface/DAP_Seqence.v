@@ -199,7 +199,7 @@ module DAP_Seqence (
             clock_idle <= 1'd1;
             rx_flag <= 16'd0;
             tx_nxt <= 1'd0;
-            rx_data <= 64'd0;
+            rx_data <= 32'd0;
             SWDIO_TMS_T <= 1'd0;
             SWDIO_TMS_O <= 1'd0;
             TDI_O <= 1'd1;
@@ -362,7 +362,7 @@ module DAP_Seqence (
                         (swj_us_cnt == 32'd0) ||
                         ((swj_pin_select_reg & (swj_pin_read ^ swj_pin_output_reg)) == 8'd0)
                     ) begin
-                        rx_data <= {56'd0, swj_pin_read};
+                        rx_data[7:0] <= swj_pin_read;
                         rx_flag <= 16'd0;
                         rx_valid <= 1'd1;
                         swj_pin_sm <= 1'd0;
@@ -582,7 +582,7 @@ module DAP_Seqence (
                         // OK / WAIT Timeout / ERROR / Other
                         swd_trans_sm <= SWD_TRANS_SM_IDLE;
 
-                        rx_data <= {32'd0, swd_trans_rx_data};
+                        rx_data <= swd_trans_rx_data;
                         case (swd_trans_rx_ack)
                             3'b001, 3'b010, 3'b100:
                                 rx_flag <= {13'd0, swd_trans_rx_ack};

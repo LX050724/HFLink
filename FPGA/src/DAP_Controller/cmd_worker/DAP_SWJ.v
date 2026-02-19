@@ -260,14 +260,25 @@ module DAP_SWJ #(
     reg swd_seq_tx_valid;
 
 
+    localparam [2:0] SWD_WRITE_ABORT_READ_INDEX = 3'd0;
+    localparam [2:0] SWD_WRITE_ABORT_READ_DATA0 = 3'd1;
+    localparam [2:0] SWD_WRITE_ABORT_READ_DATA1 = 3'd2;
+    localparam [2:0] SWD_WRITE_ABORT_READ_DATA2 = 3'd3;
+    localparam [2:0] SWD_WRITE_ABORT_READ_DATA3 = 3'd4;
+    localparam [2:0] SWD_WRITE_ABORT_WAIT_RESPONE = 3'd5;
+    localparam [2:0] SWD_WRITE_ABORT_DONE = 3'd6;
+
+    reg [2:0] swd_write_abort_sm;
+    reg [31:0] swd_write_abort_data;
+
     localparam [2:0] SWJ_PINS_SM_READ_OUTPUT = 3'd0;
     localparam [2:0] SWJ_PINS_SM_READ_SELECT = 3'd1;
     localparam [2:0] SWJ_PINS_SM_READ_WAIT0 = 3'd2;
     localparam [2:0] SWJ_PINS_SM_READ_WAIT1 = 3'd3;
     localparam [2:0] SWJ_PINS_SM_READ_WAIT2 = 3'd4;
     localparam [2:0] SWJ_PINS_SM_READ_WAIT3 = 3'd5;
-    localparam [2:0] SWJ_PINS_SM_READ_WAIT_RESPONE = 3'd6;
-    localparam [2:0] SWJ_PINS_SM_READ_DONE = 3'd7;
+    localparam [2:0] SWJ_PINS_SM_WAIT_RESPONE = 3'd6;
+    localparam [2:0] SWJ_PINS_SM_DONE = 3'd7;
 
     reg [2:0] swj_pins_sm;
     reg [5:0] swj_pins_output;
@@ -387,11 +398,16 @@ module DAP_SWJ #(
                 seq_tx_cmd = {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_trans_trig_requset};
                 seq_tx_data = swd_trans_wdata;
                 seq_tx_valid = (swd_trans_sm & SWD_TRANS_SM_TRIGGER) != 27'd0;
+
+                // ram_write_addr
+                // ram_write_data
+                // ram_write_en
+                // packet_len
             end
             `CMD_WRITE_ABORT: begin
-                seq_tx_cmd = 16'd0;
-                seq_tx_data = 32'd0;
-                seq_tx_valid = 1'd0;
+                seq_tx_cmd = {`SEQ_CMD_SWD_TRANSFER, 8'd0, 4'd0};
+                seq_tx_data = swd_write_abort_data;
+                seq_tx_valid = (swd_write_abort_sm == SWD_WRITE_ABORT_READ_DATA3) && dap_in_tvalid;
             end
             `CMD_SWJ_PINS: begin
                 seq_tx_cmd = {`SEQ_CMD_SWJ_PINS, swj_pins_output, swj_pins_select};
@@ -400,18 +416,28 @@ module DAP_SWJ #(
 
                 // ram_write_addr <= 10'd0;
                 // ram_write_data <= seq_rx_data[7:0];
-                // ram_write_en <= (swj_pins_sm == SWJ_PINS_SM_READ_WAIT_RESPONE) && seq_rx_valid;
+                // ram_write_en <= (swj_pins_sm == SWJ_PINS_SM_WAIT_RESPONE) && seq_rx_valid;
                 // packet_len <= 1'd1;
             end
             `CMD_SWJ_SEQUENCE: begin
                 seq_tx_cmd = {`SEQ_CMD_SWD_SEQ, 7'd0, 1'd0, swj_seq_trans_num};
                 seq_tx_data = {24'd0, swj_seq_data};
                 seq_tx_valid = swj_seq_tx_valid;
+
+                // ram_write_addr = 10'd0;
+                // ram_write_data = 8'd0;
+                // ram_write_en = (swj_pins_sm == SWJ_SEQ_SM_READ_NUM);
+                // packet_len = 10'd1;
             end
             `CMD_SWD_SEQUENCE: begin
                 seq_tx_cmd = {`SEQ_CMD_SWD_SEQ, 7'd0, swd_seq_dir, swd_seq_trans_num};
                 seq_tx_data = {24'd0, swd_seq_send_data};
                 seq_tx_valid = swd_seq_tx_valid;
+
+                // ram_write_addr = swd_seq_ram_waddr;
+                // ram_write_data = seq_rx_data[7:0];
+                // ram_write_en = (swd_seq_sm == SWD_SEQ_SM_WAIT) && seq_rx_valid && swd_seq_dir;
+                // packet_len = ram_write_addr + 1'd1;
             end
             default: begin
                 seq_tx_cmd = 16'd0;
@@ -442,6 +468,9 @@ module DAP_SWJ #(
             swd_seq_trans_num <= 0;
             swd_seq_send_data <= 0;
             swd_seq_tx_valid <= 0;
+
+            swd_write_abort_sm <= 3'd0;
+            swd_write_abort_data <= 32'd0;
 
             swj_pins_sm <= SWJ_PINS_SM_READ_OUTPUT;
             swj_pins_output <= 6'd0;
@@ -562,8 +591,7 @@ module DAP_SWJ #(
                             swd_seq_bit_num <= swd_seq_bit_num - swd_seq_trans_num;
 
                             if (swd_seq_dir) begin
-                                packet_len <= ram_write_addr + 10'd1;
-                                ram_write_addr <= ram_write_addr + 10'd1;
+                                ram_write_addr <= ram_write_addr + 1'd1;
                                 ram_write_data <= seq_rx_data[7:0];
                                 ram_write_en <= 1'd1;
                             end
@@ -578,7 +606,6 @@ module DAP_SWJ #(
                                 end
                                 else begin
                                     swd_seq_sm <= SWD_SEQ_SM_DONE;
-                                    done[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd1;
                                 end
                             end
 
@@ -586,12 +613,69 @@ module DAP_SWJ #(
                     end
 
                     default: begin
+                        packet_len <= ram_write_addr + 1'd1;
+                        done[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd1;
                     end
                 endcase
             end
             else begin
                 swd_seq_sm <= SWD_SEQ_SM_READ_SEQ_NUM;
                 done[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd0;
+            end
+
+            if (start[`CMD_WRITE_ABORT_SHIFT] && SWD_MODE == 1'd0) begin
+                case (swd_write_abort_sm) /* synthesis parallel_case */
+                    SWD_WRITE_ABORT_READ_INDEX: begin
+                        if (dap_in_tvalid) begin
+                            swd_write_abort_sm <= SWD_WRITE_ABORT_READ_DATA0;
+                        end
+                    end
+                    SWD_WRITE_ABORT_READ_DATA0: begin
+                        if (dap_in_tvalid) begin
+                            swd_write_abort_data[7:0] <= dap_in_tdata;
+                            swd_write_abort_sm <= SWD_WRITE_ABORT_READ_DATA1;
+                        end
+                    end
+                    SWD_WRITE_ABORT_READ_DATA1: begin
+                        if (dap_in_tvalid) begin
+                            swd_write_abort_data[15:8] <= dap_in_tdata;
+                            swd_write_abort_sm <= SWD_WRITE_ABORT_READ_DATA2;
+                        end
+                    end
+                    SWD_WRITE_ABORT_READ_DATA2: begin
+                        if (dap_in_tvalid) begin
+                            swd_write_abort_data[23:16] <= dap_in_tdata;
+                            swd_write_abort_sm <= SWD_WRITE_ABORT_READ_DATA3;
+                        end
+                    end
+                    SWD_WRITE_ABORT_READ_DATA3: begin
+                        if (dap_in_tvalid) begin
+                            swd_write_abort_data[31:24] <= dap_in_tdata;
+                            swd_write_abort_sm <= SWD_WRITE_ABORT_WAIT_RESPONE;
+                        end
+                    end
+                    SWD_WRITE_ABORT_WAIT_RESPONE: begin
+                        if (seq_rx_valid) begin
+                            ram_write_addr <= 10'd0;
+                            ram_write_en <= 1'd1;
+                            packet_len <= 1'd1;
+                            if (seq_rx_flag[2:0] == 3'b001) begin
+                                ram_write_data <= 8'h00;
+                            end
+                            else begin
+                                ram_write_data <= 8'hff;
+                            end
+                            swd_write_abort_sm <= SWD_WRITE_ABORT_DONE;
+                            done[`CMD_WRITE_ABORT_SHIFT] <= 1'd1;
+                        end
+                    end
+                    SWD_WRITE_ABORT_DONE: begin
+                    end
+                endcase
+            end
+            else begin
+                swd_write_abort_sm <= SWD_WRITE_ABORT_READ_INDEX;
+                done[`CMD_WRITE_ABORT_SHIFT] <= 1'd0;
             end
 
 
@@ -630,17 +714,17 @@ module DAP_SWJ #(
                     SWJ_PINS_SM_READ_WAIT3: begin
                         if (dap_in_tvalid) begin
                             swj_pins_wait_time[31:24] <= dap_in_tdata;
-                            swj_seq_sm <= SWJ_PINS_SM_READ_WAIT_RESPONE;
+                            swj_seq_sm <= SWJ_PINS_SM_WAIT_RESPONE;
                         end
                     end
-                    SWJ_PINS_SM_READ_WAIT_RESPONE: begin
+                    SWJ_PINS_SM_WAIT_RESPONE: begin
                         if (seq_rx_valid) begin
                             ram_write_addr <= 10'd0;
                             ram_write_data <= seq_rx_data[7:0];
                             ram_write_en <= 1'd1;
                             packet_len <= 1'd1;
                             done[`CMD_SWJ_PINS_SHIFT] <= 1'd1;
-                            swj_pins_sm <= SWJ_PINS_SM_READ_DONE;
+                            swj_pins_sm <= SWJ_PINS_SM_DONE;
                         end
                     end
                     default: begin
@@ -1093,7 +1177,6 @@ module DAP_SWJ #(
 `endif
 
                         swd_trans_timestamp <= clk_timer;
-                        swd_block_trans_sm <= SWD_TRANS_SM_WAIT;
                         swd_trans_sm <= SWD_TRANS_SM_WAIT;
                     end
                     SWD_TRANS_SM_WAIT: begin
@@ -1202,7 +1285,11 @@ module DAP_SWJ #(
            (swd_seq_sm == SWD_SEQ_SM_READ_SEQ_INFO) ||
            (swd_seq_sm == SWD_SEQ_SM_READ_DATA && swd_seq_dir == 1'd0);
 
-    assign dap_in_tready[`CMD_SWJ_PINS_SHIFT] = swj_pins_sm < SWJ_PINS_SM_READ_WAIT_RESPONE;
+    assign dap_in_tready[`CMD_WRITE_ABORT_SHIFT] = (SWJ_CR_MODE == 1'd0) ?
+            (swd_write_abort_sm < SWD_WRITE_ABORT_WAIT_RESPONE) :
+            1'd0;
+
+    assign dap_in_tready[`CMD_SWJ_PINS_SHIFT] = swj_pins_sm < SWJ_PINS_SM_WAIT_RESPONE;
 
     assign dap_in_tready[`CMD_TRANSFER_BLOCK_SHIFT] = (SWJ_CR_MODE == 1'd0) ?
            (swd_block_trans_sm[7:0] != 8'd0) :
