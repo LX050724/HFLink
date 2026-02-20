@@ -742,19 +742,20 @@ module DAP_SWJ #(
                         ram_write_addr <= 10'd2;
                         packet_len <= 10'd3;
                         swd_block_trans_err_flag <= 1'd0;
+                        swd_block_trans_response_cnt <= 16'd0;
                         if (dap_in_tvalid) begin
                             swd_block_trans_sm <= SWD_BTRANS_SM_READ_COUNT_L;
                         end
                     end
                     SWD_BTRANS_SM_READ_COUNT_L: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_request_cnt <= {dap_in_tdata, swd_block_trans_request_cnt[15:8]};
+                            swd_block_trans_request_cnt[7:0] <= dap_in_tdata;
                             swd_block_trans_sm <= SWD_BTRANS_SM_READ_COUNT_H;
                         end
                     end
                     SWD_BTRANS_SM_READ_COUNT_H: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_request_cnt <= {dap_in_tdata, swd_block_trans_request_cnt[15:8]};
+                            swd_block_trans_request_cnt[15:8] <= dap_in_tdata;
                             swd_block_trans_sm <= SWD_BTRANS_SM_READ_REQUSET;
                         end
                     end
@@ -766,29 +767,29 @@ module DAP_SWJ #(
                                 swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
                             end
                             else begin
-                                swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA0;
+                                swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA0;
                             end
                         end
                     end
-                    SWD_TRANS_SM_READ_DATA0: begin
+                    SWD_BTRANS_SM_READ_DATA0: begin
                         if (dap_in_tvalid) begin
                             swd_block_trans_data[7:0] <= dap_in_tdata;
-                            swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA1;
+                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA1;
                         end
                     end
-                    SWD_TRANS_SM_READ_DATA1: begin
+                    SWD_BTRANS_SM_READ_DATA1: begin
                         if (dap_in_tvalid) begin
                             swd_block_trans_data[15:8] <= dap_in_tdata;
-                            swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA2;
+                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA2;
                         end
                     end
-                    SWD_TRANS_SM_READ_DATA2: begin
+                    SWD_BTRANS_SM_READ_DATA2: begin
                         if (dap_in_tvalid) begin
                             swd_block_trans_data[23:16] <= dap_in_tdata;
-                            swd_block_trans_sm <= SWD_TRANS_SM_READ_DATA3;
+                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA3;
                         end
                     end
-                    SWD_TRANS_SM_READ_DATA3: begin
+                    SWD_BTRANS_SM_READ_DATA3: begin
                         if (dap_in_tvalid) begin
                             swd_block_trans_data[31:24] <= dap_in_tdata;
                             swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
@@ -826,7 +827,7 @@ module DAP_SWJ #(
                                         swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
                                     end
                                     else begin
-                                        swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                                        swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA0;
                                     end
                                 end
                                 2'b10: begin // Read DP
@@ -911,20 +912,20 @@ module DAP_SWJ #(
                     end
 
                     SWD_BTRANS_SM_WRITE_COUNT_L: begin
-                        ram_write_addr <= 0;
+                        ram_write_addr <= 10'd0;
                         ram_write_data <= swd_block_trans_response_cnt[7:0];
                         ram_write_en <= 1'd1;
                         packet_len <= ram_write_addr + 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_H;
                     end
                     SWD_BTRANS_SM_WRITE_COUNT_H: begin
-                        ram_write_addr <= 1;
+                        ram_write_addr <= 10'd1;
                         ram_write_data <= swd_block_trans_response_cnt[15:8];
                         ram_write_en <= 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_RESPONSE;
                     end
                     SWD_BTRANS_SM_WRITE_RESPONSE: begin
-                        ram_write_addr <= 2;
+                        ram_write_addr <= 10'd2;
                         ram_write_data <= {5'd0, seq_rx_flag[2:0]};
                         ram_write_en <= 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_END;
@@ -982,7 +983,7 @@ module DAP_SWJ #(
                             if (swd_trans_requset_MASK) begin
                                 swd_trans_match_mask[7:0] <= dap_in_tdata;
                             end
-                            swd_trans_sm <= swd_trans_sm << 1'd1;
+                            swd_trans_sm <= SWD_TRANS_SM_READ_DATA1;
                         end
                     end
                     SWD_TRANS_SM_READ_DATA1: begin
@@ -991,7 +992,7 @@ module DAP_SWJ #(
                             if (swd_trans_requset_MASK) begin
                                 swd_trans_match_mask[15:8] <= dap_in_tdata;
                             end
-                            swd_trans_sm <= swd_trans_sm << 1'd1;
+                            swd_trans_sm <= SWD_TRANS_SM_READ_DATA2;
                         end
                     end
                     SWD_TRANS_SM_READ_DATA2: begin
@@ -1000,7 +1001,7 @@ module DAP_SWJ #(
                             if (swd_trans_requset_MASK) begin
                                 swd_trans_match_mask[23:16] <= dap_in_tdata;
                             end
-                            swd_trans_sm <= swd_trans_sm << 1'd1;
+                            swd_trans_sm <= SWD_TRANS_SM_READ_DATA3;
                         end
                     end
                     SWD_TRANS_SM_READ_DATA3: begin
@@ -1029,32 +1030,30 @@ module DAP_SWJ #(
                         $display("SWD_TRANS_SM_CHECK_POSTREAD %d", swd_trans_post_read);
 `endif
 
-                        if (swd_trans_post_read) begin
-                            // 需要先清除post_read状态的请求：MATCH、WriteAP、WriteDP、ReadDP (ReadAP之外所有请求)
-                            if (swd_trans_requset_MATCH || {swd_trans_requset_RnW, swd_trans_requset_APnDP} != 2'b11) begin
-                                swd_trans_post_read <= 1'd0;
-                                // RDBUFF
-                                swd_trans_trig_requset <= 4'b1110;
-                                // 写入延迟数据
-                                swd_trans_trig_en_wdata <= 1'd1;
-                                // 读请求按配置写入时间戳，写请求没有时间戳
-                                swd_trans_trig_en_wtime <= swd_trans_requset_RnW ? swd_trans_requset_TIMESTAMP : 1'd0;
-                                // 不计入命令数量
-                                swd_trans_trig_en_cnt <= 1'd0;
-                                swd_trans_trig_wtime_first <= 1'd0;
+                        // 需要先清除post_read状态的请求：MATCH、WriteAP、WriteDP、ReadDP (ReadAP之外所有请求)
+                        if (swd_trans_post_read && (swd_trans_requset_MATCH || {swd_trans_requset_RnW, swd_trans_requset_APnDP} != 2'b11)) begin
+                            swd_trans_post_read <= 1'd0;
+                            // RDBUFF
+                            swd_trans_trig_requset <= 4'b1110;
+                            // 写入延迟数据
+                            swd_trans_trig_en_wdata <= 1'd1;
+                            // 读请求按配置写入时间戳，写请求没有时间戳
+                            swd_trans_trig_en_wtime <= swd_trans_requset_RnW ? swd_trans_requset_TIMESTAMP : 1'd0;
+                            // 不计入命令数量
+                            swd_trans_trig_en_cnt <= 1'd0;
+                            swd_trans_trig_wtime_first <= 1'd0;
 
-                                if (swd_trans_requset_MATCH) begin // 匹配读取请求
-                                    swd_trans_trig_ret_sm <= SWD_TRANS_SM_MATCH_STEP1;
-                                end
-                                else if (swd_trans_requset_RnW == 1'd0) begin // 写请求
-                                    swd_trans_trig_ret_sm <= SWD_TRANS_SM_WRITE_APDP;
-                                end
-                                else begin // 读DP请求
-                                    swd_trans_trig_ret_sm <= SWD_TRANS_SM_READ_DP;
-                                end
-
-                                swd_trans_sm <= SWD_TRANS_SM_TRIGGER;
+                            if (swd_trans_requset_MATCH) begin // 匹配读取请求
+                                swd_trans_trig_ret_sm <= SWD_TRANS_SM_MATCH_STEP1;
                             end
+                            else if (swd_trans_requset_RnW == 1'd0) begin // 写请求
+                                swd_trans_trig_ret_sm <= SWD_TRANS_SM_WRITE_APDP;
+                            end
+                            else begin // 读DP请求
+                                swd_trans_trig_ret_sm <= SWD_TRANS_SM_READ_DP;
+                            end
+
+                            swd_trans_sm <= SWD_TRANS_SM_TRIGGER;
                         end
                         else begin
                             if (swd_trans_requset_MATCH) begin // 匹配读取请求
@@ -1286,8 +1285,8 @@ module DAP_SWJ #(
            (swd_seq_sm == SWD_SEQ_SM_READ_DATA && swd_seq_dir == 1'd0);
 
     assign dap_in_tready[`CMD_WRITE_ABORT_SHIFT] = (SWJ_CR_MODE == 1'd0) ?
-            (swd_write_abort_sm < SWD_WRITE_ABORT_WAIT_RESPONE) :
-            1'd0;
+           (swd_write_abort_sm < SWD_WRITE_ABORT_WAIT_RESPONE) :
+           1'd0;
 
     assign dap_in_tready[`CMD_SWJ_PINS_SHIFT] = swj_pins_sm < SWJ_PINS_SM_WAIT_RESPONE;
 
