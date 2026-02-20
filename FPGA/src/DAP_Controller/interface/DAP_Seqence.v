@@ -1,5 +1,7 @@
 `include "DAP_Cmd.v"
 
+// `define USE_FIFO
+
 module DAP_Seqence (
         // 控制器时钟
         input clk,
@@ -59,6 +61,49 @@ module DAP_Seqence (
         end
     end
 
+`ifdef USE_FIFO
+    reg tx_nxt;
+    wire [1:0] seq_tx_fifo_rnum;
+    wire tx_valid = seq_tx_fifo_rnum[0];
+    wire [15:0] tx_cmd;
+    wire [31:0] tx_data;
+
+    fifo_top seq_tx_fifo(
+                 .WrReset(~resetn), //input WrReset
+                 .RdReset(~resetn), //input RdReset
+                 .WrClk(clk), //input WrClk
+                 .WrEn(seq_tx_valid), //input WrEn
+                 .Data({seq_tx_cmd, seq_tx_data}), //input [47:0] Data
+
+                 .RdClk(sclk), //input RdClk
+                 .RdEn(1'd1), //input RdEn
+                 .Q({tx_cmd, tx_data}), //output [47:0] Q
+                 .Rnum(seq_tx_fifo_rnum), //output [1:0] Rnum
+                 .Empty(), //output Empty
+                 .Full() //output Full
+             );
+
+    reg rx_valid;
+    reg [15:0] rx_flag;
+    reg [31:0] rx_data;
+    wire [1:0] seq_rx_fifo_rnum;
+    assign seq_rx_valid = seq_rx_fifo_rnum[0];
+    fifo_top seq_rx_fifo(
+                 .WrReset(~resetn), //input WrReset
+                 .RdReset(~resetn), //input RdReset
+                 .WrClk(sclk), //input WrClk
+                 .WrEn(rx_valid), //input WrEn
+                 .Data({rx_flag, rx_data}), //input [47:0] Data
+
+                 .RdClk(clk), //input RdClk
+                 .RdEn(1'd1), //input RdEn
+                 .Q({seq_rx_flag, seq_rx_data}), //output [47:0] Q
+                 .Rnum(Rnum), //output [1:0] Rnum
+                 .Empty(), //output Empty
+                 .Full() //output Full
+             );
+
+`else
     reg rx_valid;
     reg rx_valid2;
     reg [15:0] rx_flag;
@@ -109,6 +154,10 @@ module DAP_Seqence (
     assign seq_rx_flag = rx_flag;
     assign seq_rx_data = rx_data;
     assign seq_rx_valid = rx_valid_ff2;
+
+`endif
+
+
 
     wire [3:0] current_cmd = tx_cmd[15:12];
 
@@ -193,8 +242,13 @@ module DAP_Seqence (
 
     always @(posedge sclk or negedge resetn) begin
         if (!resetn) begin
+`ifdef USE_FIFO
+            rx_valid <= 0;
+`else
             rx_valid <= 0;
             rx_valid2 <= 0;
+`endif
+
             clock_oen <= 1'd0;
             clock_idle <= 1'd1;
             rx_flag <= 16'd0;
@@ -246,9 +300,15 @@ module DAP_Seqence (
         end
         else begin
             tx_nxt <= 1'd0;
+
+`ifdef USE_FIFO
+
+            rx_valid <= 1'd0;
+`else
             rx_valid2 <= rx_valid;
             if (rx_valid2)
                 rx_valid <= 1'd0;
+`endif
 
             if (sclk_negedge)
                 delay_clk_en <= 1'd1;
@@ -275,7 +335,6 @@ module DAP_Seqence (
                             swd_seq_tx_count <= swd_seq_tx_count + 1'd1;
                             {swd_seq_tx_data, SWDIO_TMS_O} <= {1'd0, swd_seq_tx_data};
 
-                            delay_clk_en <= !(swd_seq_tx_count == 4'd0);
                             SWDIO_TMS_T <= swd_seq_dir;
                             clock_oen <= 1'd1;
                         end
@@ -403,7 +462,7 @@ module DAP_Seqence (
                                 clock_oen <= 1'd1;
                                 SWDIO_TMS_O <= 1'd1;
                                 SWDIO_TMS_T <= 1'd0;
-                                delay_clk_en <= 0;
+                                // delay_clk_en <= 0;
                             end
 
                             SWD_TRANS_IO_APnDP: begin
@@ -483,6 +542,7 @@ module DAP_Seqence (
                             end
                             SWD_TRANS_IO_DONE: begin
                                 swd_trans_tx_sm <= SWD_TRANS_IO_DONE;
+                                swd_trans_sm <= SWD_TRANS_SM_CHECK;
                                 clock_oen <= 1'd0;
                                 SWDIO_TMS_O <= 1'd0;
                                 SWDIO_TMS_T <= 1'd0;
@@ -547,25 +607,6 @@ module DAP_Seqence (
                                 swd_trans_rx_sm <= SWD_TRANS_IO_DONE;
                             end
                         endcase
-                    end
-
-                    if (sclk_negedge) begin
-                        if (swd_trans_tx_RnW) begin
-                            // 读模式下rx结束但ACK错误结束
-                            if (swd_trans_rx_sm == SWD_TRANS_IO_DONE && swd_trans_rx_ack != 3'b001) begin
-                                swd_trans_sm <= SWD_TRANS_SM_CHECK;
-                            end
-                        end
-                        else begin
-                            // 写模式下tx结束但ACK错误结束
-                            if (swd_trans_tx_sm == SWD_TRANS_IO_DONE && swd_trans_rx_ack != 3'b001) begin
-                                swd_trans_sm <= SWD_TRANS_SM_CHECK;
-                            end
-                        end
-
-                        if (swd_trans_tx_sm == SWD_TRANS_IO_DONE && swd_trans_rx_sm == SWD_TRANS_IO_DONE) begin
-                            swd_trans_sm <= SWD_TRANS_SM_CHECK;
-                        end
                     end
                 end
 

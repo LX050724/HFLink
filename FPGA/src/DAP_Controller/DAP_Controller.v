@@ -283,6 +283,8 @@ module DAP_Controller #(
 
 
     // 一阶段解码器，命令字转换独热码
+    reg [1:0] dap_sm;
+    reg [7:0] processing_cmd;   // 当前处理的命令
     reg [`CMD_REG_WIDTH-1:0] cmd_decoder_reslut;
     always @(*) begin
         cmd_decoder_reslut = 12'd1;
@@ -348,8 +350,6 @@ module DAP_Controller #(
         endcase
     end
 
-    reg [7:0] processing_cmd;   // 当前处理的命令
-    reg [1:0] dap_sm;
     reg [7:0] num_cmd;
     wire fist_decoder_tready = (dap_sm == 2'd0 || dap_sm == 2'd1);    // 一阶段解码器读就绪
     // 根据状态选择解码信号

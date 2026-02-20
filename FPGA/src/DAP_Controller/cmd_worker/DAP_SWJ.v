@@ -684,37 +684,37 @@ module DAP_SWJ #(
                     SWJ_PINS_SM_READ_OUTPUT: begin
                         if (dap_in_tvalid) begin
                             swj_pins_output <= {dap_in_tdata[5], dap_in_tdata[7], dap_in_tdata[3:0]};
-                            swj_seq_sm <= SWJ_PINS_SM_READ_SELECT;
+                            swj_pins_sm <= SWJ_PINS_SM_READ_SELECT;
                         end
                     end
                     SWJ_PINS_SM_READ_SELECT: begin
                         if (dap_in_tvalid) begin
                             swj_pins_select <= {dap_in_tdata[5], dap_in_tdata[7], dap_in_tdata[3:0]};
-                            swj_seq_sm <= SWJ_PINS_SM_READ_WAIT0;
+                            swj_pins_sm <= SWJ_PINS_SM_READ_WAIT0;
                         end
                     end
                     SWJ_PINS_SM_READ_WAIT0: begin
                         if (dap_in_tvalid) begin
                             swj_pins_wait_time[7:0] <= dap_in_tdata;
-                            swj_seq_sm <= SWJ_PINS_SM_READ_WAIT1;
+                            swj_pins_sm <= SWJ_PINS_SM_READ_WAIT1;
                         end
                     end
                     SWJ_PINS_SM_READ_WAIT1: begin
                         if (dap_in_tvalid) begin
                             swj_pins_wait_time[15:8] <= dap_in_tdata;
-                            swj_seq_sm <= SWJ_PINS_SM_READ_WAIT2;
+                            swj_pins_sm <= SWJ_PINS_SM_READ_WAIT2;
                         end
                     end
                     SWJ_PINS_SM_READ_WAIT2: begin
                         if (dap_in_tvalid) begin
                             swj_pins_wait_time[23:16] <= dap_in_tdata;
-                            swj_seq_sm <= SWJ_PINS_SM_READ_WAIT3;
+                            swj_pins_sm <= SWJ_PINS_SM_READ_WAIT3;
                         end
                     end
                     SWJ_PINS_SM_READ_WAIT3: begin
                         if (dap_in_tvalid) begin
                             swj_pins_wait_time[31:24] <= dap_in_tdata;
-                            swj_seq_sm <= SWJ_PINS_SM_WAIT_RESPONE;
+                            swj_pins_sm <= SWJ_PINS_SM_WAIT_RESPONE;
                         end
                     end
                     SWJ_PINS_SM_WAIT_RESPONE: begin
@@ -1084,8 +1084,8 @@ module DAP_SWJ #(
                     end
 
                     SWD_TRANS_SM_READ_DP: begin // 读DP
-                        //                requset, en_wdata, en_wtime, en_cnt, wtime_first, ret_sm
-                        SWD_TRANS_TRIGGER(swd_trans_requset[3:0], 1'd1, swd_trans_requset_TIMESTAMP, 1'd1, 1'd1, SWD_TRANS_SM_READ_REQUSET);
+                        //                requset,          en_wdata, en_wtime, en_cnt, wtime_first,             ret_sm
+                        SWD_TRANS_TRIGGER(swd_trans_requset[3:0], 1'd1, 1'd0, 1'd1, swd_trans_requset_TIMESTAMP, SWD_TRANS_SM_READ_REQUSET);
                         swd_trans_check_write <= 1'd0;
                     end
 
