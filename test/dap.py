@@ -138,6 +138,12 @@ class DAP:
         self.exec_buffer = BytesIO()
         self.exec_buffer.write(b'\x7f' + num.to_bytes(1))
 
+    def switch_swd(self):
+        self.swj_seqence(17*8, b'\xff\xff\xff\xff\xff\xff\xff\x9e\xe7\xff\xff\xff\xff\xff\xff\xff\x00')
+
+    def swd_read_idcode(self):
+        ret = self.swd_transfer_block(1, self.DAP_TRANS_READ | self.DAP_TRANS_DP)
+        return int.from_bytes(ret[-4:].tobytes(), 'little')
 
     def transfer_abort(self):
         self._write(b'x07')
@@ -164,7 +170,7 @@ class DAP:
         if bit_num == 256:
             bit_num = 0
         self._write(b'\x12' + bit_num.to_bytes(1) + data[0:byte_num])
-        # self._read(2, 1000)
+        self._read(2, 1000)
 
     def swj_read(self):
         self._read(2, 1000)
@@ -187,7 +193,9 @@ class DAP:
         if requse & self.DAP_TRANS_WRITE:
             cmd += data[0:trans_num*4]
         self._write(cmd)
-        self._read()
+        return self._read()
 
     def read(self, n=512, timeout=10):
-        self._read(n, timeout)
+        return self._read(n, timeout)
+    def write(self, data):
+        self._write(data)

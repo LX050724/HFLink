@@ -1,7 +1,7 @@
 `timescale 1 ns/ 10 ps
 `include "DAP_Cmd.v"
 
-`define DELAY_TIME 10
+`define DELAY_TIME 0
 `define TRUN_CYCLE 12'd0
 
 module DAP_SWD_Trans_tb();
@@ -312,7 +312,7 @@ module DAP_SWD_Trans_tb();
         RnW = 0;
         Addr = 0;
         Parity = 0;
-        data = 0;
+        data = 32'h12345678;
         DataParity = 0;
         turn_cnt = 0;
         // tx_ack = 3'b001;
@@ -356,6 +356,7 @@ module DAP_SWD_Trans_tb();
             SWD_TRANS_IO_TURN1: begin
                 if (turn_cnt == `TRUN_CYCLE) begin
                     turn_cnt <= 12'd0;
+                    SWDIO_TMS_I <= #`DELAY_TIME tx_ack[0];
                     swd_sm <= SWD_TRANS_IO_ACK0;
                 end
                 else begin
@@ -363,21 +364,28 @@ module DAP_SWD_Trans_tb();
                 end
             end
             SWD_TRANS_IO_ACK0: begin // ack 0
-                SWDIO_TMS_I <= #`DELAY_TIME tx_ack[0];
-                swd_sm <= swd_sm + 1;
-            end
-            SWD_TRANS_IO_ACK1: begin // ack 1
                 SWDIO_TMS_I <= #`DELAY_TIME tx_ack[1];
                 swd_sm <= swd_sm + 1;
             end
-            SWD_TRANS_IO_ACK2: begin // ack 2
+            SWD_TRANS_IO_ACK1: begin // ack 1
                 SWDIO_TMS_I <= #`DELAY_TIME tx_ack[2];
-                data_cnt <= 0;
+                swd_sm <= swd_sm + 1;
+            end
+            SWD_TRANS_IO_ACK2: begin // ack 2
+                // SWDIO_TMS_I <= #`DELAY_TIME tx_ack[2];
 
                 if (tx_ack == 3'b001) begin
                     // 读请求ACK后跟数据段
                     // 写请求ACK后跟TURN
-                    swd_sm <= RnW ? SWD_TRANS_IO_DATA : SWD_TRANS_IO_TURN2;
+                    if (RnW) begin
+                        data_cnt <= 1;
+                        SWDIO_TMS_I <= #`DELAY_TIME data[0];
+                        swd_sm <= SWD_TRANS_IO_DATA;
+                    end
+                    else begin
+                        data_cnt <= 0;
+                        swd_sm <= SWD_TRANS_IO_TURN2;
+                    end
                 end
                 else begin
                     swd_sm <= SWD_TRANS_IO_TURN2;
@@ -408,6 +416,7 @@ module DAP_SWD_Trans_tb();
             SWD_TRANS_IO_DATA: begin // data
                 data_cnt <= data_cnt + 1;
                 if (data_cnt == 31) begin
+                    SWDIO_TMS_I <= parity_32(data);
                     swd_sm <= SWD_TRANS_IO_DATA_PATIYY;
                 end
                 if (RnW) begin
@@ -418,6 +427,7 @@ module DAP_SWD_Trans_tb();
                 end
             end
             SWD_TRANS_IO_DATA_PATIYY: begin // p
+                SWDIO_TMS_I <= parity_32(data);
                 DataParity = (parity_32(data) == swdio_i);
                 swd_sm <= RnW ? SWD_TRANS_IO_TURN2 : SWD_TRANS_IO_START;
             end

@@ -32,20 +32,19 @@ module DAP_USB_Receiver #(
     reg [FIFO_ADDR_LEN:0] fifo_wptr;
     reg [FIFO_ADDR_LEN:0] fifo_wptr_tmp;
     reg [FIFO_ADDR_LEN:0] fifo_rptr;
-    wire [FIFO_ADDR_LEN:0] fifo_rptr_next = fifo_rptr + 1'd1;
+    wire [FIFO_ADDR_LEN:0] fifo_rptr_next = (axis_tready && axis_tvaild) ? fifo_rptr + 1'd1 : fifo_rptr;
 
 
-    wire [12:0] fifo_ext_wptr = fifo_wptr + 13'd512;
-    assign fifo_full = (fifo_ext_wptr[12] ^ fifo_rptr[12]) && (fifo_ext_wptr[11:0] >= fifo_rptr[11:0]);
+    wire [FIFO_ADDR_LEN:0] fifo_ext_wptr = fifo_wptr + FIFO_BUFFER_LEN;
+    assign fifo_full = (fifo_ext_wptr[FIFO_ADDR_LEN] ^ fifo_rptr[FIFO_ADDR_LEN]) && (fifo_ext_wptr[FIFO_ADDR_LEN-1:0] >= fifo_rptr[FIFO_ADDR_LEN-1:0]);
     assign fifo_empty = (fifo_wptr == fifo_rptr);
     assign usb_rxrdy = !fifo_full;
-    
+
     reg usb_rx_active_store;
-    
+
     wire fifo_write_en = usb_rx_valid;
 
-    assign axis_tvaild = !fifo_empty;
-    wire fifo_read_en = axis_tready && axis_tvaild;
+    reg axis_tvaild;
 
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
@@ -54,6 +53,7 @@ module DAP_USB_Receiver #(
             fifo_rptr <= {(FIFO_ADDR_LEN+1){1'd0}};
             usb_rx_active_store <= 1'd0;
             axis_tdata <= 8'd0;
+            axis_tvaild <= 1'd0;
         end
         else begin
             usb_rx_active_store <= usb_rx_active;
@@ -71,13 +71,14 @@ module DAP_USB_Receiver #(
                 fifo_wptr_tmp <= fifo_wptr_tmp + 1'd1;
             end
 
-            if (fifo_read_en) begin
+            if (!fifo_empty) begin
                 fifo_rptr <= fifo_rptr_next;
+                axis_tvaild <= 1'd1;
                 axis_tdata <= ram[fifo_rptr_next[FIFO_ADDR_LEN-1:0]];
-            end else begin
-                axis_tdata <= ram[fifo_rptr[FIFO_ADDR_LEN-1:0]];
             end
-
+            else begin
+                axis_tvaild <= 1'd0;
+            end
         end
     end
 

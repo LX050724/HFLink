@@ -448,6 +448,8 @@ module DAP_Seqence (
                         swd_trans_tx_RnW <= tx_cmd[1];
                         swd_trans_tx_ADDR <= tx_cmd[3:2];
 
+                        swd_trans_rx_parity <= 1'd0;
+
                         delay_clk_en <= 0; // 复位延迟时钟标志
                         swd_trans_sm <= SWD_TRANS_SM_WORKING;
                     end
@@ -528,6 +530,10 @@ module DAP_Seqence (
                             end
                             SWD_TRANS_IO_DATA: begin
                                 {swd_trans_tx_data, SWDIO_TMS_O} <= {1'd0, swd_trans_tx_data}; // 移位输出
+                                if (swd_trans_tx_RnW) begin
+                                    SWDIO_TMS_O <= 1'd0;
+                                end
+
                                 swd_trans_tx_parity <= swd_trans_tx_parity ^ swd_trans_tx_data[0];
                                 if (swd_trans_tx_cnt == 12'd31) begin
                                     swd_trans_tx_cnt <= 12'd0;
@@ -538,7 +544,7 @@ module DAP_Seqence (
                                 end
                             end
                             SWD_TRANS_IO_DATA_PATIYY: begin
-                                SWDIO_TMS_O <= swd_trans_tx_parity;
+                                SWDIO_TMS_O <= swd_trans_tx_RnW ? 1'd0 : swd_trans_tx_parity;
                             end
                             SWD_TRANS_IO_DONE: begin
                                 swd_trans_tx_sm <= SWD_TRANS_IO_DONE;
@@ -626,9 +632,9 @@ module DAP_Seqence (
                         rx_data <= swd_trans_rx_data;
                         case (swd_trans_rx_ack)
                             3'b001, 3'b010, 3'b100:
-                                rx_flag <= {13'd0, swd_trans_rx_ack};
+                                rx_flag <= {12'd0, swd_trans_rx_parity, swd_trans_rx_ack};
                             default:
-                                rx_flag <= {13'd0, 3'b111};
+                                rx_flag <= {12'd0, swd_trans_rx_parity, 3'b111};
                         endcase
                         rx_valid <= 1'd1;
                         swj_busy <= 1'd0;

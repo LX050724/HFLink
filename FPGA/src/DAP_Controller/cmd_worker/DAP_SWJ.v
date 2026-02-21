@@ -659,7 +659,7 @@ module DAP_SWJ #(
                             ram_write_addr <= 10'd0;
                             ram_write_en <= 1'd1;
                             packet_len <= 1'd1;
-                            if (seq_rx_flag[2:0] == 3'b001) begin
+                            if (seq_rx_flag[3:0] == 4'b0001) begin
                                 ram_write_data <= 8'h00;
                             end
                             else begin
@@ -803,7 +803,7 @@ module DAP_SWJ #(
                         swd_block_trans_sm <= SWD_BTRANS_SM_TRANSFER;
                     end
                     SWD_BTRANS_SM_TRANSFER: begin // 等待传输完成
-                        if (!swd_block_trans_err_flag && (seq_rx_valid && seq_rx_flag[2:0] == 3'b001)) begin // 正常传输完成
+                        if (!swd_block_trans_err_flag && (seq_rx_valid && seq_rx_flag[3:0] == 4'b0001)) begin // 正常传输完成
                             // 请求计数-1
                             swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
                             // 响应计数+1
@@ -845,7 +845,7 @@ module DAP_SWJ #(
                             endcase
                         end
 
-                        if (swd_block_trans_err_flag || (seq_rx_valid && seq_rx_flag[2:0] != 3'b001)) begin // 错误状态
+                        if (swd_block_trans_err_flag || (seq_rx_valid && seq_rx_flag[3:0] != 4'b0001)) begin // 错误状态
                             swd_block_trans_err_flag <= 1'd1;
                             swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
                             if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
@@ -1106,7 +1106,7 @@ module DAP_SWJ #(
 
                     SWD_TRANS_SM_MATCH_STEP3: begin // 匹配第三步，循环读取匹配
                         swd_trans_check_write <= 1'd0;
-                        if (swd_trans_match_mask & seq_rx_data[31:0] == swd_trans_wdata) begin
+                        if ((swd_trans_match_mask & seq_rx_data) == swd_trans_wdata) begin
                             swd_trans_cnt <= swd_trans_cnt + 1'd1;
                             swd_trans_sm <= SWD_TRANS_SM_READ_REQUSET;
                         end
@@ -1148,7 +1148,7 @@ module DAP_SWJ #(
                     end
                     SWD_TRANS_SM_WRTE_STATUS: begin
                         ram_write_addr <= 10'd1;
-                        ram_write_data <= {4'd0, swd_trans_match_failed, seq_rx_flag[2:0]};
+                        ram_write_data <= {3'd0, swd_trans_match_failed, seq_rx_flag[3:0]};
                         ram_write_en <= 1'd1;
                         swd_trans_sm <= SWD_TRANS_SM_DONE;
                     end
@@ -1180,7 +1180,7 @@ module DAP_SWJ #(
                     end
                     SWD_TRANS_SM_WAIT: begin
                         if (seq_rx_valid) begin
-                            if (seq_rx_flag[2:0] == 3'b001) begin
+                            if (seq_rx_flag[3:0] == 4'b0001) begin
                                 if (swd_trans_trig_en_cnt) begin
                                     swd_trans_cnt <= swd_trans_cnt + 1'd1;
                                 end
