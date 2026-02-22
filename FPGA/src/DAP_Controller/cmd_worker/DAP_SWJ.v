@@ -906,7 +906,7 @@ module DAP_SWJ #(
                                 swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
                             end
                             else begin
-                                swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
+                                swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
                             end
                         end
                     end
