@@ -241,7 +241,7 @@ module DAP_Controller #(
     reg [11:0] packet_len;
     reg group_finish;
     reg packet_finish;
-    wire packet_almost_full;
+    wire packet_fifo_full;
 
     DAP_USB_Receiver dap_usb_receiver_inst (
                          .clk(hclk),
@@ -277,7 +277,7 @@ module DAP_Controller #(
                        .packet_len(packet_len),
                        .group_finish(group_finish),
                        .packet_finish(packet_finish),
-                       .almost_full(packet_almost_full)
+                       .fifo_full(packet_fifo_full)
                    );
 
 
@@ -533,7 +533,7 @@ module DAP_Controller #(
                     end
                 end
                 2'd3: begin
-                    if (!packet_almost_full) begin
+                    if (!packet_fifo_full) begin
                         // 没有num_cmd或最后一个处理完
                         if (num_cmd == 8'd0 || num_cmd == 8'd1) begin
                             // 命令数量清零，整包打包完成
