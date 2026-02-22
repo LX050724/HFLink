@@ -21,6 +21,7 @@ extern "C" {
 #define USBD_MAX_POWER     300
 #define USBD_LANGID_STRING 1033
 
+void usbd_set_serial_number(const uint8_t *data);
 void usbd_init_desc(void);
 void usbd_ep0_rx_irq_handler(USBD_TypeDef *usbd, uint32_t it_flag);
 

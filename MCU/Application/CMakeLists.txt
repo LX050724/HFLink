@@ -14,7 +14,7 @@ if (("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE}" STREQUAL 
     target_compile_definitions(HFLinkAPP PRIVATE DEBUG)
     target_link_libraries(HFLinkAPP PRIVATE m SEGGER_RTT GOWIN_M1)
 else()
-    target_link_libraries(HFLinkAPP PRIVATE m GOWIN_M1)
+    target_link_libraries(HFLinkAPP PRIVATE m GOWIN_M1) 
 endif()
 
 add_custom_command(TARGET HFLinkAPP POST_BUILD
@@ -22,8 +22,8 @@ add_custom_command(TARGET HFLinkAPP POST_BUILD
     COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:HFLinkAPP> HFLinkAPP.hex
     COMMENT "Building HFLinkAPP.bin"
 )
-    
-add_custom_command(TARGET HFLinkAPP POST_BUILD
-    COMMAND python ${CMAKE_SOURCE_DIR}/tools/make_itcm.py HFLinkAPP.bin -o .
-    COMMENT "Building itcm"
+
+add_custom_target(ForceRunTarget ALL
+    COMMAND python ${CMAKE_SOURCE_DIR}/tools/package.py -p ${CMAKE_SOURCE_DIR}/../FPGA/HFLink.gprj -c HFLinkAPP.bin -o ${CMAKE_BINARY_DIR}/bitstream.bin
+    COMMENT "Building FPGA Bitstream"
 )

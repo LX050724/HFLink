@@ -51,6 +51,26 @@
 
 #define WEBUSB_INTF_NUM (3)
 
+typedef struct {
+    const char *str;
+    uint8_t len;
+} USBD_desc_str_t;
+
+static const uint8_t *ep0_data_buf = NULL;
+static uint32_t ep0_data_buf_residue = 0;
+static char serial_number_dynamic[33]; // Dynamic serial number
+static USBD_desc_str_t string_descriptors[] = {
+    {"\x09\x04", 2},
+    {"HFLink", 9},
+    {"HFLink CMSIS-DAP", 16},
+    {serial_number_dynamic, 32},
+    {"HFLink CMSIS-DAP", 16},
+    {"HFLink UART", 11},
+};
+
+uint16_t desc_strserial_addr;
+uint16_t desc_exstr_addr[3];
+
 // clang-format off
 const uint8_t USBD_WinUSBDescriptorSetDescriptor[] = {
     WBVAL(WINUSB_DESCRIPTOR_SET_HEADER_SIZE), /* wLength */
@@ -146,21 +166,6 @@ const uint8_t USBD_BinaryObjectStoreDescriptor[] = {
 };
 
 
-char serial_number_dynamic[] = "11111111110000000123456789ABCDEF"; // Dynamic serial number
-
-typedef struct {
-    const char *str;
-    uint8_t len;
-} USBD_desc_str_t;
-
-USBD_desc_str_t string_descriptors[] = {
-    {"\x09\x04", 2},
-    {"HFLink", 9},
-    {"HFLink CMSIS-DAP", 16},
-    {"00000000000000000123456789ABCDEF", 32},
-    {"HFLink CMSIS-DAP", 16},
-    {"HFLink UART", 11},
-};
 
 static const uint8_t device_quality_descriptor[] = {
     USB_DEVICE_QUALIFIER_DESCRIPTOR_INIT(USB_2_1, 0x00, 0x00, 0x00, 0x01),
@@ -234,10 +239,19 @@ static uint8_t desc_make_str(volatile uint8_t **desc, const char *str)
     return total_len;
 }
 
-uint16_t desc_strserial_addr;
-uint16_t desc_exstr_addr[3];
 
-void usbd_init_desc()
+void usbd_set_serial_number(const uint8_t *data)
+{
+    const char *hex_str = "0123456789abcdef";
+    for (int i = 0; i < 16; i++)
+    {
+        serial_number_dynamic[i*2] = hex_str[data[i] >> 4];
+        serial_number_dynamic[i*2+1] = hex_str[(data[i] & 0x0f)];
+    }
+    serial_number_dynamic[32] = 0;
+}
+
+void usbd_init_desc(void)
 {
     volatile uint8_t *w_ptr = &USBD->DESC_DATA[0];
     USBD->DESC.DEV_LEN = sizeof(device_descriptor);
@@ -342,11 +356,6 @@ void cdc_acm_class_interface_request_handler(USBD_TypeDef *usbd, const struct us
         break;
     }
 }
-
-uint8_t xxx[0x12];
-
-const uint8_t *ep0_data_buf = NULL;
-uint32_t ep0_data_buf_residue = 0;
 
 void usbd_write_ldata(USBD_TypeDef *usbd, const uint8_t *data, size_t len)
 {
@@ -466,7 +475,7 @@ void usbd_setup_request_handler(USBD_TypeDef *usbd, uint32_t it_flag, const stru
     //                   usbd_ep_get_rxnum(usbd, 0));
 }
 
-struct usb_setup_packet setup;
+static struct usb_setup_packet setup;
 
 void usbd_ep0_rx_irq_handler(USBD_TypeDef *usbd, uint32_t it_flag)
 {

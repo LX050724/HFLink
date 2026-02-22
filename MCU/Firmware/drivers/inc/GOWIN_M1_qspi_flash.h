@@ -151,6 +151,7 @@ extern void qspi_flash_Enable(void);
 void qspi_flash_fast_read_quad(uint32_t address, uint8_t *read_buffer, uint16_t rd_len);
 uint8_t qspi_flash_chip_reset();
 uint8_t qspi_flash_read_status(void);
+uint8_t qspi_flash_read_unique_id(uint8_t *write_buffer);
 
 #ifdef __cplusplus
 }

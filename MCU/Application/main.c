@@ -37,7 +37,7 @@ void delay_decrement(void)
     }
 }
 
-#define AHB_USBDevice ((USBD_TypeDef *)0x80000000)
+
 
 uint8_t test_mem[2048];
 
@@ -61,7 +61,7 @@ uint32_t crc32(uint32_t init, uint8_t *data, uint16_t length)
 
 uint8_t rbuff[2048];
 
-int main()
+int main(void)
 {
 #ifdef DEBUG
     SEGGER_RTT_Init();
@@ -81,19 +81,12 @@ int main()
     qspi_flash_init();
     qspi_flash_Enable();
 
-    print("SPI_FLASH IDREV: %08x\n", SPI_FLASH->IDREV);
-    print("SPI_FLASH Support Slave: %d\n", !!(SPI_FLASH->CONFIG & SPIFLASH_CONF_SLAVE_Msk));
-    print("SPI_FLASH Support Mmap: %d\n", !!(SPI_FLASH->CONFIG & SPIFLASH_CONF_MMAP_Msk));
-    print("SPI_FLASH Support direct IO: %d\n", !!(SPI_FLASH->CONFIG & SPIFLASH_CONF_DIRECT_IO_Msk));
-    print("SPI_FLASH Support QuadSPI: %d\n", !!(SPI_FLASH->CONFIG & SPIFLASH_CONF_QUADIO_Msk));
-    print("SPI_FLASH Support DualSPI: %d\n", !!(SPI_FLASH->CONFIG & SPIFLASH_CONF_DUALIO_Msk));
-    print("SPI_FLASH TxFIFO Depth: %d\n",
-          (SPI_FLASH->CONFIG & SPIFLASH_CONF_TX_DEPTH_Msk) >> SPIFLASH_CONF_TX_DEPTH_Pos);
-    print("SPI_FLASH RxFIFO Depth: %d\n",
-          (SPI_FLASH->CONFIG & SPIFLASH_CONF_RX_DEPTH_Msk) >> SPIFLASH_CONF_RX_DEPTH_Pos);
-    print("DAP->TIME %08x\n", DAP->TIMESTAMP);
-    // qspi_flash_chip_reset();
-    // change_mode_qspi_flash();
+    do {
+        uint8_t flash_unique_id[16];
+        qspi_flash_read_unique_id(flash_unique_id);
+        usbd_set_serial_number(flash_unique_id);
+    } while(0);
+
     
     usbd_init_desc();
     usbd_enable(USBD);

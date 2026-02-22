@@ -15,6 +15,12 @@ static uint8_t qspi_get_fifo_depth(uint8_t fifo_depth_config);
 // static uint8_t qspi_flash_read_status(void);
 static void qspi_flash_write_cmd(uint32_t cmd);
 
+static inline uint32_t qspi_flash_rxne(void)
+{
+    return !(SPI_FLASH->STATUS & (1 << 14));
+}
+
+
 /* Functions ------------------------------------------------------------------*/
 /**
  * @brief Initializes QSPI-Flash
@@ -36,7 +42,7 @@ void qspi_flash_init(void)
     while ((SPI_FLASH->STATUS & 0x01))
         ; // wait until QSPI active finish
 
-    buff = QSPI_ADDRESS_24_BITS | QSPI_DATA_8_BITS | SPIFLASH_TRANSFMT_DATAMERGE;
+    buff = QSPI_ADDRESS_24_BITS | QSPI_DATA_8_BITS;
     // other fields reset to 0 while qspi_default_modes connected to 0
     SPI_FLASH->TRANSFMT = buff;
 
@@ -527,9 +533,9 @@ uint8_t qspi_flash_read_sr(uint8_t reg)
     return byte;
 }
 
-uint8_t qspi_flash_chip_reset()
+uint8_t qspi_flash_chip_reset(void)
 {
-    SPI_FLASH->TRANSCTRL = QSPI_INSTRUCTION_1_LINE | QSPI_TRMODE_NONE_DATA | QSPI_TRMODE_WRITE_ONLY;
+    SPI_FLASH->TRANSCTRL = QSPI_INSTRUCTION_1_LINE | QSPI_TRMODE_NONE_DATA;
     SPI_FLASH->CMD = 0x66;
     while (SPI_FLASH->STATUS & SPIFLASH_SR_PRGBUSY)
         ;
@@ -541,13 +547,21 @@ uint8_t qspi_flash_chip_reset()
     return 0;
 }
 
-// void qspi_enable_mmap()
-// {
-//     SPI_FLASH->TRANSCTRL = QSPI_INSTRUCTION_1_LINE | // enable cmd
-//                         QSPI_ADDRESS_SAME_DATA | QSPI_DATA_4_LINES | QSPI_TRMODE_DUMMY_READ |
-//                         (2 << SPIFLASH_TRANSCTRL_DUMMYCNT_Pos);
 
-//     SPI_FLASH->ADDR = 0;
-//     SPI_FLASH->CMD = 0xEB;
-//     SPI_FLASH->CONFIG |= 
-// }
+uint8_t qspi_flash_read_unique_id(uint8_t *write_buffer)
+{
+    SPI_FLASH->TRANSCTRL = QSPI_INSTRUCTION_1_LINE | QSPI_DATA_1_LINE | QSPI_TRMODE_DUMMY_READ |
+                           ((4 - 1) << SPIFLASH_TRANSCTRL_DUMMYCNT_Pos) | ((16 - 1) << SPIFLASH_TRANSCTRL_RDDT_CNT_Pos);
+
+    SPI_FLASH->CMD = 0x4b;
+
+    for (uint16_t i = 0; i < 16; i++)
+    {
+        // check the status of txfifo
+        while (qspi_flash_rxne())
+            ;
+        write_buffer[i] = *(volatile uint8_t *)&SPI_FLASH->DATA;
+    }
+
+    return 0;
+}

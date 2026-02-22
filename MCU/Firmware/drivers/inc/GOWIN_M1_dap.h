@@ -45,6 +45,11 @@ inline static void dap_baud_start(DAP_TypeDef *dap)
     dap->BAUD_GEN.CR |= 1;
 }
 
+inline static void dap_baud_stop(DAP_TypeDef *dap)
+{
+    dap->BAUD_GEN.CR &= ~1U;
+}
+
 inline static void dap_baud_set_reload(DAP_TypeDef *dap, uint16_t div)
 {
     dap->BAUD_GEN.RELOAD = div;
