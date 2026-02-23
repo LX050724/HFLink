@@ -180,7 +180,8 @@ static void dap_transfer_configure_handler(DAP_TypeDef *dap)
     uint8_t idle_cycles = dap_read_data(dap);
     uint16_t wait_retry = dap_read_data16(dap);
     uint16_t match_retry = dap_read_data16(dap);
-
+    dap_swj_set_match_retry(dap, match_retry);
+    dap_swj_set_wait_retry(dap, wait_retry);
     DAP_DEBUG("Transfer idle %d cycles, wait retry %d, match retry %d\n", idle_cycles, wait_retry, match_retry);
     dap_write_data(dap, 0);
 }
