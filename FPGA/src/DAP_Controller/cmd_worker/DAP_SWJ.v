@@ -77,12 +77,12 @@ module DAP_SWJ #(
     wire SWJ_CR_MODE = SWJ_CR; // 0: SWD; 1: JTAG
 
 
-    reg [31:0] SWJ_SWD_CR;
+    reg [2:0] SWJ_SWD_CR;
     reg [7:0] SWJ_JTAG_CR;
     reg [31:0] SWJ_JTAG_IR_CONF_REG [0:7];
 
-    wire [11:0] SWD_CONF_TURN = SWJ_SWD_CR[11:0];
-    wire SWD_CONF_FORCE_DATA = SWJ_SWD_CR[31];
+    wire [1:0] SWD_CONF_TURN = SWJ_SWD_CR[1:0];
+    wire SWD_CONF_FORCE_DATA = SWJ_SWD_CR[2];
 
     wire [7:0] JTAG_CR_COUNT = SWJ_JTAG_CR[7:0];
     wire [13:0] JTAG_IR_BEFORE_CONF [0:7];
@@ -101,7 +101,7 @@ module DAP_SWJ #(
     always @(posedge clk or negedge resetn) begin : ahb_mem_write_ctrl
         if (!resetn) begin
             SWJ_CR <= 0;
-            SWJ_SWD_CR <= 9'd0;
+            SWJ_SWD_CR <= 3'd0;
             SWJ_JTAG_CR <= 8'd0;
             for (i = 0; i < 8; i = i + 1) begin
                 SWJ_JTAG_IR_CONF_REG[i] <= 32'd0;
@@ -126,7 +126,9 @@ module DAP_SWJ #(
                             SWJ_MATCH_RETRY[8+:8] <= ahb_wdata[24+:8];
                     end
                     SWJ_SWD_CR_ADDR[ADDRWIDTH-1:2]:
-                        AHB_WRITE_REG32(SWJ_SWD_CR);
+                        if (ahb_byte_strobe[0]) begin
+                            SWJ_SWD_CR <= ahb_wdata[2:0];
+                        end
                     SWJ_JTAG_CR_ADDR[ADDRWIDTH-1:2]:
                         AHB_WRITE_REG32(SWJ_JTAG_CR);
                     SWJ_JTAG_IR_CONF0_ADDR[ADDRWIDTH-1:2]:
@@ -218,6 +220,7 @@ module DAP_SWJ #(
 
                     .DAP_TRANS_WAIT_RETRY(SWJ_WAIT_RETRY),
                     .SWD_TURN_CYCLE(SWD_CONF_TURN),
+                    .SWD_CONF_FORCE_DATA(SWD_CONF_FORCE_DATA),
 
                     // GPIO
                     .SWCLK_TCK_O(SWCLK_TCK_O),

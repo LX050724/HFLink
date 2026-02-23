@@ -6,7 +6,9 @@ add_executable(HFLinkAPP
     usb/usbd_core.c
     dap/dap.c
     ads1115/ads1115.c
+    upgrade/upgrade.c
 )
+
 target_include_directories(HFLinkAPP PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_options(HFLinkAPP PRIVATE -T "${CMAKE_CURRENT_LIST_DIR}/GOWIN_M1_APP.ld")
 

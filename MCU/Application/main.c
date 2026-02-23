@@ -3,12 +3,13 @@
 #include "GOWIN_M1_dap.h"
 #include "GOWIN_M1_usbd.h"
 #include "core_cm1.h"
+#include "upgrade/upgrade.h"
 #include <stdint.h>
 #include <string.h>
 
+#include "ads1115/ads1115.h"
 #include "dap/dap.h"
 #include "usb/usbd_core.h"
-#include "ads1115/ads1115.h"
 #include <GOWIN_M1_qspi_flash.h>
 
 #ifdef DEBUG
@@ -19,6 +20,8 @@
 #endif
 
 static volatile uint32_t delay;
+
+uint32_t crc32(uint32_t init, uint8_t *data, uint32_t length);
 
 void delay_1ms(uint32_t count)
 {
@@ -37,29 +40,7 @@ void delay_decrement(void)
     }
 }
 
-
-
-uint8_t test_mem[2048];
-
-uint32_t crc32(uint32_t init, uint8_t *data, uint16_t length)
-{
-    uint8_t i;
-    uint32_t crc = init; // Initial value
-    while (length--)
-    {
-        crc ^= *data++; // crc ^= *data; data++;
-        for (i = 0; i < 8; ++i)
-        {
-            if (crc & 1)
-                crc = (crc >> 1) ^ 0xEDB88320; // 0xEDB88320= reverse 0x04C11DB7
-            else
-                crc = (crc >> 1);
-        }
-    }
-    return ~crc;
-}
-
-uint8_t rbuff[2048];
+uint8_t rbuff[512];
 
 int main(void)
 {
@@ -75,70 +56,54 @@ int main(void)
 
     NVIC_EnableIRQ(EXTINT_1_IRQn);
     DAP->CR = 0x80000001;
-    DAP->TIMESTAMP = 0;
-    print("DAP->TIME %08x\n", DAP->TIMESTAMP);
-    
+
     qspi_flash_init();
     qspi_flash_Enable();
 
-    do {
+    do
+    {
         uint8_t flash_unique_id[16];
         qspi_flash_read_unique_id(flash_unique_id);
         usbd_set_serial_number(flash_unique_id);
-    } while(0);
+    } while (0);
 
-    
+    NVIC_EnableIRQ(EXTINT_0_IRQn);
+    print("CR:%08x\n", USBD->CR);
+
     usbd_init_desc();
     usbd_enable(USBD);
     usbd_enable_it(USBD, USBD_CR_IT_EPOUT | USBD_CR_IT_EPIN | USBD_CR_IT_SETUP);
 
-    NVIC_EnableIRQ(EXTINT_0_IRQn);
-    print("CR:%08x\n", USBD->CR);
-    
     axisuart_set_baud(AXIS_UART, 115200);
     axisuart_enable(AXIS_UART);
 
+    // 加载DAP控制器默认参数
     dap_baud_set_reload(DAP, 10);
     dap_baud_set_simpling_cmp(DAP, 10);
-    DAP->SWJ.WAIT_RETRY = 100;
-    DAP->SWJ.MATCH_RETRY = 100;
+    dap_swj_set_wait_retry(DAP, 100);
+    dap_swj_set_match_retry(DAP, 100);
     dap_baud_start(DAP);
 
+    //
     DAP->GPIO.TCK_DELAY = 60; // 750ps
-    
+
     GPIO_SetBit(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
     GPIO_SetOutEnable(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
 
-    // ads1115_i2c_init();
-
+    ads1115_i2c_init();
 
     while (1)
     {
-        GPIO_SetBit(GPIO0, GPIO_Pin_1);
-        delay_1ms(300);
-        GPIO_ResetBit(GPIO0, GPIO_Pin_1);
-        delay_1ms(300);
+        upgrade_loop();
     }
 }
-
-uint16_t xxxx[16];
-uint8_t xi;
 
 void EXTINT_0_Handler(void)
 {
     uint32_t usbd_sr = USBD->SR;
     usbd_clear_flag(USBD, usbd_sr & 0xF0000000);
-
     usbd_ep0_rx_irq_handler(USBD, usbd_sr);
     usbd_ep_readall(USBD, 0, rbuff, sizeof(rbuff));
-}
-
-void send_str(const char *s)
-{
-    int n = strlen(s);
-    *((uint8_t *)&DAP->DR) = n + 1;
-    for (int i = 0; i <= n; i++)
-        *((uint8_t *)&DAP->DR) = s[i];
 }
 
 void EXTINT_1_Handler(void)
@@ -146,3 +111,54 @@ void EXTINT_1_Handler(void)
     dap_irq_handler(DAP);
 }
 
+#define DAP_VENDOR_CMD_UPGRADE 0x00
+#define DAP_VENDOR_CMD_SENSOR 0x01
+#define DAP_VENDOR_CMD_CONFIG 0x02
+
+void dap_vendor0_handler(DAP_TypeDef *dap)
+{
+    uint8_t cmd = dap_read_data(dap);
+
+    switch (cmd)
+    {
+    case DAP_VENDOR_CMD_UPGRADE: {
+        uint8_t sub_command = dap_read_data(dap);
+        if (sub_command == 0x00)
+        {
+            uint32_t firm_size = dap_read_data32(dap);
+            int ret = upgrade_start(firm_size);
+            dap_write_data(dap, ret);
+        }
+        else if (sub_command == 0x01)
+        {
+            volatile uint8_t *buffer = upgrade_get_buffer();
+            for (int i = 0; i < 256; i++)
+            {
+                uint8_t t = dap_read_data(dap);
+                if (buffer)
+                    buffer[i] = t;
+            }
+
+            if (buffer != NULL)
+            {
+                upgrade_received_data();
+                dap_write_data(dap, 0x00);
+            }
+            else
+            {
+                dap_write_data(dap, 0xff);
+            }
+        }
+        else if (sub_command == 0x02)
+        {
+            uint32_t checksum = upgrade_get_verify_result();
+            dap_write_data32(dap, checksum);
+        }
+        else if (sub_command == 0xff)
+        {
+            upgrade_reset();
+        }
+        break;
+    }
+    }
+}

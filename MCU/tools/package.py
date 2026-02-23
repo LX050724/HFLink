@@ -68,7 +68,7 @@ def main():
     
     parser = argparse.ArgumentParser(
         prog=sys.argv[0],
-        description="二进制打包感觉",
+        description="比特流打包工具",
     )
     parser.add_argument('-p', '--project')
     parser.add_argument('-c', '--cbin')
@@ -108,11 +108,13 @@ def main():
     result_filename = 'new_' + os.path.basename(project.get_bitstream_path())
     result_path = os.path.join(temp_dir.name, result_filename)
     output_path = result_filename
-
     if args.output is not None:
         output_path = args.output
-
-    shutil.copy(result_path, os.path.splitext(output_path)[0] + '.fs')
+    fs_output_path = os.path.splitext(output_path)[0] + '.fs'
+    
+    if os.path.exists(fs_output_path):
+        os.chmod(fs_output_path, 0o666)
+    shutil.copy(result_path, fs_output_path)
     bitstream2bin(result_path, output_path)
 
         

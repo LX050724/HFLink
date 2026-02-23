@@ -87,6 +87,11 @@
 #define QSPI_TRMODE_DUMMY_WRITE      ((uint32_t)(0x8UL << SPIFLASH_TRANSCTRL_TRMODE_Pos)) /* Dummy, Write */
 #define QSPI_TRMODE_DUMMY_READ       ((uint32_t)(0x9UL << SPIFLASH_TRANSCTRL_TRMODE_Pos)) /* Dummy, Read */
 
+#define QSPI_DUMMY_NUM(NUM) ((((NUM) - 1) << SPIFLASH_TRANSCTRL_DUMMYCNT_Pos) & SPIFLASH_TRANSCTRL_DUMMYCNT_Msk)
+#define QSPI_DATA_WRITE_TRANSMIT_NUM(NUM) ((((NUM) - 1) << SPIFLASH_TRANSCTRL_WRDT_CNT_Pos) & SPIFLASH_TRANSCTRL_WRDT_CNT_Msk)
+#define QSPI_DATA_READ_TRANSMIT_NUM(NUM) ((((NUM) - 1) << SPIFLASH_TRANSCTRL_RDDT_CNT_Pos) & SPIFLASH_TRANSCTRL_RDDT_CNT_Msk)
+
+
 /* Functions ------------------------------------------------------------------*/
 /**
   * @brief Initializes QSPI-Flash
@@ -99,23 +104,9 @@ extern void qspi_flash_init(void);
 extern void change_mode_qspi_flash(void);
 
 /**
-  * @brief I/O fast read data from QSPI-Flash
-  */
-extern void qspi_flash_io_fast_read(uint16_t rd_len, uint32_t cmd, uint32_t address,uint8_t *read_buffer);
-
-/**
-  * @brief Fast read data from QSPI-Flash
-  */
-extern void qspi_flash_fast_read(uint16_t rd_len, uint32_t cmd, uint32_t address,uint8_t *read_buffer);
-/**
-  * @brief Write data into QSPI-Flash
-  */
-extern void qspi_flash_write(uint16_t wr_len, uint32_t cmd, uint32_t address,uint8_t *write_buffer);
-
-/**
   * @brief Write data into a page of QSPI-Flash
   */
-extern void qspi_flash_page_program(uint16_t wr_len,uint32_t address,uint8_t *write_buffer);
+extern void qspi_flash_page_program(uint16_t wr_len,uint32_t address,uint8_t *buffer);
 
 /**
   * @brief Erase a 4K sector of QSPI-Flash
@@ -147,11 +138,13 @@ extern uint8_t qspi_flash_read_sr(uint8_t reg);
   * @brief Enable QSPI-Flash
   */
 extern void qspi_flash_Enable(void);
-
+void qspi_flash_write_enable(void);
+void qspi_flash_write_disable(void);
 void qspi_flash_fast_read_quad(uint32_t address, uint8_t *read_buffer, uint16_t rd_len);
 uint8_t qspi_flash_chip_reset();
 uint8_t qspi_flash_read_status(void);
 uint8_t qspi_flash_read_unique_id(uint8_t *write_buffer);
+int qspi_flash_is_busy(void);
 
 #ifdef __cplusplus
 }

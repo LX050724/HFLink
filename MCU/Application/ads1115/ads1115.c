@@ -1,5 +1,4 @@
 #include <GOWIN_M1_i2c.h>
-#include <SEGGER_RTT.h>
 
 #define ADS1115_I2C I2C
 #define ADS1115_ADDR 0x48
@@ -101,7 +100,7 @@ int ads1115_i2c_init(void)
         } while (conf.REG.OS == 0);
     
         uint32_t res = ads1115_read_reg(ADS1115_CONV_REG);
-        SEGGER_RTT_printf(0, "%d\n", (res >> 4) - 20);
+        // SEGGER_RTT_printf(0, "%d\n", (res >> 4) - 20);
     }
 
     return 0;

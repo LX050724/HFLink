@@ -2,12 +2,14 @@
 #include "GOWIN_M1.h"
 #include "GOWIN_M1_axisuart.h"
 #include "GOWIN_M1_usbd.h"
-#include "SEGGER_RTT.h"
 #include "usb_cdc.h"
 #include "usb_def.h"
 #include "usb_util.h"
 #include "usbd_core.h"
 #include <string.h>
+#ifdef DEBUG
+#include "SEGGER_RTT.h"
+#endif
 
 #define CMSIS_DAP_INTERFACE_SIZE (9 + 7 + 7 + 7)
 #define CUSTOM_HID_LEN (9 + 9 + 7 + 7)
@@ -249,6 +251,11 @@ void usbd_set_serial_number(const uint8_t *data)
         serial_number_dynamic[i*2+1] = hex_str[(data[i] & 0x0f)];
     }
     serial_number_dynamic[32] = 0;
+}
+
+const char *usbd_get_serial_number_str(void)
+{
+    return serial_number_dynamic;
 }
 
 void usbd_init_desc(void)

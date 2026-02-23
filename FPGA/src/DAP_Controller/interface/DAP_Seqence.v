@@ -24,7 +24,8 @@ module DAP_Seqence (
         output [31:0] seq_rx_data,
 
         input [15:0] DAP_TRANS_WAIT_RETRY,
-        input [11:0] SWD_TURN_CYCLE,
+        input [1:0] SWD_TURN_CYCLE,
+        input SWD_CONF_FORCE_DATA,
 
 
         // GPIO
@@ -42,20 +43,23 @@ module DAP_Seqence (
     );
 
     reg [15:0] dap_trans_wait_retry_ff;
-    reg [11:0] swd_turn_cycle_ff;
+    reg [1:0] swd_turn_cycle_ff;
+    reg swd_force_data_ff; 
     // reg [15:0] dap_trans_wait_retry;
     // reg [7:0] swd_turn_cycle;
 
     always @(posedge sclk or negedge resetn) begin
         if (!resetn) begin
-            dap_trans_wait_retry_ff <= 0;
-            swd_turn_cycle_ff <= 0;
+            dap_trans_wait_retry_ff <= 16'd0;
+            swd_turn_cycle_ff <= 2'd0;
+            swd_force_data_ff <= 1'd0;
             // dap_trans_wait_retry <= 0;
             // swd_turn_cycle <= 0;
         end
         else begin
             dap_trans_wait_retry_ff <= DAP_TRANS_WAIT_RETRY;
             swd_turn_cycle_ff <= SWD_TURN_CYCLE;
+            swd_force_data_ff <= SWD_CONF_FORCE_DATA;
             // dap_trans_wait_retry <= dap_trans_wait_retry_ff;
             // swd_turn_cycle <= swd_turn_cycle_ff;
         end
@@ -220,7 +224,8 @@ module DAP_Seqence (
     localparam [3:0] SWD_TRANS_IO_DONE = 4'd15;
 
     reg [1:0] swd_trans_sm;
-    reg [11:0] swd_trans_turn_cycle;
+    reg [1:0] swd_trans_turn_cycle;
+    reg swd_force_data;
     reg [15:0] swd_trans_retry_max;
     reg [15:0] swd_trans_retry_cnt;
 
@@ -281,8 +286,9 @@ module DAP_Seqence (
 
 
             swd_trans_sm <= 2'd0;
-            swd_trans_turn_cycle <= 12'd0;
+            swd_trans_turn_cycle <= 2'd0;
             swd_trans_retry_max <= 16'd0;
+            swd_force_data <= 1'd0;
             swd_trans_retry_cnt <= 16'd0;
             swd_trans_tx_sm <= 4'd0;
             swd_trans_tx_cnt <= 12'd0;
@@ -443,6 +449,7 @@ module DAP_Seqence (
                         swd_trans_retry_cnt <= 16'd0;
                         swd_trans_retry_max <= dap_trans_wait_retry_ff;
                         swd_trans_turn_cycle <= swd_turn_cycle_ff;
+                        swd_force_data <= swd_force_data_ff;
                         // 装载请求头
                         swd_trans_tx_APnDP <= tx_cmd[0];
                         swd_trans_tx_RnW <= tx_cmd[1];
@@ -498,7 +505,7 @@ module DAP_Seqence (
 
                             SWD_TRANS_IO_TURN1: begin
                                 SWDIO_TMS_T <= 1'd1;
-                                if (swd_trans_tx_cnt == swd_trans_turn_cycle) begin
+                                if (swd_trans_tx_cnt[1:0] == swd_trans_turn_cycle) begin
                                     swd_trans_tx_cnt <= 12'd0;
                                 end
                                 else begin
@@ -512,11 +519,11 @@ module DAP_Seqence (
                             SWD_TRANS_IO_TURN2: begin
                                 // 无论读写都进入SWD_TRANS_IO_TURN2
                                 // 读模式下用于等待ACK结果，ACK失败生成TURN数量时钟后退出，ACK成功生成TURN段之后进入数据段生成全部时钟
-                                if (swd_trans_tx_cnt == swd_trans_turn_cycle) begin
+                                if (swd_trans_tx_cnt[1:0] == swd_trans_turn_cycle) begin
                                     swd_trans_tx_cnt <= 12'd0;
 
                                     // 判断RX ACK状态
-                                    if (swd_trans_rx_ack == 3'd001) begin // OK
+                                    if (swd_trans_rx_ack == 3'b001 || swd_force_data) begin // OK
                                         swd_trans_tx_sm <= SWD_TRANS_IO_DATA;
                                     end
                                     else begin // Wait / Error / Other
@@ -581,7 +588,7 @@ module DAP_Seqence (
                             SWD_TRANS_IO_ACK2: begin
                                 swd_trans_rx_ack[2] <= SWDIO_TMS_I;
                                 swd_trans_rx_parity <= 1'd0;
-                                if ({SWDIO_TMS_I, swd_trans_rx_ack[1:0]} == 3'b001) begin
+                                if ({SWDIO_TMS_I, swd_trans_rx_ack[1:0]} == 3'b001 || swd_force_data) begin
                                     // OK
                                     // 读请求ACK后跟数据段
                                     // 写请求ACK后无读取内容
