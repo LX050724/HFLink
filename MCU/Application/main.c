@@ -90,7 +90,7 @@ int main(void)
     GPIO_SetBit(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
     GPIO_SetOutEnable(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
 
-    ads1115_i2c_init();
+    // ads1115_i2c_init();
 
     while (1)
     {
@@ -132,11 +132,22 @@ void dap_vendor0_handler(DAP_TypeDef *dap)
         else if (sub_command == 0x01)
         {
             volatile uint8_t *buffer = upgrade_get_buffer();
-            for (int i = 0; i < 256; i++)
+            for (int i = 0; i < 256; i += 4)
             {
-                uint8_t t = dap_read_data(dap);
                 if (buffer)
-                    buffer[i] = t;
+                {
+                    buffer[i + 0] = dap_read_data(dap);
+                    buffer[i + 1] = dap_read_data(dap);
+                    buffer[i + 2] = dap_read_data(dap);
+                    buffer[i + 3] = dap_read_data(dap);
+                }
+                else
+                {
+                    dap_read_data(dap);
+                    dap_read_data(dap);
+                    dap_read_data(dap);
+                    dap_read_data(dap);
+                }
             }
 
             if (buffer != NULL)

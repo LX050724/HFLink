@@ -101,9 +101,8 @@ static void dap_get_info_handler(DAP_TypeDef *dap)
         dap_return_n_string(dap, "0.0.0");
         break;
     case DAP_ID_CAPABILITIES:
-        // 支持全部特性
         dap_write_data(dap, 0x02);
-        dap_write_data(dap, 0xff);
+        dap_write_data(dap, 0xB1);
         dap_write_data(dap, 0x01);
         break;
     case DAP_ID_TIMESTAMP_CLOCK:
@@ -142,7 +141,7 @@ static void dap_disconnect_handler(DAP_TypeDef *dap)
 static void dap_swj_clock_handler(DAP_TypeDef *dap)
 {
     uint32_t clock = dap_read_data32(dap);
-    uint16_t reload = TIMESTAMP_CLOCK / clock;
+    uint16_t reload = SystemCoreClock / clock;
 
     dap_baud_stop(dap);
     dap_baud_set_reload(dap, reload);

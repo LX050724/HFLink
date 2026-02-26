@@ -26,8 +26,8 @@ class GowinProject:
         return self.result_files['RES.pnr.bitstream']
     
     def get_posp_path(self):
-        bitstream_path = self.get_bitstream_path()
-        return os.path.splitext(bitstream_path)[0] + '.posp'
+        db_path = self.result_files['RES.pnr.posp.bin']
+        return os.path.splitext(db_path)[0] + '.posp'
 
 def make_itcm(filepath, output):
     with open(filepath, 'rb') as f:
@@ -85,7 +85,7 @@ def main():
 
     # make_itcm("build/Application/HFLinkAPP.bin", temp_dir.name)
 
-    merge_bit_exe =  os.path.join(os.path.dirname(os.path.abspath(__file__)), "merge_bit.exe")
+    merge_bit_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), "merge_bit.exe")
 
     with subprocess.Popen(
         [
