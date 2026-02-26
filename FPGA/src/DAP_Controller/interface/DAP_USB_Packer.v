@@ -90,7 +90,7 @@ module DAP_USB_Packer#(
                 usb_txdata <= ram[{rptr[2:0], ram_read_addr_next}];
             end
 
-            if (!usb_ep_select) begin
+            if (!(usb_ep_select && usb_txact)) begin
                 ram_read_addr <= 9'd0;
             end
 

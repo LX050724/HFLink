@@ -746,7 +746,6 @@ module DAP_SWJ #(
                     SWD_BTRANS_SM_READ_INDEX: begin // 读取DAP Index抛弃
                         ram_write_addr <= 10'd2;
                         packet_len <= 10'd3;
-                        swd_block_need_post_read <= 1'd0;
                         swd_block_trans_err_flag <= 1'd0;
                         swd_block_trans_response_cnt <= 16'd0;
                         if (dap_in_tvalid) begin
@@ -774,6 +773,7 @@ module DAP_SWJ #(
                                 swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
                             end
                             else begin
+                                swd_block_need_post_read <= 1'd0;
                                 swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA0;
                             end
                         end
