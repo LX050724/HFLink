@@ -811,21 +811,25 @@ module DAP_SWJ #(
                     end
                     SWD_BTRANS_SM_TRANSFER: begin // 等待传输完成
                         if (!swd_block_trans_err_flag && (seq_rx_valid && seq_rx_flag[3:0] == 4'b0001)) begin // 正常传输完成
-
-                            // 判断是否是正式传输
-                            if (!swd_block_need_post_read) begin
-                                // 请求计数-1
-                                swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
-                                // 响应计数+1
-                                swd_block_trans_response_cnt <= swd_block_trans_response_cnt + 1'd1;
-                            end
+                            // 请求计数-1
+                            swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
+                            // 响应计数+1
+                            swd_block_trans_response_cnt <= swd_block_trans_response_cnt + 1'd1;
 
                             case (swd_block_trans_req[1:0])
                                 2'b11: begin // Read AP
                                     if (swd_block_need_post_read) begin
-                                        // 第一次传输，不写入数据直接触发下一次读取
-                                        swd_block_need_post_read <= 1'd0;
-                                        swd_block_trans_seq_tx_valid <= 1'd1;
+                                        if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
+                                            // 单次读AP传输，转RDBUFF
+                                            swd_block_trans_req <= 4'b1110;
+                                            swd_block_trans_seq_tx_valid <= 1'd1;
+                                            swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
+                                        end
+                                        else begin
+                                            // 多次传输的第一次传输，不写入数据直接触发下一次读取
+                                            swd_block_need_post_read <= 1'd0;
+                                            swd_block_trans_seq_tx_valid <= 1'd1;
+                                        end
                                     end
                                     else begin
                                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_0;
