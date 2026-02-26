@@ -280,15 +280,19 @@ module DAP_Controller #(
                        .fifo_full(packet_fifo_full)
                    );
 
+    localparam [2:0] DAP_SM_WAIT_CMD = 3'd0;
+    localparam [2:0] DAP_SM_READ_EXEC_NUM = 3'd1;
+    localparam [2:0] DAP_SM_WORKING = 3'd2;
+    localparam [2:0] DAP_SM_PACK = 3'd3;
+    localparam [2:0] DAP_SM_TURN = 3'd4;
 
-
-    // 一阶段解码器，命令字转换独热码
-    reg [1:0] dap_sm;
+    reg [2:0] dap_sm;
     reg [7:0] processing_cmd;   // 当前处理的命令
+    // 一阶段解码器，命令字转换独热码
     reg [`CMD_REG_WIDTH-1:0] cmd_decoder_reslut;
     always @(*) begin
         cmd_decoder_reslut = 12'd1;
-        case ((dap_sm == 2'd0) ? dap_in_tdata : processing_cmd)
+        case ((dap_sm == DAP_SM_WAIT_CMD) ? dap_in_tdata : processing_cmd)
             // ID_DAP_Transfer
             8'h05:
                 cmd_decoder_reslut = `CMD_TRANSFER;
@@ -351,7 +355,7 @@ module DAP_Controller #(
     end
 
     reg [7:0] num_cmd;
-    wire fist_decoder_tready = (dap_sm == 2'd0 || dap_sm == 2'd1);    // 一阶段解码器读就绪
+    wire fist_decoder_tready = (dap_sm == DAP_SM_WAIT_CMD || dap_sm == DAP_SM_READ_EXEC_NUM);    // 一阶段解码器读就绪
     // 根据状态选择解码信号
 
 
@@ -362,7 +366,7 @@ module DAP_Controller #(
     wire [9:0] worker_packet_len [0:2];
 
     // worker启动标志，运行过程中全程拉高，done下一个周期拉低
-    wire [`CMD_REAL_NUM-1:0] worker_start_flags = (dap_sm == 2'd2) ? cmd_decoder_reslut[`CMD_REAL_NUM-1:0] : 0;
+    wire [`CMD_REAL_NUM-1:0] worker_start_flags = (dap_sm == DAP_SM_WORKING) ? cmd_decoder_reslut[`CMD_REAL_NUM-1:0] : 0;
 
     // worker完成标志
     wire [`CMD_REAL_NUM-1:0] worker_done_flags;
@@ -496,7 +500,7 @@ module DAP_Controller #(
     always @(posedge hclk or negedge hresetn) begin
         if (!hresetn || !DAP_CR_EN) begin
             processing_cmd <= 8'd0;
-            dap_sm <= 2'd0;
+            dap_sm <= DAP_SM_WAIT_CMD;
             num_cmd <= 8'd0;
             sm_package_finish <= 1'd0;
             sm_group_finish <= 1'd0;
@@ -505,34 +509,34 @@ module DAP_Controller #(
             sm_package_finish <= 1'd0;
             sm_group_finish <= 1'd0;
             case (dap_sm)
-                2'd0: begin // 读第一字节
+                DAP_SM_WAIT_CMD: begin // 读第一字节
                     // 读取命令
                     if (dap_in_tvalid) begin
                         processing_cmd <= dap_in_tdata;
                         if (cmd_decoder_reslut[`CMD_TRANSFER_ABORT_SHIFT])
-                            dap_sm <= 2'd0;
+                            dap_sm <= DAP_SM_WAIT_CMD;
                         else if (cmd_decoder_reslut[`CMD_EXEC_CMD_SHIFT])
-                            dap_sm <= 2'd1;
+                            dap_sm <= DAP_SM_READ_EXEC_NUM;
                         else
-                            dap_sm <= 2'd2;
+                            dap_sm <= DAP_SM_WORKING;
                     end
                 end
-                2'd1: begin
+                DAP_SM_READ_EXEC_NUM: begin
                     // 读取numcmd
                     if (dap_in_tvalid) begin
                         num_cmd <= dap_in_tdata;
-                        dap_sm <= 2'd0;
+                        dap_sm <= DAP_SM_WAIT_CMD;
                     end
                 end
-                2'd2: begin
+                DAP_SM_WORKING: begin
                     // 等待处理完成判断忙标志
                     if (cmd_decoder_reslut[`CMD_REAL_NUM-1:0] & worker_done_flags[`CMD_REAL_NUM-1:0]) begin
                         // 分组打包完成，状态转移
                         sm_group_finish <= 1'd1;
-                        dap_sm <= 2'd3;
+                        dap_sm <= DAP_SM_PACK;
                     end
                 end
-                2'd3: begin
+                DAP_SM_PACK: begin
                     if (!packet_fifo_full) begin
                         // 没有num_cmd或最后一个处理完
                         if (num_cmd == 8'd0 || num_cmd == 8'd1) begin
@@ -544,15 +548,18 @@ module DAP_Controller #(
                             // 命令数量递减
                             num_cmd <= num_cmd - 1'd1;
                         end
-                        dap_sm <= 2'd0;
+                        dap_sm <= DAP_SM_TURN;
                     end
+                end
+                DAP_SM_TURN: begin
+                    dap_sm <= DAP_SM_WAIT_CMD;
                 end
             endcase
         end
     end
 
 
-    wire worker_tready = ((cmd_decoder_reslut[`CMD_REAL_NUM-1:1] & worker_dap_in_tready[`CMD_REAL_NUM-1:1]) ? 1'd1 : 1'd0);
+    wire worker_tready = ((worker_start_flags[`CMD_REAL_NUM-1:1] & worker_dap_in_tready[`CMD_REAL_NUM-1:1]) ? 1'd1 : 1'd0);
 
     assign dap_in_tready = DAP_CR_EN & (fist_decoder_tready | worker_tready | AHB_READ_DR);
 
@@ -562,7 +569,7 @@ module DAP_Controller #(
     always @(*) begin
         packet_finish = sm_package_finish;
 
-        if (dap_sm == 2'd0) begin
+        if (dap_sm == DAP_SM_WAIT_CMD) begin
             // DAP顶层控制器读取数据直接写入fifo, TransferAbort没有返回数据
             ram_write_addr = 10'd0;
             ram_write_data = dap_in_tdata;
@@ -570,7 +577,7 @@ module DAP_Controller #(
             packet_len = 10'd1;
             group_finish = DAP_IN_BYPASS_ACTIVE;
         end
-        else if (dap_sm == 2'd1) begin
+        else if (dap_sm == DAP_SM_READ_EXEC_NUM) begin
             ram_write_addr = 10'd0;
             ram_write_data = dap_in_tdata;
             ram_write_en = DAP_CR_EN & dap_in_tvalid;

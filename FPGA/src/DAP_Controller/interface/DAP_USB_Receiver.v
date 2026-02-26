@@ -44,7 +44,8 @@ module DAP_USB_Receiver #(
 
     wire fifo_write_en = usb_rx_valid;
 
-    reg axis_tvaild;
+    assign axis_tvaild = !fifo_empty;
+    wire fifo_read_en = axis_tready && axis_tvaild;
 
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
@@ -53,7 +54,6 @@ module DAP_USB_Receiver #(
             fifo_rptr <= {(FIFO_ADDR_LEN+1){1'd0}};
             usb_rx_active_store <= 1'd0;
             axis_tdata <= 8'd0;
-            axis_tvaild <= 1'd0;
         end
         else begin
             usb_rx_active_store <= usb_rx_active;
@@ -71,14 +71,13 @@ module DAP_USB_Receiver #(
                 fifo_wptr_tmp <= fifo_wptr_tmp + 1'd1;
             end
 
-            if (!fifo_empty) begin
+            if (fifo_read_en) begin
                 fifo_rptr <= fifo_rptr_next;
-                axis_tvaild <= 1'd1;
                 axis_tdata <= ram[fifo_rptr_next[FIFO_ADDR_LEN-1:0]];
+            end else begin
+                axis_tdata <= ram[fifo_rptr[FIFO_ADDR_LEN-1:0]];
             end
-            else begin
-                axis_tvaild <= 1'd0;
-            end
+
         end
     end
 

@@ -314,6 +314,7 @@ module DAP_SWJ #(
     reg [15:0] swd_block_trans_response_cnt;
     reg [3:0] swd_block_trans_req;
     reg [31:0] swd_block_trans_data;
+    reg swd_block_need_post_read;
     reg swd_block_trans_seq_tx_valid;
     reg swd_block_trans_RnW;
     reg swd_block_trans_err_flag;
@@ -485,6 +486,7 @@ module DAP_SWJ #(
             swd_block_trans_response_cnt <= 16'd0;
             swd_block_trans_req <= 4'd0;
             swd_block_trans_data <= 32'd0;
+            swd_block_need_post_read <= 1'd0;
             swd_block_trans_seq_tx_valid <= 1'd0;
             swd_block_trans_RnW <= 1'd0;
             swd_block_trans_err_flag <= 1'd0;
@@ -744,6 +746,7 @@ module DAP_SWJ #(
                     SWD_BTRANS_SM_READ_INDEX: begin // 读取DAP Index抛弃
                         ram_write_addr <= 10'd2;
                         packet_len <= 10'd3;
+                        swd_block_need_post_read <= 1'd0;
                         swd_block_trans_err_flag <= 1'd0;
                         swd_block_trans_response_cnt <= 16'd0;
                         if (dap_in_tvalid) begin
@@ -766,7 +769,8 @@ module DAP_SWJ #(
                         if (dap_in_tvalid) begin
                             swd_block_trans_req <= dap_in_tdata[3:0];
                             swd_block_trans_RnW <= dap_in_tdata[1];
-                            if (dap_in_tdata[1]) begin
+                            if (dap_in_tdata[1]) begin // RnW
+                                swd_block_need_post_read <= dap_in_tdata[0]; // APnDP
                                 swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
                             end
                             else begin
@@ -807,16 +811,21 @@ module DAP_SWJ #(
                     end
                     SWD_BTRANS_SM_TRANSFER: begin // 等待传输完成
                         if (!swd_block_trans_err_flag && (seq_rx_valid && seq_rx_flag[3:0] == 4'b0001)) begin // 正常传输完成
-                            // 请求计数-1
-                            swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
-                            // 响应计数+1
-                            swd_block_trans_response_cnt <= swd_block_trans_response_cnt + 1'd1;
+
+                            // 判断是否是正式传输
+                            if (!swd_block_need_post_read) begin
+                                // 请求计数-1
+                                swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
+                                // 响应计数+1
+                                swd_block_trans_response_cnt <= swd_block_trans_response_cnt + 1'd1;
+                            end
 
                             case (swd_block_trans_req[1:0])
                                 2'b11: begin // Read AP
-                                    if (swd_block_trans_response_cnt == 16'd0) begin
-                                        // 第一次传输
-                                        swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                                    if (swd_block_need_post_read) begin
+                                        // 第一次传输，不写入数据直接触发下一次读取
+                                        swd_block_need_post_read <= 1'd0;
+                                        swd_block_trans_seq_tx_valid <= 1'd1;
                                     end
                                     else begin
                                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_0;
@@ -855,7 +864,12 @@ module DAP_SWJ #(
                                 swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
                             end
                             else begin
-                                swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                                if (swd_block_trans_req[1]) begin // RnW
+                                    swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                                end
+                                else begin
+                                    swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA0;
+                                end
                             end
                         end
                     end
