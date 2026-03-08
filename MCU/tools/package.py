@@ -79,6 +79,9 @@ def main():
     c_bin_path = args.cbin
 
     project = GowinProject(os.path.abspath(args.project))
+    print("get_bitstream_path:", project.get_bitstream_path())
+    print("get_posp_path:", project.get_posp_path())
+
     shutil.copy(c_bin_path, temp_dir.name)
     shutil.copy(project.get_bitstream_path(), temp_dir.name)
     shutil.copy(project.get_posp_path(), temp_dir.name)
@@ -116,6 +119,7 @@ def main():
         os.chmod(fs_output_path, 0o666)
     shutil.copy(result_path, fs_output_path)
     bitstream2bin(result_path, output_path)
+    print("bin_output_path:", output_path)
 
         
 if __name__ == "__main__":

@@ -2,6 +2,26 @@ from typing import List
 import usb.core
 import asyncio
 from io import BytesIO
+
+DAP_PORT_DEFAULT=0
+DAP_PORT_SWD=1
+DAP_PORT_JTAG=2
+
+DAP_TRANS_AP = 1
+DAP_TRANS_DP = 0
+DAP_TRANS_READ = 2
+DAP_TRANS_WRITE = 0
+DAP_TRANS_A0 = 0
+DAP_TRANS_A4 = 4
+DAP_TRANS_A8 = 8
+DAP_TRANS_AC = 12
+
+DAP_TRANS_R_IDCODE = DAP_TRANS_READ | DAP_TRANS_DP | DAP_TRANS_A0
+DAP_TRANS_W_SELECT = DAP_TRANS_WRITE | DAP_TRANS_DP | DAP_TRANS_A8
+DAP_TRANS_W_SELECT1 = DAP_TRANS_WRITE | DAP_TRANS_DP | DAP_TRANS_A4
+DAP_TRANS_W_DLCR = DAP_TRANS_WRITE | DAP_TRANS_DP | DAP_TRANS_A4
+
+
 class DAP_SWD_Seqence:
     DIR_OUTPUT = 0
     DIR_INPUT = 0x80
@@ -19,21 +39,17 @@ class DAP_SWD_Seqence:
             self.cmd = int.to_bytes(bit_num & 0x1f | dir)
 
 
+class DAP_SWD_Requset:
+    def __init__(self, req:int, data: int|None=None):
+        self.req = req
+        self.data = data
+        self.cmd = self.req.to_bytes()
+        if (self.req & DAP_TRANS_READ) == 0:
+            self.cmd += data.to_bytes(4, 'little')
+        self.success = False
+        self.read_data = 0
 
 class DAP:
-    DAP_PORT_DEFAULT=0
-    DAP_PORT_SWD=1
-    DAP_PORT_JTAG=2
-
-    DAP_TRANS_AP = 1
-    DAP_TRANS_DP = 0
-    DAP_TRANS_READ = 2
-    DAP_TRANS_WRITE = 0
-    DAP_TRANS_A0 = 0
-    DAP_TRANS_A4 = 4
-    DAP_TRANS_A8 = 8
-    DAP_TRANS_AC = 12
-
     def __init__(self, dev: usb.core.Device):
         cfg = dev.get_active_configuration()
         dap_intf = cfg[(0,0)]
@@ -139,10 +155,10 @@ class DAP:
         self.exec_buffer.write(b'\x7f' + num.to_bytes(1))
 
     def switch_swd(self):
-        self.swj_seqence(17*8, b'\xff\xff\xff\xff\xff\xff\xff\x9e\xe7\xff\xff\xff\xff\xff\xff\xff\x00')
+        return self.swj_seqence(17*8, b'\xff\xff\xff\xff\xff\xff\xff\x9e\xe7\xff\xff\xff\xff\xff\xff\xff\x00')
 
     def swd_read_idcode(self):
-        ret = self.swd_transfer_block(1, self.DAP_TRANS_READ | self.DAP_TRANS_DP)
+        ret = self.swd_transfer_block(1, DAP_TRANS_READ | DAP_TRANS_DP)
         return int.from_bytes(ret[-4:].tobytes(), 'little')
 
     def transfer_abort(self):
@@ -188,12 +204,35 @@ class DAP:
         # self._read(rd_len)
         return rd_len
 
-    def swd_transfer_block(self, trans_num, requse, data:bytes=None):
-        cmd = b'\x06\x00' + int.to_bytes(trans_num, 2, 'little') + int.to_bytes(requse)
-        if requse & self.DAP_TRANS_WRITE:
-            cmd += data[0:trans_num*4]
+    def swd_transfer_block(self, trans_num, requse, data:List[int]|int|None=None):
+        cmd = b'\x06\x00' + int.to_bytes(trans_num, 2, 'little') + int.to_bytes(requse, 1)
+        if (requse & DAP_TRANS_READ) == 0:
+            if type(data) is list:
+                cmd += bytes([ i.to_bytes(4, 'little') for i in data ])
+            elif type(data) is int:
+                cmd += data.to_bytes(4, 'little')
         self._write(cmd)
         return self._read()
+
+    def swd_transfer(self, requsets: List[DAP_SWD_Requset]):
+        cmd = b'\x05\x00' + len(requsets).to_bytes(1)
+        for req in requsets:
+            cmd += req.cmd
+        self._write(cmd)
+        data = self.read()
+        if data[0] != 5:
+            raise RuntimeError('not match')
+        ret_num = data[1]
+        # data.pop(3)
+        # for i in range(ret_num):
+        #     requsets[i].success = True
+        #     if requsets[i].req & DAP_TRANS_READ:
+        #         requsets[i].read_data = int.from_bytes(data.pop(4).to_bytes(), 'little')
+
+    def swd_configure(self, turn: int, data_phase: int):
+        cmd = b'\x13' + ((turn & 0x03) | (data_phase & 0x01) << 2).to_bytes(1)
+        self.write(cmd)
+        return self.read()
 
     def read(self, n=512, timeout=10):
         return self._read(n, timeout)

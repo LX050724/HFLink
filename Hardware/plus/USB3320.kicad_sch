@@ -5,6 +5,130 @@
 	(uuid "16a8f92a-1ae1-4efb-a57b-060d6c9b967d")
 	(paper "A4")
 	(lib_symbols
+		(symbol "0402WGF5101TCE_1"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "R"
+				(at 0 2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "5.1K,1%"
+				(at 0 -2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "华秋编号" "G0064869"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "立创编号" "C25905"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "0402WGF5101TCE_1_0_1"
+				(rectangle
+					(start 2.54 -1.016)
+					(end -2.54 1.016)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "0402WGF5101TCE_1_1_1"
+				(pin passive line
+					(at -3.81 0 0)
+					(length 1.27)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 3.81 0 180)
+					(length 1.27)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "Connector:USB_C_Receptacle_USB2.0_16P"
 			(pin_names
 				(offset 1.016)
@@ -1075,6 +1199,12 @@
 			(embedded_fonts no)
 		)
 		(symbol "HPM6280Foc:0402WGF5101TCE"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(hide yes)
+			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -1121,7 +1251,16 @@
 					(hide yes)
 				)
 			)
-			(property "供应商编号" "C25905"
+			(property "华秋编号" "G0064869"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "立创编号" "C25905"
 				(at 0 0 0)
 				(effects
 					(font
@@ -4376,21 +4515,6 @@
 	(rule_area
 		(polyline
 			(pts
-				(xy 100.33 82.55) (xy 100.33 90.17) (xy 110.49 90.17) (xy 110.49 82.55) (xy 107.95 82.55)
-			)
-			(stroke
-				(width 0)
-				(type dash)
-			)
-			(fill
-				(type none)
-			)
-			(uuid a2630e09-3025-457c-aeba-b1f7db608290)
-		)
-	)
-	(rule_area
-		(polyline
-			(pts
 				(xy 127 82.55) (xy 127 90.17) (xy 134.62 90.17) (xy 134.62 82.55) (xy 134.62 82.55)
 			)
 			(stroke
@@ -4400,7 +4524,22 @@
 			(fill
 				(type none)
 			)
-			(uuid a9340c72-a294-451e-8aa0-326c96315a0d)
+			(uuid 30453376-2b4c-46ff-ab09-c062359aa764)
+		)
+	)
+	(rule_area
+		(polyline
+			(pts
+				(xy 100.33 82.55) (xy 100.33 90.17) (xy 110.49 90.17) (xy 110.49 82.55) (xy 107.95 82.55)
+			)
+			(stroke
+				(width 0)
+				(type dash)
+			)
+			(fill
+				(type none)
+			)
+			(uuid 7a235dbe-0a0f-4928-9b64-8f38ebbdcf6f)
 		)
 	)
 	(netclass_flag ""
@@ -5653,6 +5792,24 @@
 			)
 		)
 		(property "供应商编号" "C25905"
+			(at 95.25 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0064869"
+			(at 95.25 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C25905"
 			(at 95.25 85.09 0)
 			(effects
 				(font
@@ -7395,6 +7552,7 @@
 		)
 	)
 	(symbol
+		(lib_name "0402WGF5101TCE_1")
 		(lib_id "HPM6280Foc:0402WGF5101TCE")
 		(at 87.63 85.09 90)
 		(unit 1)
@@ -7449,6 +7607,24 @@
 			)
 		)
 		(property "供应商编号" "C25905"
+			(at 87.63 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0064869"
+			(at 87.63 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C25905"
 			(at 87.63 85.09 0)
 			(effects
 				(font

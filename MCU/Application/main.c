@@ -72,7 +72,7 @@ int main(void)
 
     usbd_init_desc();
     usbd_enable(USBD);
-    usbd_enable_it(USBD, USBD_CR_IT_EPOUT | USBD_CR_IT_EPIN | USBD_CR_IT_SETUP);
+    // usbd_enable_it(USBD, USBD_CR_IT_EPOUT | USBD_CR_IT_EPIN | USBD_CR_IT_SETUP);
 
     axisuart_set_baud(AXIS_UART, 115200);
     axisuart_enable(AXIS_UART);
@@ -100,10 +100,7 @@ int main(void)
 
 void EXTINT_0_Handler(void)
 {
-    uint32_t usbd_sr = USBD->SR;
-    usbd_clear_flag(USBD, usbd_sr & 0xF0000000);
-    usbd_ep0_rx_irq_handler(USBD, usbd_sr);
-    usbd_ep_readall(USBD, 0, rbuff, sizeof(rbuff));
+    usbd_irq_handler(USBD);
 }
 
 void EXTINT_1_Handler(void)

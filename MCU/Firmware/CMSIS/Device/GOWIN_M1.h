@@ -460,40 +460,10 @@ typedef struct
 {
     __IO uint32_t SR;
     __IO uint32_t CR;
-    __I uint32_t EP_RFFE;
-    __I uint32_t EP_TFFE;
-    __IO uint32_t EP_DATA[16];
-    struct {
-        __I uint16_t RN;
-        __I uint16_t TN;
-    } EP_FIFONUM[16];
-    __I uint32_t RESERVED0[28];
-    struct {
-      __IO uint16_t DEV_LEN;
-      __IO uint16_t DEV_ADDR;
-      __IO uint16_t QUAL_LEN;
-      __IO uint16_t QUAL_ADDR;
-      __IO uint16_t FSCFG_LEN;
-      __IO uint16_t FSCFG_ADDR;
-      __IO uint16_t HSCFG_LEN;
-      __IO uint16_t HSCFG_ADDR;
-      __IO uint16_t STRLANG_ADDR;
-      __IO uint16_t OSCFG_ADDR;
-      __IO uint16_t HIDRPT_LEN;
-      __IO uint16_t HIDRPT_ADDR;
-      __IO uint16_t BOS_LEN;
-      __IO uint16_t BOS_ADDR;
-      __IO uint16_t STRVENDOR_LEN;
-      __IO uint16_t STRVENDOR_ADDR;
-      __IO uint16_t STRPRODUCT_LEN;
-      __IO uint16_t STRPRODUCT_ADDR;
-      __IO uint16_t STRSERIAL_LEN;
-      __IO uint16_t STRSERIAL_ADDR;
-      __IO uint16_t HASSTR;
-      __I uint16_t RESERVED0;
-    } DESC;
-    __I uint32_t RESERVED1[437];
-    __IO uint8_t DESC_DATA[2048];
+    __I uint8_t SETUP[8];
+    __I uint8_t LINECODE[7];
+    __I uint8_t RESERVED0;
+    __IO uint8_t SERIAL_DESC[68];
 } USBD_TypeDef;
 
 /*-------------------------------------- AXIS_UART --------------------------------------*/

@@ -25,7 +25,7 @@ module DAP_BaudGenerator#(
     reg [31:0] REG_CR;
 
     wire REG_CR_CEN = REG_CR[0];
-    wire REG_CR_SAMPLINE_EDGE = REG_CR[1]; // 0：上升沿采样；1：下降沿采样
+    // wire [2:0] REG_DELAY_CHAIN = REG_CR[18:16];
     reg [15:0] REG_TIMING_DIV;
     reg [15:0] REG_TIMING_SIMPLING;
 
@@ -87,12 +87,15 @@ module DAP_BaudGenerator#(
     reg cen;
 
     reg [16:0] timer_cnt;
+    // reg [6:0] delay_chain_reg;
     wire [16:0] div_count_next = timer_cnt + 1'd1;
 
     wire sclk_out_w = (timer_cnt >= REG_TIMING_DIV);
     wire sclk_negedge_w = cen && (div_count_next == (REG_TIMING_DIV * 2));
     wire sclk_sampling_w = cen && (div_count_next == REG_TIMING_SIMPLING);
     
+    // wire [7:0] delay_chain = {delay_chain_reg, sclk_sampling_w};
+
     always @(posedge sclk_in or negedge resetn) begin
         if (!resetn) begin
             timer_cnt <= 16'd0;
@@ -116,7 +119,8 @@ module DAP_BaudGenerator#(
             else begin
                 timer_cnt <= 17'd0;
             end
-
+            // delay_chain_reg <= delay_chain;
+             
             sclk_out <= sclk_out_w;
             sclk_negedge <= sclk_negedge_w;
             sclk_sampling <= sclk_sampling_w;
