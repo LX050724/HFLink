@@ -443,7 +443,7 @@ module USB_DESC#(
         desc_rom[ 42] = 8'hff;
         desc_rom[ 43] = 8'h00;
         desc_rom[ 44] = 8'h00;
-        desc_rom[ 45] = 8'h00;
+        desc_rom[ 45] = 8'h02;
         desc_rom[ 46] = 8'h07;
         desc_rom[ 47] = 8'h05;
         desc_rom[ 48] = 8'h02;
@@ -548,7 +548,7 @@ module USB_DESC#(
         desc_rom[147] = 8'hff;
         desc_rom[148] = 8'h00;
         desc_rom[149] = 8'h00;
-        desc_rom[150] = 8'h00;
+        desc_rom[150] = 8'h02;
         desc_rom[151] = 8'h07;
         desc_rom[152] = 8'h05;
         desc_rom[153] = 8'h02;
@@ -903,4 +903,5 @@ module USB_DESC#(
         desc_rom[502] = 8'h73;
         desc_rom[503] = 8'h00;
     end
+
 endmodule

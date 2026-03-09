@@ -1093,7 +1093,7 @@ config_descriptor_hs = USB_CONFIG_DESCRIPTOR_INIT(
             bInterfaceClass=0xff,
             bInterfaceSubClass=0x00,
             bInterfaceProtocol=0x00,
-            iInterface=0,
+            iInterface=2,
             endpoints=[
                 USB_ENDPOINT_DESCRIPTOR_INIT(
                     bEndpointAddress=DAP_OUT_EP,
@@ -1137,7 +1137,7 @@ config_descriptor_fs = USB_CONFIG_DESCRIPTOR_INIT(
             bInterfaceClass=0xff,
             bInterfaceSubClass=0x00,
             bInterfaceProtocol=0x00,
-            iInterface=0,
+            iInterface=2,
             endpoints=[
                 USB_ENDPOINT_DESCRIPTOR_INIT(
                     bEndpointAddress=DAP_OUT_EP,
