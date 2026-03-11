@@ -82,6 +82,9 @@ int main(void)
     dap_baud_set_simpling_cmp(DAP, 10);
     dap_swj_set_wait_retry(DAP, 100);
     dap_swj_set_match_retry(DAP, 100);
+    dap_swj_set_mode(DAP, DAP_SWJ_MODE_SWD);
+    dap_gpio_enable_alone_uart(DAP);
+
     dap_baud_start(DAP);
 
     //

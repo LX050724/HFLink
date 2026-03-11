@@ -5,7 +5,7 @@ _estack = ORIGIN(RAM) + LENGTH(RAM);    /* end of RAM */
 MEMORY
 {
     ITCM (rx) :    ORIGIN = 0x00000000, LENGTH = 32K
-    RAM (rwx) :    ORIGIN = 0x20000000, LENGTH = 32K
+    RAM (rwx) :    ORIGIN = 0x20000000, LENGTH = 4K
     /* EXFLASH (rx) : ORIGIN = 0x4D400000, LENGTH = 4M-16K */
 }
 

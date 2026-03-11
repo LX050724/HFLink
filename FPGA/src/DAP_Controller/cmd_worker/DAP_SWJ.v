@@ -741,7 +741,7 @@ module DAP_SWJ #(
                 done[`CMD_SWJ_PINS_SHIFT] <= 1'd0;
             end
 
-            if (start[`CMD_TRANSFER_BLOCK_SHIFT] && SWJ_CR_MODE == 1'd0) begin
+            if (start[`CMD_TRANSFER_BLOCK_SHIFT] && SWJ_CR_MODE == 1'd1) begin
                 case (swd_block_trans_sm)
                     SWD_BTRANS_SM_READ_INDEX: begin // 读取DAP Index抛弃
                         ram_write_addr <= 10'd2;
@@ -959,7 +959,7 @@ module DAP_SWJ #(
                 done[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
             end
 
-            if (start[`CMD_TRANSFER_SHIFT] && SWJ_CR_MODE == 1'd0) begin
+            if (start[`CMD_TRANSFER_SHIFT] && SWJ_CR_MODE == 1'd1) begin
                 case(swd_trans_sm)
                     SWD_TRANS_SM_READ_INDEX: begin
                         swd_trans_post_read <= 1'd0;
@@ -1305,17 +1305,17 @@ module DAP_SWJ #(
            (swd_seq_sm == SWD_SEQ_SM_READ_SEQ_INFO) ||
            (swd_seq_sm == SWD_SEQ_SM_READ_DATA && swd_seq_dir == 1'd0);
 
-    assign dap_in_tready[`CMD_WRITE_ABORT_SHIFT] = (SWJ_CR_MODE == 1'd0) ?
+    assign dap_in_tready[`CMD_WRITE_ABORT_SHIFT] = (SWJ_CR_MODE == 1'd1) ?
            (swd_write_abort_sm < SWD_WRITE_ABORT_WAIT_RESPONE) :
            1'd0;
 
     assign dap_in_tready[`CMD_SWJ_PINS_SHIFT] = swj_pins_sm < SWJ_PINS_SM_WAIT_RESPONE;
 
-    assign dap_in_tready[`CMD_TRANSFER_BLOCK_SHIFT] = (SWJ_CR_MODE == 1'd0) ?
+    assign dap_in_tready[`CMD_TRANSFER_BLOCK_SHIFT] = (SWJ_CR_MODE == 1'd1) ?
            (swd_block_trans_sm[7:0] != 8'd0) :
            1'd0;
 
-    assign dap_in_tready[`CMD_TRANSFER_SHIFT] = (SWJ_CR_MODE == 1'd0) ?
+    assign dap_in_tready[`CMD_TRANSFER_SHIFT] = (SWJ_CR_MODE == 1'd1) ?
            (swd_trans_sm[2] ? (swd_trans_num != 8'd0) : swd_trans_sm[6:0] != 7'd0) :
            1'd0;
 

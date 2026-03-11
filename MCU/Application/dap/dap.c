@@ -129,7 +129,7 @@ static void dap_connect_handler(DAP_TypeDef *dap)
     uint8_t port = dap_read_data(dap);
     if (port == 0)
         port = DAP_DEFAULT_PORT;
-    dap_swj_set_mode(dap, port - 1);
+    dap_swj_set_mode(dap, (port == 1) ? DAP_SWJ_MODE_SWD : DAP_SWJ_MODE_JTAG);
     dap_write_data(dap, port);
 }
 
