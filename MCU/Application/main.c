@@ -3,6 +3,7 @@
 #include "GOWIN_M1_dap.h"
 #include "GOWIN_M1_usbd.h"
 #include "core_cm1.h"
+#include "soft_timer.h"
 #include "upgrade/upgrade.h"
 #include <stdint.h>
 #include <string.h>
@@ -19,28 +20,18 @@
 #define print(fmt, ...)
 #endif
 
-static volatile uint32_t delay;
+#define LED_RED_PIN GPIO_Pin_0
+#define LED_GREEN_PIN GPIO_Pin_1
+#define LED_BLUE_PIN GPIO_Pin_2
+#define LED_ALL_PIN (GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2)
 
-uint32_t crc32(uint32_t init, uint8_t *data, uint32_t length);
+#define POWER_CTL_PIN GPIO_Pin_3
 
-void delay_1ms(uint32_t count)
-{
-    delay = count;
+uint8_t adc_channel;
+// 0: VREF*4; 1: CURRENT
+int16_t adc_result[2];
 
-    while (0U != delay)
-    {
-    }
-}
-
-void delay_decrement(void)
-{
-    if (0U != delay)
-    {
-        delay--;
-    }
-}
-
-uint8_t rbuff[512];
+uint8_t led_status;
 
 int main(void)
 {
@@ -72,7 +63,6 @@ int main(void)
 
     usbd_init_desc();
     usbd_enable(USBD);
-    // usbd_enable_it(USBD, USBD_CR_IT_EPOUT | USBD_CR_IT_EPIN | USBD_CR_IT_SETUP);
 
     axisuart_set_baud(AXIS_UART, 115200);
     axisuart_enable(AXIS_UART);
@@ -93,83 +83,44 @@ int main(void)
     GPIO_SetBit(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
     GPIO_SetOutEnable(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
 
-    // ads1115_i2c_init();
+    ads1115_i2c_init();
+    adc_channel = ADS1115_MUX_A0_GND;
+    ads1115_start_conv(ADS1115_PGA_4096, adc_channel);
 
     while (1)
     {
-        upgrade_loop();
-    }
-}
-
-void EXTINT_0_Handler(void)
-{
-    usbd_irq_handler(USBD);
-}
-
-void EXTINT_1_Handler(void)
-{
-    dap_irq_handler(DAP);
-}
-
-#define DAP_VENDOR_CMD_UPGRADE 0x00
-#define DAP_VENDOR_CMD_SENSOR 0x01
-#define DAP_VENDOR_CMD_CONFIG 0x02
-
-void dap_vendor0_handler(DAP_TypeDef *dap)
-{
-    uint8_t cmd = dap_read_data(dap);
-
-    switch (cmd)
-    {
-    case DAP_VENDOR_CMD_UPGRADE: {
-        uint8_t sub_command = dap_read_data(dap);
-        if (sub_command == 0x00)
+        if (!ads1115_is_busy())
         {
-            uint32_t firm_size = dap_read_data32(dap);
-            int ret = upgrade_start(firm_size);
-            dap_write_data(dap, ret);
-        }
-        else if (sub_command == 0x01)
-        {
-            volatile uint8_t *buffer = upgrade_get_buffer();
-            for (int i = 0; i < 256; i += 4)
+            if (adc_channel == ADS1115_MUX_A0_GND)
             {
-                if (buffer)
-                {
-                    buffer[i + 0] = dap_read_data(dap);
-                    buffer[i + 1] = dap_read_data(dap);
-                    buffer[i + 2] = dap_read_data(dap);
-                    buffer[i + 3] = dap_read_data(dap);
-                }
-                else
-                {
-                    dap_read_data(dap);
-                    dap_read_data(dap);
-                    dap_read_data(dap);
-                    dap_read_data(dap);
-                }
-            }
-
-            if (buffer != NULL)
-            {
-                upgrade_received_data();
-                dap_write_data(dap, 0x00);
+                adc_result[0] = ads1115_read_result();
+                adc_channel = ADS1115_MUX_A1_GND;
+                ads1115_start_conv(ADS1115_PGA_1024, adc_channel);
             }
             else
             {
-                dap_write_data(dap, 0xff);
+                adc_result[1] = ads1115_read_result() - 433;
+                adc_channel = ADS1115_MUX_A0_GND;
+                ads1115_start_conv(ADS1115_PGA_4096, adc_channel);
             }
         }
-        else if (sub_command == 0x02)
+
+        if (timer_get_tick(TIMER_LED) == 0)
         {
-            uint32_t checksum = upgrade_get_verify_result();
-            dap_write_data32(dap, checksum);
+            timer_set_tick(TIMER_LED, 10);
+            if (adc_result[0] < 1200 / 4)
+            {
+                GPIO_SetBit(GPIO0, LED_ALL_PIN);
+                GPIO_ResetBit(GPIO0, LED_RED_PIN);
+            }
+            else
+            {
+                GPIO_SetBit(GPIO0, LED_ALL_PIN);
+                GPIO_ResetBit(GPIO0, LED_GREEN_PIN);
+            }
+            led_status = !led_status;
         }
-        else if (sub_command == 0xff)
-        {
-            upgrade_reset();
-        }
-        break;
-    }
+
+        upgrade_loop();
     }
 }

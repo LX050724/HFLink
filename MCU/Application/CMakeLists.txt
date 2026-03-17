@@ -2,9 +2,11 @@
 add_executable(HFLinkAPP
     GOWIN_M1_APP_startup.s
     main.c
+    soft_timer.c
     GOWIN_M1_it.c
     usb/usbd_core.c
     dap/dap.c
+    dap/dap_vendor0_handler.c
     ads1115/ads1115.c
     upgrade/upgrade.c
 )
@@ -27,5 +29,5 @@ add_custom_command(TARGET HFLinkAPP POST_BUILD
 
 add_custom_target(ForceRunTarget ALL
     COMMAND python ${CMAKE_SOURCE_DIR}/tools/package.py -p ${CMAKE_SOURCE_DIR}/../FPGA/HFLink.gprj -c HFLinkAPP.bin -o ${CMAKE_BINARY_DIR}/bitstream.bin
-    COMMENT "Building FPGA Bitstream"
+    COMMENT "Merge FPGA Bitstream"
 )

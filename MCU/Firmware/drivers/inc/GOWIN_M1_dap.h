@@ -20,8 +20,8 @@ extern "C" {
 #define DAP_GPIO_DIR_INPUT 1
 #define DAP_GPIO_DIR_OUTPUT 0
 
-#define DAP_SWJ_MODE_SWD 0
-#define DAP_SWJ_MODE_JTAG 1
+#define DAP_SWJ_MODE_SWD 1
+#define DAP_SWJ_MODE_JTAG 0
 
 inline static void dap_write_data(DAP_TypeDef *dap, uint8_t data)
 {
@@ -78,6 +78,16 @@ inline static void dap_gpio_enable_directio(DAP_TypeDef *dap, uint8_t index)
 inline static void dap_gpio_disable_directio(DAP_TypeDef *dap, uint8_t index)
 {
     dap->GPIO.CR &= ~(1 << index);
+}
+
+inline static void dap_gpio_enable_alone_uart(DAP_TypeDef *dap)
+{
+    dap->GPIO.CR |= 1;
+}
+
+inline static void dap_gpio_disable_alone_uart(DAP_TypeDef *dap)
+{
+    dap->GPIO.CR &= ~1;
 }
 
 inline static void dap_swj_set_mode(DAP_TypeDef *dap, uint8_t mode)

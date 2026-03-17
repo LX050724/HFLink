@@ -1,3 +1,6 @@
+#include "dap/dap.h"
+#include "soft_timer.h"
+#include "usb/usbd_core.h"
 #include <GOWIN_M1.h>
 
 void NMI_Handler(void)
@@ -46,8 +49,17 @@ void PendSV_Handler(void)
 
 void SysTick_Handler(void)
 {
-    void delay_decrement(void);
-    delay_decrement();
+    timer_systick();
+}
+
+void EXTINT_0_Handler(void)
+{
+    usbd_irq_handler(USBD);
+}
+
+void EXTINT_1_Handler(void)
+{
+    dap_irq_handler(DAP);
 }
 
 void EXTINT_2_Handler()
