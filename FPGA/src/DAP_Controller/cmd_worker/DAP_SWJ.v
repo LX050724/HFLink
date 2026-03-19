@@ -628,7 +628,7 @@ module DAP_SWJ #(
                 done[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd0;
             end
 
-            if (start[`CMD_WRITE_ABORT_SHIFT] && SWD_MODE == 1'd0) begin
+            if (start[`CMD_WRITE_ABORT_SHIFT] && SWJ_CR_MODE == 1'd1) begin
                 case (swd_write_abort_sm) /* synthesis parallel_case */
                     SWD_WRITE_ABORT_READ_INDEX: begin
                         if (dap_in_tvalid) begin
