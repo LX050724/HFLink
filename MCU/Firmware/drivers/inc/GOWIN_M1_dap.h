@@ -65,9 +65,19 @@ inline static void dap_baud_set_reload(DAP_TypeDef *dap, uint16_t div)
     dap->BAUD_GEN.RELOAD = div;
 }
 
+inline static uint16_t dap_baud_get_reload(DAP_TypeDef *dap)
+{
+    return dap->BAUD_GEN.RELOAD;
+}
+
 inline static void dap_baud_set_simpling_cmp(DAP_TypeDef *dap, uint16_t cmp)
 {
     dap->BAUD_GEN.SIMPLING_CMP = cmp;
+}
+
+inline static void dap_buad_set_simpling_delay(DAP_TypeDef *dap, uint8_t cmp)
+{
+    dap->BAUD_GEN.CR = (dap->BAUD_GEN.CR & 0x0000ffff) | (cmp << 16);
 }
 
 inline static void dap_gpio_enable_directio(DAP_TypeDef *dap, uint8_t index)
@@ -103,6 +113,16 @@ inline static void dap_swj_set_wait_retry(DAP_TypeDef *dap, uint16_t cnt)
 inline static void dap_swj_set_match_retry(DAP_TypeDef *dap, uint16_t cnt)
 {
     dap->SWJ.MATCH_RETRY = cnt;
+}
+
+inline static void dap_swd_enable_turn_clk(DAP_TypeDef *dap)
+{
+    dap->SWJ.SWD_CR |= 0x8;
+}
+
+inline static void dap_swd_disable_turn_clk(DAP_TypeDef *dap)
+{
+    dap->SWJ.SWD_CR &= ~0x8;
 }
 
 inline static void dap_swd_set_trun_cycle(DAP_TypeDef *dap, uint8_t turn_cycle)

@@ -1,10 +1,10 @@
 #include "DAP_config.h"
+#include "cmsis_compiler.h"
 #include "dap.h"
+#include "usb/usbd_core.h"
 #include <GOWIN_M1.h>
 #include <GOWIN_M1_dap.h>
 #include <string.h>
-#include "usb/usbd_core.h"
-#include "cmsis_compiler.h"
 
 #ifdef DEBUG
 #include "SEGGER_RTT.h"
@@ -143,20 +143,58 @@ static void dap_swj_clock_handler(DAP_TypeDef *dap)
     uint32_t clock = dap_read_data32(dap);
     uint16_t reload = SystemCoreClock / clock;
 
+    if (reload == 0)
+    {
+        DAP_DEBUG("SWJ Clock %d, Error\n", clock);
+        dap_write_data(dap, 0xff);
+        return;
+    }
+
     dap_baud_stop(dap);
-    dap_baud_set_reload(dap, reload);
-    dap_baud_set_simpling_cmp(dap, reload);
+    if (reload == 1)
+    {
+        // 60M特殊时序: 下降沿置位，上升沿滞后1周期采样
+        // 采样时刻距离上升沿8.33ns
+        dap_baud_set_reload(dap, reload);
+        dap_baud_set_simpling_cmp(dap, reload);
+        dap_buad_set_simpling_delay(dap, 1);
+        // turn 2周期，第二周期不输出时钟
+        dap_swd_set_trun_cycle(dap, 1);
+        dap_swd_disable_turn_clk(dap);
+    }
+    else
+    {
+        // 下降沿置位，上升沿采样，无滞后
+        dap_baud_set_reload(dap, reload);
+        dap_baud_set_simpling_cmp(dap, reload);
+        dap_buad_set_simpling_delay(dap, 0);
+        // turn默认配置1周期，输出时钟
+        dap_swd_set_trun_cycle(dap, 0);
+        dap_swd_enable_turn_clk(dap);
+    }
     dap_baud_start(dap);
 
-    DAP_DEBUG("SWJ Clock %d, r: %d s: %d\n", clock, reload, reload);
+    DAP_DEBUG("SWJ Clock %d, %d\n", clock, reload);
     dap_write_data(dap, 0);
 }
 
 static void dap_swd_configure_handler(DAP_TypeDef *dap)
 {
     uint8_t configure = dap_read_data(dap);
-    dap_swd_set_trun_data_phase(dap, configure);
-    DAP_DEBUG("SWD tr %d, data phase %d\n", configure & 0x03, (configure >> 2) & 0x01);
+    uint8_t turn_cycle = configure & 0x03;
+    uint8_t data_phase = (configure >> 2) & 0x01;
+
+    if (dap_baud_get_reload(dap) > 1 || turn_cycle > 0)
+    {
+        dap_swd_set_data_phase(dap, data_phase);
+        dap_swd_set_trun_cycle(dap, turn_cycle);
+        dap_swd_enable_turn_clk(dap);
+        DAP_DEBUG("SWD tr %d, data phase %d\n", turn_cycle, data_phase);
+    }
+    else
+    {
+        DAP_DEBUG("SWD tr %d, data phase %d, ignore\n", turn_cycle, data_phase);
+    }
     dap_write_data(dap, 0);
 }
 

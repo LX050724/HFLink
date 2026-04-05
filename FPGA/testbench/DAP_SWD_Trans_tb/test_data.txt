@@ -67,8 +67,8 @@ FF
 00
 00
 93 // Value Match AP0
-BB
 AA
+BB
 00
 00
 80 // Transfer Request W DP0

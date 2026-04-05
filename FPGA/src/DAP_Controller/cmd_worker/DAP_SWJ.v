@@ -14,6 +14,7 @@ module DAP_SWJ #(
         input sclk_out,
         input sclk_negedge,
         input sclk_sampling,
+        output sclk_sampling_en,
 
         // AHB MEM接口
         input ahb_write_en,
@@ -74,15 +75,16 @@ module DAP_SWJ #(
     reg SWJ_CR;
     reg [15:0] SWJ_WAIT_RETRY;
     reg [15:0] SWJ_MATCH_RETRY;
-    wire SWJ_CR_MODE = SWJ_CR; // 0: SWD; 1: JTAG
+    wire SWJ_CR_MODE = SWJ_CR; // 1: SWD; 0: JTAG
 
 
-    reg [2:0] SWJ_SWD_CR;
+    reg [3:0] SWJ_SWD_CR;
     reg [7:0] SWJ_JTAG_CR;
     reg [31:0] SWJ_JTAG_IR_CONF_REG [0:7];
 
     wire [1:0] SWD_CONF_TURN = SWJ_SWD_CR[1:0];
     wire SWD_CONF_FORCE_DATA = SWJ_SWD_CR[2];
+    wire SWD_CONF_TURN_CLK = SWJ_SWD_CR[3];
 
     wire [7:0] JTAG_CR_COUNT = SWJ_JTAG_CR[7:0];
     wire [13:0] JTAG_IR_BEFORE_CONF [0:7];
@@ -101,7 +103,7 @@ module DAP_SWJ #(
     always @(posedge clk or negedge resetn) begin : ahb_mem_write_ctrl
         if (!resetn) begin
             SWJ_CR <= 0;
-            SWJ_SWD_CR <= 3'd0;
+            SWJ_SWD_CR <= 4'd0;
             SWJ_JTAG_CR <= 8'd0;
             for (i = 0; i < 8; i = i + 1) begin
                 SWJ_JTAG_IR_CONF_REG[i] <= 32'd0;
@@ -127,7 +129,7 @@ module DAP_SWJ #(
                     end
                     SWJ_SWD_CR_ADDR[ADDRWIDTH-1:2]:
                         if (ahb_byte_strobe[0]) begin
-                            SWJ_SWD_CR <= ahb_wdata[2:0];
+                            SWJ_SWD_CR <= ahb_wdata[3:0];
                         end
                     SWJ_JTAG_CR_ADDR[ADDRWIDTH-1:2]:
                         AHB_WRITE_REG32(SWJ_JTAG_CR);
@@ -207,6 +209,7 @@ module DAP_SWJ #(
                     .sclk_out(sclk_out),
                     .sclk_negedge(sclk_negedge),
                     .sclk_sampling(sclk_sampling),
+                    .sclk_sampling_en(sclk_sampling_en),
 
                     // 控制器输入输出
                     .seq_tx_valid(seq_tx_valid),
@@ -221,6 +224,7 @@ module DAP_SWJ #(
                     .DAP_TRANS_WAIT_RETRY(SWJ_WAIT_RETRY),
                     .SWD_TURN_CYCLE(SWD_CONF_TURN),
                     .SWD_CONF_FORCE_DATA(SWD_CONF_FORCE_DATA),
+                    .SWD_CONF_TURN_CLK(SWD_CONF_TURN_CLK),
 
                     // GPIO
                     .SWCLK_TCK_O(SWCLK_TCK_O),

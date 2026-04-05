@@ -444,6 +444,7 @@ module DAP_Controller #(
     wire sclk_out;
     wire sclk_negedge;
     wire sclk_sampling;
+    wire sclk_sampling_en;
 
     wire [31:0] swj_hrdatas;
     DAP_SWJ #(
@@ -459,6 +460,7 @@ module DAP_Controller #(
                 .sclk_out(sclk_out),
                 .sclk_negedge(sclk_negedge),
                 .sclk_sampling(sclk_sampling),
+                .sclk_sampling_en(sclk_sampling_en),
 
                 .ahb_write_en(write_en),
                 .ahb_read_en(read_en),
@@ -632,7 +634,8 @@ module DAP_Controller #(
 
                           .sclk_out(sclk_out),
                           .sclk_negedge(sclk_negedge),
-                          .sclk_sampling(sclk_sampling)
+                          .sclk_sampling(sclk_sampling),
+                          .sclk_sampling_en(sclk_sampling_en)
                       );
 
     wire [31:0] gpio_hrdatas;

@@ -1,7 +1,7 @@
 `timescale 1 ns/ 10 ps
 `include "DAP_Cmd.v"
 
-`define DELAY_TIME 0
+`define DELAY_TIME 20
 `define TRUN_CYCLE 12'd0
 
 module DAP_SWD_Trans_tb();
@@ -65,34 +65,49 @@ module DAP_SWD_Trans_tb();
 
             case (cnt)
                 0: begin
+                    // BAUD_TIMING
                     ahb_write_en <= 1;
                     ahb_addr <= 12'h004;
                     ahb_wdata <= 32'h0001_0001;
+                    // ahb_wdata <= 32'h0002_0002;
                     ahb_byte_strobe <= 4'hf;
                 end
                 1: begin
+                    // SWJ_RETRY
                     ahb_write_en <= 1;
                     ahb_addr <= 12'h080 + 12'h004;
                     ahb_wdata <= 32'h0004_0004;
                     ahb_byte_strobe <= 4'hf;
                 end
                 2: begin
+                    // SWJ_CR
                     ahb_write_en <= 1;
-                    ahb_addr <= 12'h080 + 12'h008;
-                    ahb_wdata <= {1'd0, 19'd0, `TRUN_CYCLE};
-                    ahb_byte_strobe <= 4'hf;
-                end
-                3: begin
-                    ahb_write_en <= 1;
-                    ahb_addr <= 12'h000;
+                    ahb_addr <= 12'h080 + 12'h000;
                     ahb_wdata <= 32'h0000_0001;
                     ahb_byte_strobe <= 4'hf;
                 end
+                3: begin
+                    // SWJ_SWD_CR
+                    ahb_write_en <= 1;
+                    ahb_addr <= 12'h080 + 12'h008;
+                    ahb_wdata <= {1'd0, 1'd0, 2'd2};
+                    // ahb_wdata <= {1'd1, 1'd0, 2'd0};
+                    ahb_byte_strobe <= 4'hf;
+                end
                 4: begin
+                    // BAUD_CR
+                    ahb_write_en <= 1;
+                    ahb_addr <= 12'h000;
+                    ahb_wdata <= 32'h0002_0001;
+                    // ahb_wdata <= 32'h0000_0001;
+                    ahb_byte_strobe <= 4'hf;
+                end
+
+                10: begin
                     start[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd1;
                     $display("TEST: DAP_SWJ_Sequence");
                 end
-                5: begin
+                11: begin
                     if (done[`CMD_SWJ_SEQUENCE_SHIFT]) begin
                         start[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd0;
                         swd_sm <= 0;
@@ -106,11 +121,12 @@ module DAP_SWD_Trans_tb();
                         cnt <= cnt;
                     end
                 end
-                6: begin
+                12: begin
                     start[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd1;
+                    swd_sm = 0;
                     $display("TEST: DAP_SWD_Sequence");
                 end
-                7: begin
+                13: begin
                     if (done[`CMD_SWD_SEQUENCE_SHIFT]) begin
                         start[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd0;
                         swd_sm <= 0;
@@ -124,11 +140,12 @@ module DAP_SWD_Trans_tb();
                         cnt <= cnt;
                     end
                 end
-                8: begin
+                14: begin
                     start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd1;
+                    swd_sm = 0;
                     $display("TEST: DAP_TransferBlock");
                 end
-                9: begin
+                15: begin
                     if (done[`CMD_TRANSFER_BLOCK_SHIFT]) begin
                         start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
                         #1
@@ -141,11 +158,11 @@ module DAP_SWD_Trans_tb();
                         cnt <= cnt;
                     end
                 end
-                10: begin
+                16: begin
                     start[`CMD_TRANSFER_SHIFT] <= 1'd1;
                     $display("TEST: DAP_Transfer");
                 end
-                11: begin
+                17: begin
                     if (done[`CMD_TRANSFER_SHIFT]) begin
                         start[`CMD_TRANSFER_SHIFT] <= 1'd0;
                         #1
@@ -189,6 +206,8 @@ module DAP_SWD_Trans_tb();
     wire sclk_negedge;
     wire sclk_sampling;
     wire sclk_out;
+    wire sclk_sampling_en;
+
     DAP_BaudGenerator baud_inst(
                           .clk(clk),
                           .sclk_in(clk_x2),
@@ -203,7 +222,8 @@ module DAP_SWD_Trans_tb();
 
                           .sclk_out(sclk_out),
                           .sclk_negedge(sclk_negedge),
-                          .sclk_sampling(sclk_sampling)
+                          .sclk_sampling(sclk_sampling),
+                          .sclk_sampling_en(sclk_sampling_en)
                       );
 
     wire SWCLK_TCK_O;
@@ -227,6 +247,7 @@ module DAP_SWD_Trans_tb();
                 .sclk_out(sclk_out),
                 .sclk_negedge(sclk_negedge),
                 .sclk_sampling(sclk_sampling),
+                .sclk_sampling_en(sclk_sampling_en),
 
                 //AHBMEM接口
                 .ahb_write_en(ahb_write_en),
@@ -315,8 +336,8 @@ module DAP_SWD_Trans_tb();
         data = 32'h12345678;
         DataParity = 0;
         turn_cnt = 0;
-        // tx_ack = 3'b001;
-        tx_ack = 3'b010;
+        tx_ack = 3'b001;
+        // tx_ack = 3'b010;
         // tx_ack = 3'b100;
     end
 
@@ -416,7 +437,7 @@ module DAP_SWD_Trans_tb();
             SWD_TRANS_IO_DATA: begin // data
                 data_cnt <= data_cnt + 1;
                 if (data_cnt == 31) begin
-                    SWDIO_TMS_I <= parity_32(data);
+                    SWDIO_TMS_I <= #`DELAY_TIME parity_32(data);
                     swd_sm <= SWD_TRANS_IO_DATA_PATIYY;
                 end
                 if (RnW) begin
@@ -427,7 +448,7 @@ module DAP_SWD_Trans_tb();
                 end
             end
             SWD_TRANS_IO_DATA_PATIYY: begin // p
-                SWDIO_TMS_I <= parity_32(data);
+                SWDIO_TMS_I <= #`DELAY_TIME parity_32(data);
                 DataParity = (parity_32(data) == swdio_i);
                 swd_sm <= RnW ? SWD_TRANS_IO_TURN2 : SWD_TRANS_IO_START;
             end

@@ -12,6 +12,7 @@ module DAP_Seqence (
         input sclk_out,
         input sclk_negedge,
         input sclk_sampling,
+        output sclk_sampling_en,
 
         // 控制器输入输出
         input seq_tx_valid,
@@ -26,6 +27,7 @@ module DAP_Seqence (
         input [15:0] DAP_TRANS_WAIT_RETRY,
         input [1:0] SWD_TURN_CYCLE,
         input SWD_CONF_FORCE_DATA,
+        input SWD_CONF_TURN_CLK,
 
 
         // GPIO
@@ -44,7 +46,8 @@ module DAP_Seqence (
 
     reg [15:0] dap_trans_wait_retry_ff;
     reg [1:0] swd_turn_cycle_ff;
-    reg swd_force_data_ff; 
+    reg swd_force_data_ff;
+    reg swd_turn_clk_ff;
     // reg [15:0] dap_trans_wait_retry;
     // reg [7:0] swd_turn_cycle;
 
@@ -53,6 +56,7 @@ module DAP_Seqence (
             dap_trans_wait_retry_ff <= 16'd0;
             swd_turn_cycle_ff <= 2'd0;
             swd_force_data_ff <= 1'd0;
+            swd_turn_clk_ff <= 1'd0;
             // dap_trans_wait_retry <= 0;
             // swd_turn_cycle <= 0;
         end
@@ -60,6 +64,7 @@ module DAP_Seqence (
             dap_trans_wait_retry_ff <= DAP_TRANS_WAIT_RETRY;
             swd_turn_cycle_ff <= SWD_TURN_CYCLE;
             swd_force_data_ff <= SWD_CONF_FORCE_DATA;
+            swd_turn_clk_ff <= SWD_CONF_TURN_CLK;
             // dap_trans_wait_retry <= dap_trans_wait_retry_ff;
             // swd_turn_cycle <= swd_turn_cycle_ff;
         end
@@ -243,7 +248,7 @@ module DAP_Seqence (
     reg swd_trans_rx_parity;
     reg [2:0] swd_trans_rx_ack;
 
-    wire sclk_sampling_en = (delay_clk_en || sclk_negedge) && sclk_sampling;
+    assign sclk_sampling_en = delay_clk_en;
 
     always @(posedge sclk or negedge resetn) begin
         if (!resetn) begin
@@ -316,8 +321,7 @@ module DAP_Seqence (
                 rx_valid <= 1'd0;
 `endif
 
-            if (sclk_negedge)
-                delay_clk_en <= 1'd1;
+            delay_clk_en <= 1'd1;
 
             // SEQ_CMD_SWD_SEQ
             case (swd_seq_sm)
@@ -349,7 +353,7 @@ module DAP_Seqence (
                         end
                     end
 
-                    if (sclk_sampling_en) begin
+                    if (sclk_sampling) begin
                         if (swd_seq_rx_count != swd_seq_num) begin
                             swd_seq_rx_count <= swd_seq_rx_count + 1'd1;
                             swd_seq_rx_data[swd_seq_rx_count] <= SWDIO_TMS_I;
@@ -507,13 +511,19 @@ module DAP_Seqence (
                                 SWDIO_TMS_T <= 1'd1;
                                 if (swd_trans_tx_cnt[1:0] == swd_trans_turn_cycle) begin
                                     swd_trans_tx_cnt <= 12'd0;
+                                    clock_oen <= swd_turn_clk_ff;
                                 end
                                 else begin
                                     swd_trans_tx_cnt <= swd_trans_tx_cnt + 1'd1;
                                     swd_trans_tx_sm <= SWD_TRANS_IO_TURN1;
+                                    if (swd_trans_tx_cnt == 12'd1) begin
+                                        clock_oen <= swd_turn_clk_ff;
+                                    end
                                 end
                             end
-                            // SWD_TRANS_IO_ACK0: // Nothing
+                            SWD_TRANS_IO_ACK0: begin
+                                clock_oen <= 1'd1;
+                            end
                             // SWD_TRANS_IO_ACK1: // Nothing
                             // SWD_TRANS_IO_ACK2: // Nothing
                             SWD_TRANS_IO_TURN2: begin
@@ -521,6 +531,7 @@ module DAP_Seqence (
                                 // 读模式下用于等待ACK结果，ACK失败生成TURN数量时钟后退出，ACK成功生成TURN段之后进入数据段生成全部时钟
                                 if (swd_trans_tx_cnt[1:0] == swd_trans_turn_cycle) begin
                                     swd_trans_tx_cnt <= 12'd0;
+                                    clock_oen <= swd_trans_tx_RnW | swd_turn_clk_ff;
 
                                     // 判断RX ACK状态
                                     if (swd_trans_rx_ack == 3'b001 || swd_force_data) begin // OK
@@ -533,9 +544,13 @@ module DAP_Seqence (
                                 else begin
                                     swd_trans_tx_cnt <= swd_trans_tx_cnt + 1'd1;
                                     swd_trans_tx_sm <= SWD_TRANS_IO_TURN2;
+                                    if (swd_trans_tx_cnt == 12'd1) begin
+                                        clock_oen <= swd_trans_tx_RnW | swd_turn_clk_ff;
+                                    end
                                 end
                             end
                             SWD_TRANS_IO_DATA: begin
+                                clock_oen <= 1'd1;
                                 {swd_trans_tx_data, SWDIO_TMS_O} <= {1'd0, swd_trans_tx_data}; // 移位输出
                                 if (swd_trans_tx_RnW) begin
                                     SWDIO_TMS_O <= 1'd0;
@@ -563,7 +578,7 @@ module DAP_Seqence (
                         endcase
                     end
 
-                    if (sclk_sampling_en) begin
+                    if (sclk_sampling) begin
                         swd_trans_rx_sm <= swd_trans_rx_sm + 4'd1;
                         case (swd_trans_rx_sm)
                             SWD_TRANS_IO_START: begin

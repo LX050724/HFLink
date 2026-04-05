@@ -16,7 +16,8 @@ module DAP_BaudGenerator#(
 
         output reg sclk_out, // 输出到GPIO的时钟信号
         output reg sclk_negedge, // 控制器置位时刻参考
-        output reg sclk_sampling // 控制器采样时刻参考
+        output sclk_sampling, // 控制器采样时刻参考
+        input sclk_sampling_en
     );
 
     localparam [ADDRWIDTH-1:0] REG_CR_ADDR = BASE_ADDR + 0;  // RW
@@ -25,7 +26,7 @@ module DAP_BaudGenerator#(
     reg [31:0] REG_CR;
 
     wire REG_CR_CEN = REG_CR[0];
-    // wire [2:0] REG_DELAY_CHAIN = REG_CR[18:16];
+    wire [1:0] REG_DELAY_CHAIN = REG_CR[17:16];
     reg [15:0] REG_TIMING_DIV;
     reg [15:0] REG_TIMING_SIMPLING;
 
@@ -85,23 +86,27 @@ module DAP_BaudGenerator#(
 
     reg cen_ff1;
     reg cen;
+    reg sclk_sampling_r;
+    reg sclk_soe;
 
     reg [16:0] timer_cnt;
-    // reg [6:0] delay_chain_reg;
+    reg [2:0] delay_chain_reg;
     wire [16:0] div_count_next = timer_cnt + 1'd1;
 
     wire sclk_out_w = (timer_cnt >= REG_TIMING_DIV);
     wire sclk_negedge_w = cen && (div_count_next == (REG_TIMING_DIV * 2));
     wire sclk_sampling_w = cen && (div_count_next == REG_TIMING_SIMPLING);
     
-    // wire [7:0] delay_chain = {delay_chain_reg, sclk_sampling_w};
+    wire [3:0] delay_chain = {delay_chain_reg, sclk_sampling_w};
 
     always @(posedge sclk_in or negedge resetn) begin
         if (!resetn) begin
             timer_cnt <= 16'd0;
             sclk_out <= 1'd0;
             sclk_negedge <= 1'd0;
-            sclk_sampling <= 1'd0;
+            sclk_sampling_r <= 1'd0;
+            delay_chain_reg <= 7'd0;
+            sclk_soe <= 1'd0;
         end
         else begin
             cen_ff1 <= REG_CR_CEN;
@@ -119,14 +124,22 @@ module DAP_BaudGenerator#(
             else begin
                 timer_cnt <= 17'd0;
             end
-            // delay_chain_reg <= delay_chain;
+
+            if (sclk_sampling_en) begin
+                delay_chain_reg <= delay_chain[2:0];
+                sclk_sampling_r <= delay_chain[REG_DELAY_CHAIN];
+                sclk_soe <= sclk_soe | sclk_negedge;
+            end else begin
+                delay_chain_reg <= 4'd0;
+                sclk_sampling_r <= 1'd0;
+                sclk_soe <= 1'd0;
+            end
              
             sclk_out <= sclk_out_w;
             sclk_negedge <= sclk_negedge_w;
-            sclk_sampling <= sclk_sampling_w;
         end
     end
 
-
+    assign sclk_sampling = sclk_sampling_r && (sclk_sampling_en && sclk_soe);
 
 endmodule
