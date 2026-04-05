@@ -132,7 +132,7 @@ module DAP_BaudGenerator#(
             end else begin
                 delay_chain_reg <= 4'd0;
                 sclk_sampling_r <= 1'd0;
-                sclk_soe <= 1'd0;
+                sclk_soe <= sclk_negedge;
             end
              
             sclk_out <= sclk_out_w;
