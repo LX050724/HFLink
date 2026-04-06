@@ -1,6 +1,7 @@
 #include "DAP_config.h"
 #include "cmsis_compiler.h"
 #include "dap.h"
+#include "easyflash.h"
 #include "usb/usbd_core.h"
 #include <GOWIN_M1.h>
 #include <GOWIN_M1_dap.h>
@@ -141,8 +142,60 @@ static void dap_disconnect_handler(DAP_TypeDef *dap)
 static void dap_swj_clock_handler(DAP_TypeDef *dap)
 {
     uint32_t clock = dap_read_data32(dap);
-    uint16_t reload = SystemCoreClock / clock;
+    uint16_t reload = 0;
 
+    if (ef_get_env("FREQ_MAP_EN")[0] == '1')
+    {
+        uint32_t freq_map[11] = {};
+        uint32_t origin_clock = clock;
+        ef_get_env_blob("FREQ_MAP", freq_map, sizeof(freq_map), NULL);
+
+        switch (clock)
+        {
+        case 10000000:
+            clock = freq_map[0];
+            break;
+        case 5000000:
+            clock = freq_map[1];
+            break;
+        case 2000000:
+            clock = freq_map[2];
+            break;
+        case 1000000:
+            clock = freq_map[3];
+            break;
+        case 500000:
+            clock = freq_map[4];
+            break;
+        case 200000:
+            clock = freq_map[5];
+            break;
+        case 100000:
+            clock = freq_map[6];
+            break;
+        case 50000:
+            clock = freq_map[7];
+            break;
+        case 20000:
+            clock = freq_map[8];
+            break;
+        case 10000:
+            clock = freq_map[9];
+            break;
+        case 5000:
+            clock = freq_map[10];
+            break;
+        default:
+            break;
+        }
+        DAP_DEBUG("Clock Mapping %d -> %d\n", origin_clock, clock);
+    }
+
+    if (clock != 0)
+    {
+        reload = SystemCoreClock / clock;
+    }
+    
     if (reload == 0)
     {
         DAP_DEBUG("SWJ Clock %d, Error\n", clock);

@@ -3,6 +3,7 @@
 #include "GOWIN_M1_dap.h"
 #include "GOWIN_M1_usbd.h"
 #include "core_cm1.h"
+#include "easyflash.h"
 #include "soft_timer.h"
 #include "upgrade/upgrade.h"
 #include <stdint.h>
@@ -13,19 +14,7 @@
 #include "usb/usbd_core.h"
 #include <GOWIN_M1_qspi_flash.h>
 
-#ifdef DEBUG
-#include "SEGGER_RTT.h"
-#define print(fmt, ...) SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__)
-#else
-#define print(fmt, ...)
-#endif
-
-#define LED_RED_PIN GPIO_Pin_0
-#define LED_GREEN_PIN GPIO_Pin_1
-#define LED_BLUE_PIN GPIO_Pin_2
-#define LED_ALL_PIN (GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2)
-
-#define POWER_CTL_PIN GPIO_Pin_3
+#include "board.h"
 
 uint8_t adc_channel;
 // 0: VREF*4; 1: CURRENT
@@ -39,6 +28,7 @@ int main(void)
     SEGGER_RTT_Init();
 #endif
 
+    // 系统初始化
     NVIC_SetPriority(SysTick_IRQn, 15);
 
     SysTick->LOAD = 60000 - 1;
@@ -48,6 +38,7 @@ int main(void)
     NVIC_EnableIRQ(EXTINT_1_IRQn);
     DAP->CR = 0x80000001;
 
+    // 初始化QSPI和FLash，读取序列号
     qspi_flash_init();
     qspi_flash_Enable();
 
@@ -58,14 +49,40 @@ int main(void)
         usbd_set_serial_number(flash_unique_id);
     } while (0);
 
-    NVIC_EnableIRQ(EXTINT_0_IRQn);
-    print("CR:%08x\n", USBD->CR);
+    // ef_port_erase(EF_START_ADDR, ENV_AREA_SIZE);
 
+    // 初始化存储库
+    easyflash_init();
+
+    // 初始化GPIO
+    if (ef_get_env("5V_EN")[0] == '1')
+    {
+        GPIO_SetBit(GPIO0, POWER_CTL_PIN);
+    }
+    GPIO_SetBit(GPIO0, LED_ALL_PIN);
+    GPIO_SetOutEnable(GPIO0, LED_ALL_PIN | POWER_CTL_PIN);
+
+    // 初始化USB
+    NVIC_EnableIRQ(EXTINT_0_IRQn);
     usbd_init_desc();
     usbd_enable(USBD);
 
+    // 初始化串口
     axisuart_set_baud(AXIS_UART, 115200);
     axisuart_enable(AXIS_UART);
+
+    // 配置IODELAY
+    do
+    {
+        uint8_t iodelay_param[6] = {};
+        ef_get_env_blob("IODELAY", iodelay_param, sizeof(iodelay_param), NULL);
+        DAP->GPIO.TCK_DELAY = iodelay_param[0];
+        DAP->GPIO.TMS_T_DELAY = iodelay_param[1];
+        DAP->GPIO.TMS_O_DELAY = iodelay_param[2];
+        DAP->GPIO.TMS_I_DELAY = iodelay_param[3];
+        DAP->GPIO.TDO_DELAY = iodelay_param[4];
+        DAP->GPIO.TDI_DELAY = iodelay_param[5];
+    } while (0);
 
     // 加载DAP控制器默认参数
     dap_baud_set_reload(DAP, 10);
@@ -75,16 +92,15 @@ int main(void)
     dap_swd_set_trun_cycle(DAP, 0);
     dap_swd_enable_turn_clk(DAP);
     dap_swj_set_mode(DAP, DAP_SWJ_MODE_SWD);
-    dap_gpio_enable_alone_uart(DAP);
+
+    if (ef_get_env("INDEP_UART")[0] == '1')
+    {
+        dap_gpio_enable_independent_uart(DAP);
+    }
 
     dap_baud_start(DAP);
 
-    //
-    DAP->GPIO.TCK_DELAY = 60; // 750ps
-
-    GPIO_SetBit(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
-    GPIO_SetOutEnable(GPIO0, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
-
+    // 初始化ADC
     ads1115_i2c_init();
     adc_channel = ADS1115_MUX_A0_GND;
     ads1115_start_conv(ADS1115_PGA_4096, adc_channel);

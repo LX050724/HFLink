@@ -90,12 +90,12 @@ inline static void dap_gpio_disable_directio(DAP_TypeDef *dap, uint8_t index)
     dap->GPIO.CR &= ~(1 << index);
 }
 
-inline static void dap_gpio_enable_alone_uart(DAP_TypeDef *dap)
+inline static void dap_gpio_enable_independent_uart(DAP_TypeDef *dap)
 {
     dap->GPIO.CR |= 1;
 }
 
-inline static void dap_gpio_disable_alone_uart(DAP_TypeDef *dap)
+inline static void dap_gpio_disable_independent_uart(DAP_TypeDef *dap)
 {
     dap->GPIO.CR &= ~1;
 }
