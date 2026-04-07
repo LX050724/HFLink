@@ -17,6 +17,8 @@ typedef struct
     uint8_t freq_mapping_enable : 1;
     uint8_t supply5V_enable : 1;
     uint8_t indep_uart_enable : 1;
+    uint8_t bit_reserved : 5;
+    uint8_t reserved[160];
 } ConfigData_t;
 
 extern ConfigData_t global_config;

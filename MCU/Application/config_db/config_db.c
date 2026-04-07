@@ -11,17 +11,16 @@
 
 ConfigData_t global_config;
 
-static uint32_t flash_addr;
+static uint32_t next_flash_addr;
 
 int config_data_load()
 {
     ConfigData_t temp_config;
     uint32_t last_valid_addr = 0;
-    ConfigData_t last_valid_config;
     uint32_t crc;
     uint32_t addr;
 
-    flash_addr = FLASH_CONFIG_ADDR;
+    next_flash_addr = FLASH_CONFIG_ADDR;
     addr = FLASH_CONFIG_ADDR;
 
     while (addr < FLASH_CONFIG_END_ADDR)
@@ -33,26 +32,25 @@ int config_data_load()
         if (temp_config.magic == CONFIG_MAGIC && temp_config.version == CONFIG_VERSION &&
             crc == temp_config.crc32)
         {
-            last_valid_config = temp_config;
+            global_config = temp_config;
             last_valid_addr = addr;
         }
-
+        
         addr += FLASH_PAGE_SIZE;
     }
 
     if (last_valid_addr != 0)
     {
-        global_config = last_valid_config;
-        flash_addr = last_valid_addr;
-        if (flash_addr == FLASH_CONFIG_END_ADDR - FLASH_PAGE_SIZE)
+        next_flash_addr = last_valid_addr + FLASH_PAGE_SIZE;
+        if (next_flash_addr == FLASH_CONFIG_END_ADDR)
         {
-            flash_addr = FLASH_CONFIG_ADDR;
+            next_flash_addr = FLASH_CONFIG_ADDR;
         }
         return 0;
     }
 
     // 加载失败，使用默认配置
-    flash_addr = FLASH_CONFIG_ADDR;
+    next_flash_addr = FLASH_CONFIG_ADDR;
     global_config = (ConfigData_t){
         .magic = CONFIG_MAGIC,
         .version = CONFIG_VERSION,
@@ -103,14 +101,14 @@ int config_data_save()
     global_config.crc32 = crc;
 
     // 如果当前页地址为0或配置区起始地址，则先擦除当前页，以保证数据写入成功
-    if (flash_addr == 0 || flash_addr == FLASH_CONFIG_ADDR)
+    if (next_flash_addr == 0 || next_flash_addr == FLASH_CONFIG_ADDR)
     {
-        flash_addr = FLASH_CONFIG_ADDR;
+        next_flash_addr = FLASH_CONFIG_ADDR;
         do
         {
             qspi_flash_write_enable();
         } while ((qspi_flash_read_status() & 0x02) == 0);
-        qspi_flash_4ksector_erase(flash_addr);
+        qspi_flash_4ksector_erase(next_flash_addr);
         while (qspi_flash_is_busy())
         {
         }
@@ -121,16 +119,16 @@ int config_data_save()
     {
         qspi_flash_write_enable();
     } while ((qspi_flash_read_status() & 0x02) == 0);
-    qspi_flash_page_program(sizeof(global_config), flash_addr, (uint8_t *)&global_config);
+    qspi_flash_page_program(FLASH_PAGE_SIZE, next_flash_addr, (uint8_t *)&global_config);
     while (qspi_flash_is_busy())
     {
     }
 
     // 更新页地址，如果超过配置区范围则回绕到起始地址
-    flash_addr += FLASH_PAGE_SIZE;
-    if (flash_addr >= FLASH_CONFIG_END_ADDR)
+    next_flash_addr += FLASH_PAGE_SIZE;
+    if (next_flash_addr == FLASH_CONFIG_END_ADDR)
     {
-        flash_addr = FLASH_CONFIG_ADDR;
+        next_flash_addr = FLASH_CONFIG_ADDR;
     }
     return 0;
 }
