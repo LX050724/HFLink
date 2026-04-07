@@ -3,7 +3,6 @@
 #include "GOWIN_M1_dap.h"
 #include "GOWIN_M1_usbd.h"
 #include "core_cm1.h"
-#include "easyflash.h"
 #include "soft_timer.h"
 #include "upgrade/upgrade.h"
 #include <stdint.h>
@@ -15,6 +14,7 @@
 #include <GOWIN_M1_qspi_flash.h>
 
 #include "board.h"
+#include "config_db/config_db.h"
 
 uint8_t adc_channel;
 // 0: VREF*4; 1: CURRENT
@@ -49,13 +49,11 @@ int main(void)
         usbd_set_serial_number(flash_unique_id);
     } while (0);
 
-    // ef_port_erase(EF_START_ADDR, ENV_AREA_SIZE);
-
     // 初始化存储库
-    easyflash_init();
+    config_data_load();
 
     // 初始化GPIO
-    if (ef_get_env("5V_EN")[0] == '1')
+    if (global_config.supply5V_enable)
     {
         GPIO_SetBit(GPIO0, POWER_CTL_PIN);
     }
@@ -74,14 +72,12 @@ int main(void)
     // 配置IODELAY
     do
     {
-        uint8_t iodelay_param[6] = {};
-        ef_get_env_blob("IODELAY", iodelay_param, sizeof(iodelay_param), NULL);
-        DAP->GPIO.TCK_DELAY = iodelay_param[0];
-        DAP->GPIO.TMS_T_DELAY = iodelay_param[1];
-        DAP->GPIO.TMS_O_DELAY = iodelay_param[2];
-        DAP->GPIO.TMS_I_DELAY = iodelay_param[3];
-        DAP->GPIO.TDO_DELAY = iodelay_param[4];
-        DAP->GPIO.TDI_DELAY = iodelay_param[5];
+        DAP->GPIO.TCK_DELAY = global_config.iodelay_param[0];
+        DAP->GPIO.TMS_T_DELAY = global_config.iodelay_param[1];
+        DAP->GPIO.TMS_O_DELAY = global_config.iodelay_param[2];
+        DAP->GPIO.TMS_I_DELAY = global_config.iodelay_param[3];
+        DAP->GPIO.TDO_DELAY = global_config.iodelay_param[4];
+        DAP->GPIO.TDI_DELAY = global_config.iodelay_param[5];
     } while (0);
 
     // 加载DAP控制器默认参数
@@ -93,7 +89,7 @@ int main(void)
     dap_swd_enable_turn_clk(DAP);
     dap_swj_set_mode(DAP, DAP_SWJ_MODE_SWD);
 
-    if (ef_get_env("INDEP_UART")[0] == '1')
+    if (global_config.indep_uart_enable)
     {
         dap_gpio_enable_independent_uart(DAP);
     }
@@ -141,4 +137,22 @@ int main(void)
 
         upgrade_loop();
     }
+}
+
+uint32_t crc32(uint32_t init, uint8_t *data, uint32_t length)
+{
+    uint8_t i;
+    uint32_t crc = init; // Initial value
+    while (length--)
+    {
+        crc ^= *data++; // crc ^= *data; data++;
+        for (i = 0; i < 8; ++i)
+        {
+            if (crc & 1)
+                crc = (crc >> 1) ^ 0xEDB88320; // 0xEDB88320= reverse 0x04C11DB7
+            else
+                crc = (crc >> 1);
+        }
+    }
+    return ~crc;
 }

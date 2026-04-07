@@ -1,7 +1,7 @@
 #include "DAP_config.h"
 #include "cmsis_compiler.h"
 #include "dap.h"
-#include "easyflash.h"
+#include "config_db/config_db.h"
 #include "usb/usbd_core.h"
 #include <GOWIN_M1.h>
 #include <GOWIN_M1_dap.h>
@@ -144,46 +144,43 @@ static void dap_swj_clock_handler(DAP_TypeDef *dap)
     uint32_t clock = dap_read_data32(dap);
     uint16_t reload = 0;
 
-    if (ef_get_env("FREQ_MAP_EN")[0] == '1')
+    if (global_config.freq_mapping_enable)
     {
-        uint32_t freq_map[11] = {};
         uint32_t origin_clock = clock;
-        ef_get_env_blob("FREQ_MAP", freq_map, sizeof(freq_map), NULL);
-
         switch (clock)
         {
         case 10000000:
-            clock = freq_map[0];
+            clock = global_config.clock_freq_mapping[0];
             break;
         case 5000000:
-            clock = freq_map[1];
+            clock = global_config.clock_freq_mapping[1];
             break;
         case 2000000:
-            clock = freq_map[2];
+            clock = global_config.clock_freq_mapping[2];
             break;
         case 1000000:
-            clock = freq_map[3];
+            clock = global_config.clock_freq_mapping[3];
             break;
         case 500000:
-            clock = freq_map[4];
+            clock = global_config.clock_freq_mapping[4];
             break;
         case 200000:
-            clock = freq_map[5];
+            clock = global_config.clock_freq_mapping[5];
             break;
         case 100000:
-            clock = freq_map[6];
+            clock = global_config.clock_freq_mapping[6];
             break;
         case 50000:
-            clock = freq_map[7];
+            clock = global_config.clock_freq_mapping[7];
             break;
         case 20000:
-            clock = freq_map[8];
+            clock = global_config.clock_freq_mapping[8];
             break;
         case 10000:
-            clock = freq_map[9];
+            clock = global_config.clock_freq_mapping[9];
             break;
         case 5000:
-            clock = freq_map[10];
+            clock = global_config.clock_freq_mapping[10];
             break;
         default:
             break;

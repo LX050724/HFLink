@@ -1,5 +1,8 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef DEBUG
 #include "SEGGER_RTT.h"
@@ -14,3 +17,9 @@
 #define LED_ALL_PIN (GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2)
 
 #define POWER_CTL_PIN GPIO_Pin_3
+
+uint32_t crc32(uint32_t init, uint8_t *data, uint32_t length);
+
+#ifdef __cplusplus
+}
+#endif

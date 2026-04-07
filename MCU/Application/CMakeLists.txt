@@ -9,13 +9,11 @@ add_executable(HFLinkAPP
     dap/dap_vendor0_handler.c
     ads1115/ads1115.c
     upgrade/upgrade.c
-    easyflash/ef_port.c
+    config_db/config_db.c
 )
 
 target_include_directories(HFLinkAPP PRIVATE ${CMAKE_CURRENT_LIST_DIR} easyflash)
 target_link_options(HFLinkAPP PRIVATE -T "${CMAKE_CURRENT_LIST_DIR}/GOWIN_M1_APP.ld")
-
-target_link_libraries(HFLinkAPP PRIVATE EasyFlash)
 
 if (("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo"))
     target_compile_definitions(HFLinkAPP PRIVATE DEBUG)

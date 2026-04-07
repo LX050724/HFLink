@@ -1,10 +1,10 @@
 #include "upgrade.h"
 #include <GOWIN_M1_qspi_flash.h>
 #include <string.h>
+#include "board.h"
 
 #define FPGA_BITSTREAM_BEGIN_ADDR 0x00000000U
 #define FPGA_BITSTREAM_END_ADDR 0x00100000U
-#define CRC32_POLYNOMIAL 0xEDB88320U
 
 typedef enum
 {
@@ -22,23 +22,6 @@ static volatile uint8_t upg_busy_flag;
 static volatile UPG_Status status;
 static volatile uint8_t upg_buffer[256];
 
-uint32_t crc32(uint32_t init, uint8_t *data, uint32_t length)
-{
-    uint8_t i;
-    uint32_t crc = init; // Initial value
-    while (length--)
-    {
-        crc ^= *data++; // crc ^= *data; data++;
-        for (i = 0; i < 8; ++i)
-        {
-            if (crc & 1)
-                crc = (crc >> 1) ^ 0xEDB88320; // 0xEDB88320= reverse 0x04C11DB7
-            else
-                crc = (crc >> 1);
-        }
-    }
-    return ~crc;
-}
 
 void upgrade_loop(void)
 {
@@ -49,10 +32,10 @@ void upgrade_loop(void)
     case UPG_ERASE: {
         for (uint32_t addr = FPGA_BITSTREAM_BEGIN_ADDR; addr < FPGA_BITSTREAM_END_ADDR; addr += 0x10000)
         {
-            qspi_flash_write_enable();
-            while (!(qspi_flash_read_status() & 0x02))
+            do
             {
-            }
+                qspi_flash_write_enable();
+            } while ((qspi_flash_read_status() & 0x02) == 0);
             qspi_flash_64ksector_erase(addr);
             while (qspi_flash_is_busy())
             {
@@ -66,10 +49,10 @@ void upgrade_loop(void)
         break;
     }
     case UPG_PROGRAM: {
-        qspi_flash_write_enable();
-        while (!(qspi_flash_read_status() & 0x02))
+        do
         {
-        }
+            qspi_flash_write_enable();
+        } while ((qspi_flash_read_status() & 0x02) == 0);
         qspi_flash_page_program(256, upg_write_addr, upg_buffer);
         while (qspi_flash_is_busy())
         {
