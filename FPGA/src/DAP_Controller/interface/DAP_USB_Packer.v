@@ -27,19 +27,27 @@ module DAP_USB_Packer#(
     );
     reg [7:0] ram [0:4095];
 
-    reg [8:0] txlen_queue [0:7];
+    reg [9:0] txlen_queue [0:7];
     reg [3:0] wptr;
     reg [3:0] rptr;
 
-    reg [8:0] total_packet_len; // 包总长
+    reg [9:0] total_packet_len; // 包总长
     reg [8:0] waddr_offset;     // 写偏移地址
     wire [8:0] waddr = waddr_offset + ram_write_addr; // 实际写入地址
 
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
             waddr_offset <= 9'd0;
-            total_packet_len <= 9'd0;
+            total_packet_len <= 10'd0;
             wptr <= 4'd0;
+            txlen_queue[0] <= 10'd0;
+            txlen_queue[1] <= 10'd0;
+            txlen_queue[2] <= 10'd0;
+            txlen_queue[3] <= 10'd0;
+            txlen_queue[4] <= 10'd0;
+            txlen_queue[5] <= 10'd0;
+            txlen_queue[6] <= 10'd0;
+            txlen_queue[7] <= 10'd0;
         end
         else begin
             if (ram_write_en && !fifo_full) begin
