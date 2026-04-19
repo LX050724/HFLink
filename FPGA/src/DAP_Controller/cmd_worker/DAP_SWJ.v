@@ -226,14 +226,11 @@ module DAP_SWJ #(
     localparam [2:0] WRITE_ABORT_READ_DATA1 = 3'd2;
     localparam [2:0] WRITE_ABORT_READ_DATA2 = 3'd3;
     localparam [2:0] WRITE_ABORT_READ_DATA3 = 3'd4;
-    localparam [2:0] WRITE_ABORT_WAIT_IR = 3'd5;
-    localparam [2:0] WRITE_ABORT_WAIT_RESPONSE = 3'd6;
-    localparam [2:0] WRITE_ABORT_DONE = 3'd7;
+    localparam [2:0] WRITE_ABORT_WAIT_RESPONE = 3'd5;
+    localparam [2:0] WRITE_ABORT_DONE = 3'd6;
 
     reg [2:0] write_abort_sm;
-    reg [3:0] write_abort_trans_req;
     reg [31:0] write_abort_data;
-    reg write_abort_trans_seq_tx_valid;
 
     localparam [2:0] SWJ_PINS_SM_READ_OUTPUT = 3'd0;
     localparam [2:0] SWJ_PINS_SM_READ_SELECT = 3'd1;
@@ -363,12 +360,11 @@ module DAP_SWJ #(
 
     // JTAG IDCODE控制器状态机
     localparam [2:0] JTAG_IDCODE_SM_WAIT_INDEX = 3'd0;  // 等待Index
-    localparam [2:0] JTAG_IDCODE_SM_WAIT_IR = 3'd1;   // 等待IR
-    localparam [2:0] JTAG_IDCODE_SM_WAIT_IDCODE = 3'd2;   // 等待IDCODE
-    localparam [2:0] JTAG_IDCODE_SM_WRITE_DATA1 = 3'd3; // 写入数据1
-    localparam [2:0] JTAG_IDCODE_SM_WRITE_DATA2 = 3'd4; // 写入数据2
-    localparam [2:0] JTAG_IDCODE_SM_WRITE_DATA3 = 3'd5; // 写入数据3
-    localparam [2:0] JTAG_IDCODE_SM_DONE = 3'd6;       // 完成
+    localparam [2:0] JTAG_IDCODE_SM_WRITE_DATA0 = 3'd1;   // 等待IDCODE
+    localparam [2:0] JTAG_IDCODE_SM_WRITE_DATA1 = 3'd2; // 写入数据1
+    localparam [2:0] JTAG_IDCODE_SM_WRITE_DATA2 = 3'd3; // 写入数据2
+    localparam [2:0] JTAG_IDCODE_SM_WRITE_DATA3 = 3'd4; // 写入数据3
+    localparam [2:0] JTAG_IDCODE_SM_DONE = 3'd5;       // 完成
 
     reg [2:0] jtag_idcode_sm;
     reg jtag_idcode_seq_tx_valid;
@@ -464,9 +460,9 @@ module DAP_SWJ #(
                 ram_write_data = write_abort_ram_write_data;
                 ram_write_en = write_abort_ram_write_en;
                 packet_len = 10'd1;  // Write Abort always returns 1 byte
-                seq_tx_cmd = {write_abort_trans_req, 3'd0, jtag_index, 6'd0};
+                seq_tx_cmd = {SWD_MODE ? `SEQ_CMD_SWD_TRANSFER : `SEQ_CMD_JTAG_IDCODE, 8'd0, 4'd0};
                 seq_tx_data = write_abort_data;
-                seq_tx_valid = write_abort_trans_seq_tx_valid;
+                seq_tx_valid = (write_abort_sm == WRITE_ABORT_READ_DATA3) && dap_in_tvalid;
             end
             `CMD_SWJ_PINS: begin
                 ram_write_addr = swj_pins_ram_write_addr;
@@ -510,7 +506,7 @@ module DAP_SWJ #(
                 ram_write_en = jtag_idcode_ram_write_en;
                 packet_len = 10'd5;
                 seq_tx_cmd = {jtag_idcode_trans_req, 5'd0, jtag_index, 6'd0};
-                seq_tx_data = 8'b11111110;
+                seq_tx_data = 32'd0;
                 seq_tx_valid = jtag_idcode_seq_tx_valid;
             end
             default: begin
@@ -674,30 +670,15 @@ module DAP_SWJ #(
             write_abort_ram_write_addr <= 10'd0;
             write_abort_sm <= 3'd0;
             write_abort_data <= 32'd0;
-            write_abort_trans_seq_tx_valid <= 1'd0;
-
             done[`CMD_WRITE_ABORT_SHIFT] <= 1'd0;
         end
         else begin
             write_abort_ram_write_en <= 1'd0;
-            write_abort_trans_seq_tx_valid <= 1'd0;
+
             if (start[`CMD_WRITE_ABORT_SHIFT]) begin
                 case (write_abort_sm) /* synthesis parallel_case */
                     WRITE_ABORT_READ_INDEX: begin
                         if (dap_in_tvalid) begin
-                            if (SWJ_CR_MODE) begin
-                                write_abort_sm <= WRITE_ABORT_READ_DATA0;
-                            end
-                            else begin
-                                // JTAG模式下先发送IR指令
-                                write_abort_sm <= WRITE_ABORT_READ_WAIT_IR;
-                                write_abort_data[7:0] <= 8'b11111000;
-                                write_abort_trans_seq_tx_valid <= 1'd1;
-                            end
-                        end
-                    end
-                    WRITE_ABORT_WAIT_IR: begin
-                        if (seq_rx_valid) begin
                             write_abort_sm <= WRITE_ABORT_READ_DATA0;
                         end
                     end
@@ -722,17 +703,9 @@ module DAP_SWJ #(
                     WRITE_ABORT_READ_DATA3: begin
                         if (dap_in_tvalid) begin
                             write_abort_data[31:24] <= dap_in_tdata;
-                            if (SWJ_CR_MODE) begin
-                                write_abort_trans_req <= SEQ_CMD_SWD_TRANSFER;
-                            end
-                            else begin
-                                write_abort_trans_req <= SEQ_CMD_JTAG_ABORT;
-                            end
                             write_abort_sm <= WRITE_ABORT_WAIT_RESPONE;
-                            write_abort_trans_seq_tx_valid <= 1'd1;
                         end
                     end
-
                     WRITE_ABORT_WAIT_RESPONE: begin
                         if (seq_rx_valid) begin
                             write_abort_ram_write_addr <= 10'd0;
@@ -1561,7 +1534,6 @@ module DAP_SWJ #(
             jtag_idcode_ram_write_addr <= 10'd0;
             jtag_idcode_sm <= JTAG_IDCODE_SM_WAIT_INDEX;
             jtag_idcode_seq_tx_valid <= 1'd0;
-            jtag_idcode_trans_req <= 4'd0;
             done[`CMD_JTAG_IDCODE_SHIFT] <= 1'd0;
         end
         else begin
@@ -1572,27 +1544,15 @@ module DAP_SWJ #(
                 case (jtag_idcode_sm) /* synthesis parallel_case */
                     JTAG_IDCODE_SM_WAIT_INDEX: begin
                         if (dap_in_tvalid) begin
-                            // 发IR
-                            jtag_idcode_trans_req <= `SEQ_CMD_JTAG_IR;
-                            jtag_idcode_seq_tx_valid <= 1'd1;
-
                             // 写入Status
                             jtag_idcode_ram_write_addr <= 10'd0;
                             jtag_idcode_ram_write_data <= 8'h00;
                             jtag_idcode_ram_write_en <= 1'd1;
-
-                            jtag_idcode_sm <= JTAG_IDCODE_SM_WAIT_IR;
-                        end
-                    end
-                    JTAG_IDCODE_SM_WAIT_IR: begin
-                        if (seq_rx_valid) begin
-                            // IR切换后准备接收IDCODE数据
-                            jtag_idcode_sm <= JTAG_IDCODE_SM_WAIT_IDCODE;
-                            jtag_idcode_trans_req <= `SEQ_CMD_JTAG_IDCODE;
+                            jtag_idcode_sm <= JTAG_IDCODE_SM_WRITE_DATA0;
                             jtag_idcode_seq_tx_valid <= 1'd1;
                         end
                     end
-                    JTAG_IDCODE_SM_WAIT_IDCODE: begin
+                    JTAG_IDCODE_SM_WRITE_DATA0: begin
                         if (seq_rx_valid) begin
                             // 写入IDCODE的第一字节
                             jtag_idcode_ram_write_addr <= 10'd1;

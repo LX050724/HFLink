@@ -163,14 +163,9 @@ module DAP_Seqence (
     reg clock_idle;
     assign SWCLK_TCK_O = clock_oen ? sclk_out : clock_idle;
 
-
-    reg [1:0] swj_seq_sm;
-    reg [7:0] swj_seq_count;
-
     // ========== 各命令独立RX寄存器 ==========
     // SWD_SEQ
     reg [7:0] swd_seq_rx_data;
-    reg [3:0] swd_seq_rx_flag;
 
     // SWJ_PINS
     reg [7:0] swj_pins_rx_data;
@@ -260,37 +255,7 @@ module DAP_Seqence (
     assign TRST_O = swj_pins_trst_o_reg;
     // ==============================================
 
-    // JTAG IR registers
-    reg [3:0] jtag_ir_sm;
-    reg [31:0] jtag_ir_tx_data;
-    reg [7:0] jtag_ir_tx_count;
-
-    // JTAG IDCODE registers
-    reg jtag_idcode_sm;
-    reg [3:0] jtag_idcode_tx_sm;
-    reg [5:0] jtag_idcode_tx_count;
-    reg [3:0] jtag_idcode_rx_sm;
-    reg [5:0] jtag_idcode_rx_count;
-
-    reg jtag_seq_sm;
-    reg [3:0] jtag_seq_tx_count;
-    reg [3:0] jtag_seq_rx_count;
-    reg [7:0] jtag_seq_tx_data;
-    reg [7:0] jtag_seq_rx_data;
-
-    reg jtag_trans_sm;
-    reg [15:0] jtag_trans_retry_cnt;
-    reg [15:0] jtag_trans_retry_max;
-    reg [2:0] jtag_trans_index;
-    reg [3:0] jtag_trans_tx_sm;
-    reg [3:0] jtag_trans_rx_sm;
-    reg jtag_trans_abort;
-    reg [34:0] jtag_trans_tx_data;
-    reg [34:0] jtag_trans_tx_shift;
-    reg [7:0] jtag_trans_tx_count;
-    reg [34:0] jtag_trans_rx_data;
-    reg [7:0] jtag_trans_rx_count;
-
+    // ========== SWD_SEQ 状态机寄存器 ==========
     reg swd_seq_sm;
     reg swd_seq_dir;
     reg [3:0] swd_seq_num;
@@ -298,6 +263,7 @@ module DAP_Seqence (
     reg [3:0] swd_seq_tx_count;
     reg [3:0] swd_seq_rx_count;
 
+    // ========== SWJ_PINS 状态机寄存器 ==========
     reg swj_pin_sm;
     reg [7:0] swj_pin_select_reg;
     reg [7:0] swj_pin_output_reg;
@@ -317,6 +283,7 @@ module DAP_Seqence (
              SWCLK_TCK_O
          };
 
+    // ========== SWD_TRANSFER 状态机寄存器 ==========
     localparam [1:0] SWD_TRANS_SM_IDLE = 2'd0;
     localparam [1:0] SWD_TRANS_SM_WORKING = 2'd1;
     localparam [1:0] SWD_TRANS_SM_CHECK = 2'd2;
@@ -358,6 +325,7 @@ module DAP_Seqence (
     reg swd_trans_rx_parity;
     reg [2:0] swd_trans_rx_ack;
 
+    // ========== JTAG 状态机寄存器 ==========
     localparam [3:0] JTAG_EXIT2_DR = 4'h0;
     localparam [3:0] JTAG_EXIT1_DR = 4'h1;
     localparam [3:0] JTAG_SHIFT_DR = 4'h2;
@@ -375,82 +343,56 @@ module DAP_Seqence (
     localparam [3:0] JTAG_CAPUTRE_IR = 4'hE;
     localparam [3:0] JTAG_TEST_LOGIC_RESET = 4'hF;
 
-    assign sclk_sampling_en = delay_clk_en == 5'h1f;  // 只要有任一命令的延时使能被关闭就复位采样时钟
+    // JTAG IR registers
+    reg [3:0] jtag_ir_sm;
+    reg [31:0] jtag_ir_tx_data;
+    reg [7:0] jtag_ir_tx_count;
 
+    // JTAG IDCODE registers
+    reg jtag_idcode_sm;
+    reg [3:0] jtag_idcode_tx_sm;
+    reg [5:0] jtag_idcode_tx_count;
+    reg [3:0] jtag_idcode_rx_sm;
+    reg [5:0] jtag_idcode_rx_count;
+
+    reg jtag_seq_sm;
+    reg [3:0] jtag_seq_tx_count;
+    reg [3:0] jtag_seq_rx_count;
+    reg [7:0] jtag_seq_tx_data;
+    reg [7:0] jtag_seq_rx_data;
+
+    reg jtag_trans_sm;
+    reg [15:0] jtag_trans_retry_cnt;
+    reg [15:0] jtag_trans_retry_max;
+    reg [2:0] jtag_trans_index;
+    reg [3:0] jtag_trans_tx_sm;
+    reg [3:0] jtag_trans_rx_sm;
+    reg jtag_trans_abort;
+    reg [34:0] jtag_trans_tx_data;
+    reg [34:0] jtag_trans_tx_shift;
+    reg [7:0] jtag_trans_tx_count;
+    reg [34:0] jtag_trans_rx_data;
+    reg [7:0] jtag_trans_rx_count;
+
+    assign sclk_sampling_en = delay_clk_en == 7'h7f;  // 只要有任一命令的延时使能被关闭就复位采样时钟
+
+    // ============================================================================
+    // rx_valid2 合并逻辑
+    // ============================================================================
     always @(posedge sclk or negedge resetn) begin
         if (!resetn) begin
             rx_valid2 <= 0;
+        end
+        else begin
+            rx_valid2 <= swj_busy ? rx_valid : rx_valid | rx_valid2;
+        end
+    end
 
-            // SWJ_PINS GPIO 寄存器复位
-            swj_pins_swdio_o_reg <= 1'd0;
-            swj_pins_swdio_t_reg <= 1'd1;  // 默认输入模式
-            swj_pins_tdi_o_reg <= 1'd0;
-            swj_pins_srst_o_reg <= 1'd0;
-            swj_pins_trst_o_reg <= 1'd0;
-
-            // SWD_SEQ GPIO + RX 寄存器复位
-            swd_seq_swdio_o_reg <= 1'd0;
-            swd_seq_swdio_t_reg <= 1'd0;
-            swd_seq_rx_data <= 8'd0;
-
-            // SWJ_PINS RX 寄存器复位
-            swj_pins_rx_data <= 8'd0;
-
-            // SWD_TRANSFER GPIO + RX + TX 寄存器复位
-            swd_trans_swdio_o_reg <= 1'd0;
-            swd_trans_swdio_t_reg <= 1'd0;
-            swd_trans_rx_data <= 32'd0;
-            swd_trans_rx_flag <= 4'd0;
-            swd_trans_tx_shift <= 32'd0;
-            swd_trans_tx_data <= 32'd0;
-
-            // JTAG_GPIO 寄存器复位
-            jtag_ir_tms_o_reg <= 1'd0;
-            jtag_ir_tdi_o_reg <= 1'd0;
-            jtag_idcode_tms_o_reg <= 1'd0;
-            jtag_idcode_tdi_o_reg <= 1'd0;
-            jtag_idcode_rx_data <= 32'd0;
-            jtag_seq_tms_o_reg <= 1'd0;
-            jtag_seq_tdi_o_reg <= 1'd0;
-            jtag_seq_rx_data <= 8'd0;
-            jtag_trans_tms_o_reg <= 1'd0;
-            jtag_trans_tdi_o_reg <= 1'd0;
-
-            // JTAG_TRANS 寄存器复位
-            jtag_trans_sm <= 4'd0;
-            jtag_trans_retry_cnt <= 16'd0;
-            jtag_trans_retry_max <= 16'd0;
-            jtag_trans_index <= 3'd0;
-            jtag_trans_tx_sm <= 4'd0;
-            jtag_trans_rx_sm <= 4'd0;
-            jtag_trans_abort <= 1'd0;
-            jtag_trans_tx_data <= 35'd0;
-            jtag_trans_tx_shift <= 35'd0;
-            jtag_trans_tx_count <= 8'd0;
-            jtag_trans_rx_data <= 35'd0;
-            jtag_trans_rx_count <= 8'd0;
-
-            clock_oen <= 5'd0;
-            clock_idle <= 1'd1;
-            swj_busy <= 8'd0;
-            delay_clk_en <= 5'd0;
-
-            swj_seq_sm <= 0;
-            swj_seq_count <= 0;
-
-            // JTAG IR registers reset
-            jtag_ir_sm <= 4'd0;
-            jtag_ir_tx_data = 32'd0;
-            jtag_ir_tx_count = 8'd0;
-
-            // JTAG IDCODE registers reset
-            jtag_idcode_sm <= 1'd0;
-            jtag_idcode_tx_sm <= 4'd0;
-            jtag_idcode_tx_count <= 6'd0;
-            jtag_idcode_rx_sm <= 4'd0;
-            jtag_idcode_rx_data <= 32'd0;
-            jtag_idcode_rx_count <= 6'd0;
-
+    // ============================================================================
+    // SWD_SEQ 命令实现
+    // ============================================================================
+    always @(posedge sclk or negedge resetn) begin
+        if (!resetn) begin
             swd_seq_sm <= 1'd0;
             swd_seq_dir <= 1'd0;
             swd_seq_num <= 4'd0;
@@ -458,39 +400,16 @@ module DAP_Seqence (
             swd_seq_rx_data <= 8'd0;
             swd_seq_tx_count <= 4'd0;
             swd_seq_rx_count <= 4'd0;
-
-            swj_pin_select_reg <= 8'd0;
-            swj_pin_output_reg <= 8'd0;
-            swj_pin_sm <= 1'd0;
-            swj_us_cnt <= 32'd0;
-            swj_tick_cnt <= 8'd0;
-
-
-            swd_trans_sm <= 2'd0;
-            swd_trans_turn_cycle <= 2'd0;
-            swd_trans_retry_max <= 16'd0;
-            swd_force_data <= 1'd0;
-            swd_trans_retry_cnt <= 16'd0;
-            swd_trans_tx_sm <= 4'd0;
-            swd_trans_tx_cnt <= 12'd0;
-            swd_trans_tx_APnDP <= 1'd0;
-            swd_trans_tx_RnW <= 1'd0;
-            swd_trans_tx_ADDR <= 2'd0;
-            swd_trans_tx_parity <= 1'd0;
-            swd_trans_tx_data <= 32'd0;
-            swd_trans_rx_sm <= 4'd0;
-            swd_trans_rx_cnt <= 12'd0;
-            swd_trans_rx_data <= 32'd0;
-            swd_trans_rx_parity <= 1'd0;
-            swd_trans_rx_ack <= 3'd0;
-
+            swd_seq_swdio_o_reg <= 1'd0;
+            swd_seq_swdio_t_reg <= 1'd0;
+            rx_valid[CMD_INDEX_SWD_SEQ] <= 1'd0;
+            clock_oen[CMD_INDEX_SWD_SEQ] <= 1'd0;
+            swj_busy[CMD_INDEX_SWD_SEQ] <= 1'd0;
         end
         else begin
-            rx_valid <= 0;
-            rx_valid2 <= swj_busy ? rx_valid : rx_valid | rx_valid2;
-            delay_clk_en <= 5'h1f;  // 默认所有命令的延时时钟使能都打开，由具体命令状态机控制时钟输出
-
-            // SEQ_CMD_SWD_SEQ
+            rx_valid[CMD_INDEX_SWD_SEQ] <= 1'd0;
+            delay_clk_en[CMD_INDEX_SWD_SEQ] <= 1'd1;  // 默认不延时，状态机内部根据需要开启
+            
             case (swd_seq_sm)
                 1'd0: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_SWD_SEQ && swj_busy == 8'd0) begin
@@ -539,8 +458,35 @@ module DAP_Seqence (
                     end
                 end
             endcase
+        end
+    end
 
-            // SEQ_CMD_SWJ_PINS
+    // ============================================================================
+    // SWJ_PINS 命令实现
+    // ============================================================================
+    always @(posedge sclk or negedge resetn) begin
+        if (!resetn) begin
+            swj_pin_sm <= 1'd0;
+            swj_pin_select_reg <= 8'd0;
+            swj_pin_output_reg <= 8'd0;
+            swj_us_cnt <= 32'd0;
+            swj_tick_cnt <= 8'd0;
+            swj_pins_swdio_o_reg <= 1'd0;
+            swj_pins_swdio_t_reg <= 1'd0;
+            swj_pins_tdi_o_reg <= 1'd0;
+            swj_pins_srst_o_reg <= 1'd0;
+            swj_pins_trst_o_reg <= 1'd0;
+            swj_pins_rx_data <= 8'd0;
+            rx_valid[CMD_INDEX_SWJ_PINS] <= 1'd0;
+            delay_clk_en[CMD_INDEX_SWJ_PINS] <= 1'd0;
+            clock_oen[CMD_INDEX_SWJ_PINS] <= 1'd0;
+            swj_busy[CMD_INDEX_SWJ_PINS] <= 1'd0;
+            clock_idle <= 1'd1;
+        end
+        else begin
+            rx_valid[CMD_INDEX_SWJ_PINS] <= 1'd0;
+            delay_clk_en[CMD_INDEX_SWJ_PINS] <= 1'd1;
+            
             case (swj_pin_sm) /*synthesis parallel_case*/
                 0: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_SWJ_PINS && swj_busy == 8'd0) begin
@@ -602,8 +548,44 @@ module DAP_Seqence (
                     end
                 end
             endcase
+        end
+    end
 
-            // SEQ_CMD_SWD_TRANSFER
+    // ============================================================================
+    // SWD_TRANSFER 命令实现
+    // ============================================================================
+    always @(posedge sclk or negedge resetn) begin
+        if (!resetn) begin
+            swd_trans_sm <= 2'd0;
+            swd_trans_turn_cycle <= 2'd0;
+            swd_trans_retry_max <= 16'd0;
+            swd_force_data <= 1'd0;
+            swd_trans_retry_cnt <= 16'd0;
+            swd_trans_tx_sm <= 4'd0;
+            swd_trans_tx_cnt <= 12'd0;
+            swd_trans_tx_APnDP <= 1'd0;
+            swd_trans_tx_RnW <= 1'd0;
+            swd_trans_tx_ADDR <= 2'd0;
+            swd_trans_tx_parity <= 1'd0;
+            swd_trans_tx_data <= 32'd0;
+            swd_trans_tx_shift <= 32'd0;
+            swd_trans_rx_sm <= 4'd0;
+            swd_trans_rx_cnt <= 12'd0;
+            swd_trans_rx_data <= 32'd0;
+            swd_trans_rx_parity <= 1'd0;
+            swd_trans_rx_ack <= 3'd0;
+            swd_trans_rx_flag <= 4'd0;
+            swd_trans_swdio_o_reg <= 1'd0;
+            swd_trans_swdio_t_reg <= 1'd0;
+            rx_valid[CMD_INDEX_SWD_TRANS] <= 1'd0;
+            delay_clk_en[CMD_INDEX_SWD_TRANS] <= 1'd0;
+            clock_oen[CMD_INDEX_SWD_TRANS] <= 1'd0;
+            swj_busy[CMD_INDEX_SWD_TRANS] <= 1'd0;
+        end
+        else begin
+            rx_valid[CMD_INDEX_SWD_TRANS] <= 1'd0;
+            delay_clk_en[CMD_INDEX_SWD_TRANS] <= 1'd1;
+            
             case (swd_trans_sm) /*synthesis parallel_case*/
                 SWD_TRANS_SM_IDLE: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_SWD_TRANSFER && swj_busy == 8'd0) begin
@@ -824,8 +806,28 @@ module DAP_Seqence (
                     end
                 end
             endcase
+        end
+    end
 
-            // SEQ_CMD_JTAG_IR
+    // ============================================================================
+    // JTAG_IR 命令实现
+    // ============================================================================
+    always @(posedge sclk or negedge resetn) begin
+        if (!resetn) begin
+            jtag_ir_sm <= 4'd0;
+            jtag_ir_tx_data <= 32'd0;
+            jtag_ir_tx_count <= 8'd0;
+            jtag_ir_tms_o_reg <= 1'd0;
+            jtag_ir_tdi_o_reg <= 1'd0;
+            rx_valid[CMD_INDEX_JTAG_IR] <= 1'd0;
+            delay_clk_en[CMD_INDEX_JTAG_IR] <= 1'd0;
+            clock_oen[CMD_INDEX_JTAG_IR] <= 1'd0;
+            swj_busy[CMD_INDEX_JTAG_IR] <= 1'd0;
+        end
+        else begin
+            rx_valid[CMD_INDEX_JTAG_IR] <= 1'd0;
+            delay_clk_en[CMD_INDEX_JTAG_IR] <= 1'd1;
+            
             case (jtag_ir_sm)
                 // Idle state - wait for command
                 4'd0: begin // BEGIN
@@ -945,8 +947,31 @@ module DAP_Seqence (
                     end
                 end
             endcase
+        end
+    end
 
-            // SEQ_CMD_JTAG_IDCODE
+    // ============================================================================
+    // JTAG_IDCODE 命令实现
+    // ============================================================================
+    always @(posedge sclk or negedge resetn) begin
+        if (!resetn) begin
+            jtag_idcode_sm <= 1'd0;
+            jtag_idcode_tx_sm <= 4'd0;
+            jtag_idcode_tx_count <= 6'd0;
+            jtag_idcode_rx_sm <= 4'd0;
+            jtag_idcode_rx_count <= 6'd0;
+            jtag_idcode_rx_data <= 32'd0;
+            jtag_idcode_tms_o_reg <= 1'd0;
+            jtag_idcode_tdi_o_reg <= 1'd0;
+            rx_valid[CMD_INDEX_JTAG_IDCODE] <= 1'd0;
+            delay_clk_en[CMD_INDEX_JTAG_IDCODE] <= 1'd0;
+            clock_oen[CMD_INDEX_JTAG_IDCODE] <= 1'd0;
+            swj_busy[CMD_INDEX_JTAG_IDCODE] <= 1'd0;
+        end
+        else begin
+            rx_valid[CMD_INDEX_JTAG_IDCODE] <= 1'd0;
+            delay_clk_en[CMD_INDEX_JTAG_IDCODE] <= 1'd1;
+            
             if (jtag_idcode_sm == 1'd0) begin
                 if (tx_valid && current_cmd == `SEQ_CMD_JTAG_IDCODE && swj_busy == 8'd0) begin
                     swj_busy[CMD_INDEX_JTAG_IDCODE] <= 1'd1;
@@ -1057,8 +1082,30 @@ module DAP_Seqence (
                     swj_busy[CMD_INDEX_JTAG_IDCODE] <= 1'd0;
                 end
             end
+        end
+    end
 
-            // CMD_JTAG_SEQUENCE
+    // ============================================================================
+    // JTAG_SEQ 命令实现
+    // ============================================================================
+    always @(posedge sclk or negedge resetn) begin
+        if (!resetn) begin
+            jtag_seq_sm <= 1'd0;
+            jtag_seq_tx_count <= 4'd0;
+            jtag_seq_rx_count <= 4'd0;
+            jtag_seq_tx_data <= 8'd0;
+            jtag_seq_rx_data <= 8'd0;
+            jtag_seq_tms_o_reg <= 1'd0;
+            jtag_seq_tdi_o_reg <= 1'd0;
+            rx_valid[CMD_INDEX_JTAG_SEQ] <= 1'd0;
+            delay_clk_en[CMD_INDEX_JTAG_SEQ] <= 1'd0;
+            clock_oen[CMD_INDEX_JTAG_SEQ] <= 1'd0;
+            swj_busy[CMD_INDEX_JTAG_SEQ] <= 1'd0;
+        end
+        else begin
+            rx_valid[CMD_INDEX_JTAG_SEQ] <= 1'd0;
+            delay_clk_en[CMD_INDEX_JTAG_SEQ] <= 1'd1;
+            
             case (jtag_seq_sm)
                 1'd0: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_JTAG_SEQ && swj_busy == 8'd0) begin
@@ -1101,8 +1148,38 @@ module DAP_Seqence (
                     end
                 end
             endcase
+        end
+    end
 
-            // SEQ_CMD_JTAG_TRANSFER
+    // ============================================================================
+    // JTAG_TRANSFER 命令实现
+    // ============================================================================
+    always @(posedge sclk or negedge resetn) begin
+        if (!resetn) begin
+            jtag_trans_sm <= 4'd0;
+            jtag_trans_retry_cnt <= 16'd0;
+            jtag_trans_retry_max <= 16'd0;
+            jtag_trans_index <= 3'd0;
+            jtag_trans_tx_sm <= 4'd0;
+            jtag_trans_rx_sm <= 4'd0;
+            jtag_trans_abort <= 1'd0;
+            jtag_trans_tx_data <= 35'd0;
+            jtag_trans_tx_shift <= 35'd0;
+            jtag_trans_tx_count <= 8'd0;
+            jtag_trans_rx_data <= 35'd0;
+            jtag_trans_rx_count <= 8'd0;
+            jtag_trans_rx_flag <= 3'd0;
+            jtag_trans_tms_o_reg <= 1'd0;
+            jtag_trans_tdi_o_reg <= 1'd0;
+            rx_valid[CMD_INDEX_JTAG_TRANS] <= 1'd0;
+            delay_clk_en[CMD_INDEX_JTAG_TRANS] <= 1'd0;
+            clock_oen[CMD_INDEX_JTAG_TRANS] <= 1'd0;
+            swj_busy[CMD_INDEX_JTAG_TRANS] <= 1'd0;
+        end
+        else begin
+            rx_valid[CMD_INDEX_JTAG_TRANS] <= 1'd0;
+            delay_clk_en[CMD_INDEX_JTAG_TRANS] <= 1'd1;
+
             case (jtag_trans_sm)
                 4'd0: begin
                     if (tx_valid && (current_cmd == `SEQ_CMD_JTAG_TRANSFER || current_cmd == `SEQ_CMD_JTAG_ABORT) && swj_busy == 8'd0) begin
