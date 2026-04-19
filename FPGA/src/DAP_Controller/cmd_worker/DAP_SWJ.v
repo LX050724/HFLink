@@ -79,34 +79,25 @@ module DAP_SWJ #(
 
 
     reg [3:0] SWJ_SWD_CR;
-    reg [7:0] SWJ_JTAG_CR;
-    reg [31:0] SWJ_JTAG_IR_CONF_REG [0:7];
+    reg [3:0] SWJ_JTAG_CR;
+    reg [19:0] SWJ_JTAG_IR_CONF_REG [0:7];
 
     wire [1:0] SWD_CONF_TURN = SWJ_SWD_CR[1:0];
     wire SWD_CONF_FORCE_DATA = SWJ_SWD_CR[2];
     wire SWD_CONF_TURN_CLK = SWJ_SWD_CR[3];
 
-    wire [7:0] JTAG_CR_COUNT = SWJ_JTAG_CR[7:0];
-    wire [13:0] JTAG_IR_BEFORE_CONF [0:7];
-    wire [13:0] JTAG_IR_AFTER_CONF [0:7];
-    wire [3:0] JTAG_IR_LEN_CONF [0:7];
+    wire [3:0] JTAG_CR_COUNT = SWJ_JTAG_CR[3:0];
 
-    generate
-        for (gi = 0; gi < 8; gi = gi + 1) begin : jtag_ir_conf_loop
-            assign JTAG_IR_BEFORE_CONF[gi] = SWJ_JTAG_IR_CONF_REG[gi][18+:14];
-            assign JTAG_IR_AFTER_CONF[gi] = SWJ_JTAG_IR_CONF_REG[gi][4+:14];
-            assign JTAG_IR_LEN_CONF[gi] = SWJ_JTAG_IR_CONF_REG[gi][3:0];
-        end
-    endgenerate
     assign SWD_MODE = SWJ_CR_MODE;
+
 
     always @(posedge clk or negedge resetn) begin : ahb_mem_write_ctrl
         if (!resetn) begin
             SWJ_CR <= 0;
             SWJ_SWD_CR <= 4'd0;
-            SWJ_JTAG_CR <= 8'd0;
+            SWJ_JTAG_CR <= 4'd0;
             for (i = 0; i < 8; i = i + 1) begin
-                SWJ_JTAG_IR_CONF_REG[i] <= 32'd0;
+                SWJ_JTAG_IR_CONF_REG[i] <= 20'd0;
             end
         end
         else begin
@@ -132,7 +123,9 @@ module DAP_SWJ #(
                             SWJ_SWD_CR <= ahb_wdata[3:0];
                         end
                     SWJ_JTAG_CR_ADDR[ADDRWIDTH-1:2]:
-                        AHB_WRITE_REG32(SWJ_JTAG_CR);
+                        if (ahb_byte_strobe[0]) begin
+                            SWJ_JTAG_CR <= ahb_wdata[3:0];
+                        end
                     SWJ_JTAG_IR_CONF0_ADDR[ADDRWIDTH-1:2]:
                         AHB_WRITE_REG32(SWJ_JTAG_IR_CONF_REG[0]);
                     SWJ_JTAG_IR_CONF1_ADDR[ADDRWIDTH-1:2]:
@@ -199,46 +192,6 @@ module DAP_SWJ #(
     wire [15:0] seq_rx_flag;
     wire [31:0] seq_rx_data;
 
-    DAP_Seqence dap_seqence_inst(
-                    // 控制器时钟
-                    .clk(clk),
-                    .resetn(resetn),
-
-                    // 串行时钟
-                    .sclk(sclk),
-                    .sclk_out(sclk_out),
-                    .sclk_negedge(sclk_negedge),
-                    .sclk_sampling(sclk_sampling),
-                    .sclk_sampling_en(sclk_sampling_en),
-
-                    // 控制器输入输出
-                    .seq_tx_valid(seq_tx_valid),
-                    .seq_tx_cmd(seq_tx_cmd),
-                    .seq_tx_data(seq_tx_data),
-                    .seq_tx_full(seq_tx_full),
-
-                    .seq_rx_valid(seq_rx_valid),
-                    .seq_rx_flag(seq_rx_flag),
-                    .seq_rx_data(seq_rx_data),
-
-                    .DAP_TRANS_WAIT_RETRY(SWJ_WAIT_RETRY),
-                    .SWD_TURN_CYCLE(SWD_CONF_TURN),
-                    .SWD_CONF_FORCE_DATA(SWD_CONF_FORCE_DATA),
-                    .SWD_CONF_TURN_CLK(SWD_CONF_TURN_CLK),
-
-                    // GPIO
-                    .SWCLK_TCK_O(SWCLK_TCK_O),
-                    .SWDIO_TMS_T(SWDIO_TMS_T),
-                    .SWDIO_TMS_O(SWDIO_TMS_O),
-                    .SWDIO_TMS_I(SWDIO_TMS_I),
-                    .SWO_TDO_I(SWO_TDO_I),
-                    .TDI_O(TDI_O),
-                    // input RTCK_I,
-                    .SRST_I(SRST_I),
-                    .SRST_O(SRST_O),
-                    .TRST_I(TRST_I),
-                    .TRST_O(TRST_O)
-                );
 
     localparam [1:0] SWJ_SEQ_SM_READ_NUM = 2'd0;
     localparam [1:0] SWJ_SEQ_SM_READ_DATA = 2'd1;
@@ -388,139 +341,137 @@ module DAP_SWJ #(
     wire swd_trans_requset_MASK = swd_trans_requset[5];
     wire swd_trans_requset_TIMESTAMP = swd_trans_requset[7];
 
+    // RAM write signals - independent registers for each state machine
+    // Note: packet_len is constant for swj_seq, swd_write_abort, swj_pins (always 1)
+    //       so no packet_len register needed for these state machines
+    reg [9:0] swj_seq_ram_write_addr;
+    reg [7:0] swj_seq_ram_write_data;
+    reg swj_seq_ram_write_en;
+
+    reg [9:0] swd_seq_ram_write_addr;
+    reg [7:0] swd_seq_ram_write_data;
+    reg swd_seq_ram_write_en;
+    reg [9:0] swd_seq_packet_len;
+
+    reg [9:0] swd_write_abort_ram_write_addr;
+    reg [7:0] swd_write_abort_ram_write_data;
+    reg swd_write_abort_ram_write_en;
+
+    reg [9:0] swj_pins_ram_write_addr;
+    reg [7:0] swj_pins_ram_write_data;
+    reg swj_pins_ram_write_en;
+
+    reg [9:0] swd_block_trans_ram_write_addr;
+    reg [7:0] swd_block_trans_ram_write_data;
+    reg swd_block_trans_ram_write_en;
+    reg [9:0] swd_block_trans_packet_len;
+
+    reg [9:0] swd_trans_ram_write_addr;
+    reg [7:0] swd_trans_ram_write_data;
+    reg swd_trans_ram_write_en;
+    reg [9:0] swd_trans_packet_len;
 
 
+    reg [`CMD_SWJ_RANGE] start_hold;
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            start_hold <= 12'd0;
+        end
+        else begin
+            if (start) begin
+                start_hold <= start;
+            end
+        end
+    end
+
+    // Combinational logic for RAM write signals and seq_tx signals based on active state machine
     always @(*) begin
-        casez ({start, 2'd0}) /* synthesis parallel_case */
+        // Default: no write
+        ram_write_addr = 10'd0;
+        ram_write_data = 8'd0;
+        ram_write_en = 1'd0;
+        packet_len = 10'd0;
+        seq_tx_cmd = 16'd0;
+        seq_tx_data = 32'd0;
+        seq_tx_valid = 1'd0;
+
+        casez ({start_hold, 2'd0}) /* synthesis parallel_case */
             `CMD_TRANSFER_BLOCK: begin
+                ram_write_addr = swd_block_trans_ram_write_addr;
+                ram_write_data = swd_block_trans_ram_write_data;
+                ram_write_en = swd_block_trans_ram_write_en;
+                packet_len = swd_block_trans_packet_len;
                 seq_tx_cmd = {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_block_trans_req};
                 seq_tx_data = swd_block_trans_data;
                 seq_tx_valid = swd_block_trans_seq_tx_valid;
-
-                // ram_write_addr
-                // ram_write_data
-                // ram_write_en
-                // packet_len
             end
             `CMD_TRANSFER: begin
+                ram_write_addr = swd_trans_ram_write_addr;
+                ram_write_data = swd_trans_ram_write_data;
+                ram_write_en = swd_trans_ram_write_en;
+                packet_len = swd_trans_packet_len;
                 seq_tx_cmd = {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_trans_trig_requset};
                 seq_tx_data = swd_trans_wdata;
                 seq_tx_valid = (swd_trans_sm & SWD_TRANS_SM_TRIGGER) != 27'd0;
-
-                // ram_write_addr
-                // ram_write_data
-                // ram_write_en
-                // packet_len
             end
             `CMD_WRITE_ABORT: begin
+                ram_write_addr = swd_write_abort_ram_write_addr;
+                ram_write_data = swd_write_abort_ram_write_data;
+                ram_write_en = swd_write_abort_ram_write_en;
+                packet_len = 10'd1;  // Write Abort always returns 1 byte
                 seq_tx_cmd = {`SEQ_CMD_SWD_TRANSFER, 8'd0, 4'd0};
                 seq_tx_data = swd_write_abort_data;
                 seq_tx_valid = (swd_write_abort_sm == SWD_WRITE_ABORT_READ_DATA3) && dap_in_tvalid;
             end
             `CMD_SWJ_PINS: begin
+                ram_write_addr = swj_pins_ram_write_addr;
+                ram_write_data = swj_pins_ram_write_data;
+                ram_write_en = swj_pins_ram_write_en;
+                packet_len = 10'd1;  // SWJ Pins always returns 1 byte (pin status)
                 seq_tx_cmd = {`SEQ_CMD_SWJ_PINS, swj_pins_output, swj_pins_select};
                 seq_tx_data = swj_pins_wait_time;
                 seq_tx_valid = (swj_pins_sm == SWJ_PINS_SM_READ_WAIT3) && dap_in_tvalid;
-
-                // ram_write_addr <= 10'd0;
-                // ram_write_data <= seq_rx_data[7:0];
-                // ram_write_en <= (swj_pins_sm == SWJ_PINS_SM_WAIT_RESPONE) && seq_rx_valid;
-                // packet_len <= 1'd1;
             end
             `CMD_SWJ_SEQUENCE: begin
+                ram_write_addr = swj_seq_ram_write_addr;
+                ram_write_data = swj_seq_ram_write_data;
+                ram_write_en = swj_seq_ram_write_en;
+                packet_len = 10'd1;  // SWJ Sequence always returns 1 byte
                 seq_tx_cmd = {`SEQ_CMD_SWD_SEQ, 7'd0, 1'd0, swj_seq_trans_num};
                 seq_tx_data = {24'd0, swj_seq_data};
                 seq_tx_valid = swj_seq_tx_valid;
-
-                // ram_write_addr = 10'd0;
-                // ram_write_data = 8'd0;
-                // ram_write_en = (swj_pins_sm == SWJ_SEQ_SM_READ_NUM);
-                // packet_len = 10'd1;
             end
             `CMD_SWD_SEQUENCE: begin
+                ram_write_addr = swd_seq_ram_write_addr;
+                ram_write_data = swd_seq_ram_write_data;
+                ram_write_en = swd_seq_ram_write_en;
+                packet_len = swd_seq_packet_len;
                 seq_tx_cmd = {`SEQ_CMD_SWD_SEQ, 7'd0, swd_seq_dir, swd_seq_trans_num};
                 seq_tx_data = {24'd0, swd_seq_send_data};
                 seq_tx_valid = swd_seq_tx_valid;
-
-                // ram_write_addr = swd_seq_ram_waddr;
-                // ram_write_data = seq_rx_data[7:0];
-                // ram_write_en = (swd_seq_sm == SWD_SEQ_SM_WAIT) && seq_rx_valid && swd_seq_dir;
-                // packet_len = ram_write_addr + 1'd1;
             end
             default: begin
-                seq_tx_cmd = 16'd0;
-                seq_tx_data = 32'd0;
-                seq_tx_valid = 1'd0;
+                // All signals already initialized to 0 above
             end
         endcase
     end
 
+    // SWJ Sequence Controller
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
-            ram_write_en <= 1'd0;
-            ram_write_data <= 8'd0;
-            ram_write_addr <= 10'd0;
-            done <= 0;
-            packet_len <= 1'd0;
-
+            swj_seq_ram_write_en <= 1'd0;
+            swj_seq_ram_write_data <= 8'd0;
+            swj_seq_ram_write_addr <= 10'd0;
             swj_seq_bit_num <= 0;
             swj_seq_trans_num <= 0;
             swj_seq_sm <= 0;
             swj_seq_data <= 0;
             swj_seq_tx_valid <= 0;
-
-            swd_seq_sm <= 0;
-            swd_seq_num <= 0;
-            swd_seq_dir <= 0;
-            swd_seq_bit_num <= 0;
-            swd_seq_trans_num <= 0;
-            swd_seq_send_data <= 0;
-            swd_seq_tx_valid <= 0;
-
-            swd_write_abort_sm <= 3'd0;
-            swd_write_abort_data <= 32'd0;
-
-            swj_pins_sm <= SWJ_PINS_SM_READ_OUTPUT;
-            swj_pins_output <= 6'd0;
-            swj_pins_select <= 6'd0;
-            swj_pins_wait_time <= 32'd0;
-
-            swd_block_trans_sm <= SWD_BTRANS_SM_READ_INDEX;
-            swd_block_trans_request_cnt <= 16'd0;
-            swd_block_trans_response_cnt <= 16'd0;
-            swd_block_trans_req <= 4'd0;
-            swd_block_trans_data <= 32'd0;
-            swd_block_need_post_read <= 1'd0;
-            swd_block_trans_seq_tx_valid <= 1'd0;
-            swd_block_trans_RnW <= 1'd0;
-            swd_block_trans_err_flag <= 1'd0;
-
-            swd_trans_post_read <= 0;
-            swd_trans_check_write <= 0;
-            swd_trans_has_error <= 0;
-            swd_trans_match_failed <= 1'd0;
-            swd_trans_wdata <= 32'd0;
-            swd_trans_sm <= SWD_TRANS_SM_READ_INDEX;
-            swd_trans_match_mask <= 32'd0;
-            swd_trans_num <= 8'd0;
-            swd_trans_cnt <= 8'd0;
-            swd_trans_requset <= 8'd0;
-            swd_trans_timestamp <= 1'd0;
-            swd_trans_match_cnt <= 1'd0;
-            swd_trans_seq_tx_valid <= 1'd0;
-            swd_trans_trig_requset <= 4'd0;
-            swd_trans_trig_ret_sm <= 26'd0;
-            swd_trans_trig_en_wdata <= 1'd0;
-            swd_trans_trig_en_wtime <= 1'd0;
-            swd_trans_trig_en_cnt <= 1'd0;
-            swd_trans_trig_wtime_first <= 1'd0;
+            done[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd0;
         end
         else begin
-            ram_write_en <= 1'd0;
-            swd_trans_seq_tx_valid <= 1'd0;
-            swd_block_trans_seq_tx_valid <= 1'd0;
+            swj_seq_ram_write_en <= 1'd0;
             swj_seq_tx_valid <= 1'd0;
-            swd_seq_tx_valid <= 1'd0;
 
             if (start[`CMD_SWJ_SEQUENCE_SHIFT]) begin
                 case (swj_seq_sm) /* synthesis parallel_case */
@@ -550,10 +501,9 @@ module DAP_SWJ #(
                                 swj_seq_sm <= SWJ_SEQ_SM_READ_DATA;
                             end
                             else begin
-                                ram_write_addr <= 10'd0;
-                                ram_write_data <= 8'd0;
-                                packet_len <= 1'd1;
-                                ram_write_en <= 1'd1;
+                                swj_seq_ram_write_addr <= 10'd0;
+                                swj_seq_ram_write_data <= 8'd0;
+                                swj_seq_ram_write_en <= 1'd1;
                                 swj_seq_sm <= SWJ_SEQ_SM_DONE;
                                 done[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd1;
                             end
@@ -567,15 +517,36 @@ module DAP_SWJ #(
                 swj_seq_sm <= SWJ_SEQ_SM_READ_NUM;
                 done[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd0;
             end
+        end
+    end
+
+    // SWD Sequence Controller
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            swd_seq_ram_write_en <= 1'd0;
+            swd_seq_ram_write_data <= 8'd0;
+            swd_seq_ram_write_addr <= 10'd0;
+            swd_seq_packet_len <= 1'd0;
+            swd_seq_sm <= 0;
+            swd_seq_num <= 0;
+            swd_seq_dir <= 0;
+            swd_seq_bit_num <= 0;
+            swd_seq_trans_num <= 0;
+            swd_seq_send_data <= 0;
+            swd_seq_tx_valid <= 0;
+            done[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd0;
+        end
+        else begin
+            swd_seq_ram_write_en <= 1'd0;
+            swd_seq_tx_valid <= 1'd0;
 
             if (start[`CMD_SWD_SEQUENCE_SHIFT]) begin
                 case (swd_seq_sm) /* synthesis parallel_case */
                     SWD_SEQ_SM_READ_SEQ_NUM: begin
                         if (dap_in_tvalid) begin
-                            ram_write_addr <= 10'd0;
-                            ram_write_data <= 8'd0;
-                            ram_write_en <= 1'd1;
-
+                            swd_seq_ram_write_addr <= 10'd0;
+                            swd_seq_ram_write_data <= 8'd0;
+                            swd_seq_ram_write_en <= 1'd1;
                             swd_seq_num <= dap_in_tdata;
                             swd_seq_sm <= SWD_SEQ_SM_READ_SEQ_INFO;
                         end
@@ -600,9 +571,9 @@ module DAP_SWJ #(
                             swd_seq_bit_num <= swd_seq_bit_num - swd_seq_trans_num;
 
                             if (swd_seq_dir) begin
-                                ram_write_addr <= ram_write_addr + 1'd1;
-                                ram_write_data <= seq_rx_data[7:0];
-                                ram_write_en <= 1'd1;
+                                swd_seq_ram_write_addr <= swd_seq_ram_write_addr + 1'd1;
+                                swd_seq_ram_write_data <= seq_rx_data[7:0];
+                                swd_seq_ram_write_en <= 1'd1;
                             end
 
                             if ((swd_seq_bit_num - swd_seq_trans_num) != 7'd0) begin
@@ -617,12 +588,10 @@ module DAP_SWJ #(
                                     swd_seq_sm <= SWD_SEQ_SM_DONE;
                                 end
                             end
-
                         end
                     end
-
                     default: begin
-                        packet_len <= ram_write_addr + 1'd1;
+                        swd_seq_packet_len <= swd_seq_ram_write_addr + 1'd1;
                         done[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd1;
                     end
                 endcase
@@ -631,6 +600,21 @@ module DAP_SWJ #(
                 swd_seq_sm <= SWD_SEQ_SM_READ_SEQ_NUM;
                 done[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd0;
             end
+        end
+    end
+
+    // SWD Write Abort Controller
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            swd_write_abort_ram_write_en <= 1'd0;
+            swd_write_abort_ram_write_data <= 8'd0;
+            swd_write_abort_ram_write_addr <= 10'd0;
+            swd_write_abort_sm <= 3'd0;
+            swd_write_abort_data <= 32'd0;
+            done[`CMD_WRITE_ABORT_SHIFT] <= 1'd0;
+        end
+        else begin
+            swd_write_abort_ram_write_en <= 1'd0;
 
             if (start[`CMD_WRITE_ABORT_SHIFT] && SWJ_CR_MODE == 1'd1) begin
                 case (swd_write_abort_sm) /* synthesis parallel_case */
@@ -665,14 +649,13 @@ module DAP_SWJ #(
                     end
                     SWD_WRITE_ABORT_WAIT_RESPONE: begin
                         if (seq_rx_valid) begin
-                            ram_write_addr <= 10'd0;
-                            ram_write_en <= 1'd1;
-                            packet_len <= 1'd1;
+                            swd_write_abort_ram_write_addr <= 10'd0;
+                            swd_write_abort_ram_write_en <= 1'd1;
                             if (seq_rx_flag[3:0] == 4'b0001) begin
-                                ram_write_data <= 8'h00;
+                                swd_write_abort_ram_write_data <= 8'h00;
                             end
                             else begin
-                                ram_write_data <= 8'hff;
+                                swd_write_abort_ram_write_data <= 8'hff;
                             end
                             swd_write_abort_sm <= SWD_WRITE_ABORT_DONE;
                             done[`CMD_WRITE_ABORT_SHIFT] <= 1'd1;
@@ -686,7 +669,23 @@ module DAP_SWJ #(
                 swd_write_abort_sm <= SWD_WRITE_ABORT_READ_INDEX;
                 done[`CMD_WRITE_ABORT_SHIFT] <= 1'd0;
             end
+        end
+    end
 
+    // SWJ Pins Controller
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            swj_pins_ram_write_en <= 1'd0;
+            swj_pins_ram_write_data <= 8'd0;
+            swj_pins_ram_write_addr <= 10'd0;
+            swj_pins_sm <= SWJ_PINS_SM_READ_OUTPUT;
+            swj_pins_output <= 6'd0;
+            swj_pins_select <= 6'd0;
+            swj_pins_wait_time <= 32'd0;
+            done[`CMD_SWJ_PINS_SHIFT] <= 1'd0;
+        end
+        else begin
+            swj_pins_ram_write_en <= 1'd0;
 
             if (start[`CMD_SWJ_PINS_SHIFT]) begin
                 case(swj_pins_sm) /* synthesis parallel_case */
@@ -728,10 +727,9 @@ module DAP_SWJ #(
                     end
                     SWJ_PINS_SM_WAIT_RESPONE: begin
                         if (seq_rx_valid) begin
-                            ram_write_addr <= 10'd0;
-                            ram_write_data <= seq_rx_data[7:0];
-                            ram_write_en <= 1'd1;
-                            packet_len <= 1'd1;
+                            swj_pins_ram_write_addr <= 10'd0;
+                            swj_pins_ram_write_data <= seq_rx_data[7:0];
+                            swj_pins_ram_write_en <= 1'd1;
                             done[`CMD_SWJ_PINS_SHIFT] <= 1'd1;
                             swj_pins_sm <= SWJ_PINS_SM_DONE;
                         end
@@ -744,12 +742,36 @@ module DAP_SWJ #(
                 swj_pins_sm <= SWJ_PINS_SM_READ_OUTPUT;
                 done[`CMD_SWJ_PINS_SHIFT] <= 1'd0;
             end
+        end
+    end
+
+    // SWD Block Transfer Controller
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            swd_block_trans_ram_write_en <= 1'd0;
+            swd_block_trans_ram_write_data <= 8'd0;
+            swd_block_trans_ram_write_addr <= 10'd0;
+            swd_block_trans_packet_len <= 1'd0;
+            swd_block_trans_sm <= SWD_BTRANS_SM_READ_INDEX;
+            swd_block_trans_request_cnt <= 16'd0;
+            swd_block_trans_response_cnt <= 16'd0;
+            swd_block_trans_req <= 4'd0;
+            swd_block_trans_data <= 32'd0;
+            swd_block_need_post_read <= 1'd0;
+            swd_block_trans_seq_tx_valid <= 1'd0;
+            swd_block_trans_RnW <= 1'd0;
+            swd_block_trans_err_flag <= 1'd0;
+            done[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
+        end
+        else begin
+            swd_block_trans_ram_write_en <= 1'd0;
+            swd_block_trans_seq_tx_valid <= 1'd0;
 
             if (start[`CMD_TRANSFER_BLOCK_SHIFT] && SWJ_CR_MODE == 1'd1) begin
                 case (swd_block_trans_sm)
                     SWD_BTRANS_SM_READ_INDEX: begin // 读取DAP Index抛弃
-                        ram_write_addr <= 10'd2;
-                        packet_len <= 10'd3;
+                        swd_block_trans_ram_write_addr <= 10'd2;
+                        swd_block_trans_packet_len <= 10'd3;
                         swd_block_trans_err_flag <= 1'd0;
                         swd_block_trans_response_cnt <= 16'd0;
                         if (dap_in_tvalid) begin
@@ -865,14 +887,14 @@ module DAP_SWJ #(
                             endcase
                         end
 
-                        if (swd_block_trans_err_flag || (seq_rx_valid && seq_rx_flag[3:0] != 4'b0001)) begin // 错误状态
+                        if (swd_block_trans_err_flag || (seq_rx_valid && seq_rx_flag[3:0] != 4'b0001)) begin
                             swd_block_trans_err_flag <= 1'd1;
                             swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
                             if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
                                 swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
                             end
                             else begin
-                                if (swd_block_trans_req[1]) begin // RnW
+                                if (swd_block_trans_req[1]) begin
                                     swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
                                 end
                                 else begin
@@ -881,7 +903,6 @@ module DAP_SWJ #(
                             end
                         end
                     end
-
                     SWD_BTRANS_SM_WAIT_RDBUFF: begin
                         if (seq_rx_valid) begin
                             if (swd_block_trans_RnW) begin
@@ -892,31 +913,30 @@ module DAP_SWJ #(
                             end
                         end
                     end
-
                     SWD_BTRANS_SM_WRITE_DATA_0: begin
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= seq_rx_data[7:0];
-                        ram_write_en <= 1'd1;
+                        swd_block_trans_ram_write_addr <= swd_block_trans_ram_write_addr + 1'd1;
+                        swd_block_trans_ram_write_data <= seq_rx_data[7:0];
+                        swd_block_trans_ram_write_en <= 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_1;
                     end
                     SWD_BTRANS_SM_WRITE_DATA_1: begin
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= seq_rx_data[15:8];
-                        ram_write_en <= 1'd1;
+                        swd_block_trans_ram_write_addr <= swd_block_trans_ram_write_addr + 1'd1;
+                        swd_block_trans_ram_write_data <= seq_rx_data[15:8];
+                        swd_block_trans_ram_write_en <= 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_2;
                     end
                     SWD_BTRANS_SM_WRITE_DATA_2: begin
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= seq_rx_data[23:16];
-                        ram_write_en <= 1'd1;
+                        swd_block_trans_ram_write_addr <= swd_block_trans_ram_write_addr + 1'd1;
+                        swd_block_trans_ram_write_data <= seq_rx_data[23:16];
+                        swd_block_trans_ram_write_en <= 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_3;
                     end
                     SWD_BTRANS_SM_WRITE_DATA_3: begin
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= seq_rx_data[31:24];
-                        ram_write_en <= 1'd1;
+                        swd_block_trans_ram_write_addr <= swd_block_trans_ram_write_addr + 1'd1;
+                        swd_block_trans_ram_write_data <= seq_rx_data[31:24];
+                        swd_block_trans_ram_write_en <= 1'd1;
 
-                        if (swd_block_trans_req[0] == 1'd0) begin // 读DP
+                        if (swd_block_trans_req[0] == 1'd0) begin
                             if (swd_block_trans_request_cnt == 16'd0) begin
                                 swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
                             end
@@ -924,8 +944,8 @@ module DAP_SWJ #(
                                 swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
                             end
                         end
-                        else begin // 读AP
-                            if (swd_block_trans_request_cnt == 16'd0) begin // 最后一次读AP接RDBUFF
+                        else begin
+                            if (swd_block_trans_request_cnt == 16'd0) begin
                                 swd_block_trans_req <= 4'b1110;
                                 swd_block_trans_seq_tx_valid <= 1'd1;
                                 swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
@@ -935,24 +955,23 @@ module DAP_SWJ #(
                             end
                         end
                     end
-
                     SWD_BTRANS_SM_WRITE_COUNT_L: begin
-                        ram_write_addr <= 10'd0;
-                        ram_write_data <= swd_block_trans_response_cnt[7:0];
-                        ram_write_en <= 1'd1;
-                        packet_len <= ram_write_addr + 1'd1;
+                        swd_block_trans_ram_write_addr <= 10'd0;
+                        swd_block_trans_ram_write_data <= swd_block_trans_response_cnt[7:0];
+                        swd_block_trans_ram_write_en <= 1'd1;
+                        swd_block_trans_packet_len <= swd_block_trans_ram_write_addr + 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_H;
                     end
                     SWD_BTRANS_SM_WRITE_COUNT_H: begin
-                        ram_write_addr <= 10'd1;
-                        ram_write_data <= swd_block_trans_response_cnt[15:8];
-                        ram_write_en <= 1'd1;
+                        swd_block_trans_ram_write_addr <= 10'd1;
+                        swd_block_trans_ram_write_data <= swd_block_trans_response_cnt[15:8];
+                        swd_block_trans_ram_write_en <= 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_RESPONSE;
                     end
                     SWD_BTRANS_SM_WRITE_RESPONSE: begin
-                        ram_write_addr <= 10'd2;
-                        ram_write_data <= {5'd0, seq_rx_flag[2:0]};
-                        ram_write_en <= 1'd1;
+                        swd_block_trans_ram_write_addr <= 10'd2;
+                        swd_block_trans_ram_write_data <= {5'd0, seq_rx_flag[2:0]};
+                        swd_block_trans_ram_write_en <= 1'd1;
                         swd_block_trans_sm <= SWD_BTRANS_SM_END;
                         done[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd1;
                     end
@@ -962,6 +981,40 @@ module DAP_SWJ #(
                 swd_block_trans_sm <= SWD_BTRANS_SM_READ_INDEX;
                 done[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
             end
+        end
+    end
+
+    // SWD Transfer Controller
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            swd_trans_ram_write_en <= 1'd0;
+            swd_trans_ram_write_data <= 8'd0;
+            swd_trans_ram_write_addr <= 10'd0;
+            swd_trans_packet_len <= 1'd0;
+            swd_trans_post_read <= 0;
+            swd_trans_check_write <= 0;
+            swd_trans_has_error <= 0;
+            swd_trans_match_failed <= 1'd0;
+            swd_trans_wdata <= 32'd0;
+            swd_trans_sm <= SWD_TRANS_SM_READ_INDEX;
+            swd_trans_match_mask <= 32'd0;
+            swd_trans_num <= 8'd0;
+            swd_trans_cnt <= 8'd0;
+            swd_trans_requset <= 8'd0;
+            swd_trans_timestamp <= 1'd0;
+            swd_trans_match_cnt <= 1'd0;
+            swd_trans_seq_tx_valid <= 1'd0;
+            swd_trans_trig_requset <= 4'd0;
+            swd_trans_trig_ret_sm <= 26'd0;
+            swd_trans_trig_en_wdata <= 1'd0;
+            swd_trans_trig_en_wtime <= 1'd0;
+            swd_trans_trig_en_cnt <= 1'd0;
+            swd_trans_trig_wtime_first <= 1'd0;
+            done[`CMD_TRANSFER_SHIFT] <= 1'd0;
+        end
+        else begin
+            swd_trans_ram_write_en <= 1'd0;
+            swd_trans_seq_tx_valid <= 1'd0;
 
             if (start[`CMD_TRANSFER_SHIFT] && SWJ_CR_MODE == 1'd1) begin
                 case(swd_trans_sm)
@@ -970,8 +1023,8 @@ module DAP_SWJ #(
                         swd_trans_check_write <= 1'd0;
                         swd_trans_has_error <= 1'd0;
                         swd_trans_match_failed <= 1'd0;
-                        packet_len <= 10'd2;
-                        ram_write_addr <= 10'd1;
+                        swd_trans_packet_len <= 10'd2;
+                        swd_trans_ram_write_addr <= 10'd1;
                         if (dap_in_tvalid) begin
                             swd_trans_sm <= SWD_TRANS_SM_READ_COUNT;
                         end
@@ -1146,7 +1199,6 @@ module DAP_SWJ #(
                             swd_trans_match_cnt <= swd_trans_match_cnt + 1'd1;
                         end
                     end
-
                     SWD_TRANS_SM_CHECK_WIRTE: begin
 `ifdef SIMULATION
                         $display("SWD_TRANS_SM_CHECK_WIRTE pr:%d wc:%d", swd_trans_post_read, swd_trans_check_write);
@@ -1164,17 +1216,16 @@ module DAP_SWJ #(
                             swd_trans_sm <= SWD_TRANS_SM_WRTE_COUNT;
                         end
                     end
-
                     SWD_TRANS_SM_WRTE_COUNT: begin
-                        ram_write_addr <= 10'd0;
-                        ram_write_data <= swd_trans_cnt;
-                        ram_write_en <= 1'd1;
+                        swd_trans_ram_write_addr <= 10'd0;
+                        swd_trans_ram_write_data <= swd_trans_cnt;
+                        swd_trans_ram_write_en <= 1'd1;
                         swd_trans_sm <= swd_trans_sm << 1'd1;
                     end
                     SWD_TRANS_SM_WRTE_STATUS: begin
-                        ram_write_addr <= 10'd1;
-                        ram_write_data <= {3'd0, swd_trans_match_failed, seq_rx_flag[3:0]};
-                        ram_write_en <= 1'd1;
+                        swd_trans_ram_write_addr <= 10'd1;
+                        swd_trans_ram_write_data <= {3'd0, swd_trans_match_failed, seq_rx_flag[3:0]};
+                        swd_trans_ram_write_en <= 1'd1;
                         swd_trans_sm <= SWD_TRANS_SM_DONE;
                     end
                     SWD_TRANS_SM_TRIGGER: begin
@@ -1229,31 +1280,31 @@ module DAP_SWJ #(
                         end
                     end
                     SWD_TRANS_SM_WRITE_DATA0: begin
-                        packet_len <= packet_len + 1'd1;
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= seq_rx_data[7:0];
-                        ram_write_en <= 1'd1;
+                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
+                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
+                        swd_trans_ram_write_data <= seq_rx_data[7:0];
+                        swd_trans_ram_write_en <= 1'd1;
                         swd_trans_sm <= swd_trans_sm << 1'd1;
                     end
                     SWD_TRANS_SM_WRITE_DATA1: begin
-                        packet_len <= packet_len + 1'd1;
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= seq_rx_data[15:8];
-                        ram_write_en <= 1'd1;
+                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
+                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
+                        swd_trans_ram_write_data <= seq_rx_data[15:8];
+                        swd_trans_ram_write_en <= 1'd1;
                         swd_trans_sm <= swd_trans_sm << 1'd1;
                     end
                     SWD_TRANS_SM_WRITE_DATA2: begin
-                        packet_len <= packet_len + 1'd1;
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= seq_rx_data[23:16];
-                        ram_write_en <= 1'd1;
+                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
+                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
+                        swd_trans_ram_write_data <= seq_rx_data[23:16];
+                        swd_trans_ram_write_en <= 1'd1;
                         swd_trans_sm <= swd_trans_sm << 1'd1;
                     end
                     SWD_TRANS_SM_WRITE_DATA3: begin
-                        packet_len <= packet_len + 1'd1;
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= seq_rx_data[31:24];
-                        ram_write_en <= 1'd1;
+                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
+                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
+                        swd_trans_ram_write_data <= seq_rx_data[31:24];
+                        swd_trans_ram_write_en <= 1'd1;
                         if (!swd_trans_trig_en_wtime || swd_trans_trig_wtime_first) begin
                             swd_trans_sm <= swd_trans_trig_ret_sm;
                         end
@@ -1262,31 +1313,31 @@ module DAP_SWJ #(
                         end
                     end
                     SWD_TRANS_SM_WRITE_TIME0: begin
-                        packet_len <= packet_len + 1'd1;
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= swd_trans_timestamp[7:0];
-                        ram_write_en <= 1'd1;
+                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
+                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
+                        swd_trans_ram_write_data <= swd_trans_timestamp[7:0];
+                        swd_trans_ram_write_en <= 1'd1;
                         swd_trans_sm <= swd_trans_sm << 1'd1;
                     end
                     SWD_TRANS_SM_WRITE_TIME1: begin
-                        packet_len <= packet_len + 1'd1;
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= swd_trans_timestamp[15:8];
-                        ram_write_en <= 1'd1;
+                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
+                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
+                        swd_trans_ram_write_data <= swd_trans_timestamp[15:8];
+                        swd_trans_ram_write_en <= 1'd1;
                         swd_trans_sm <= swd_trans_sm << 1'd1;
                     end
                     SWD_TRANS_SM_WRITE_TIME2: begin
-                        packet_len <= packet_len + 1'd1;
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= swd_trans_timestamp[23:16];
-                        ram_write_en <= 1'd1;
+                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
+                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
+                        swd_trans_ram_write_data <= swd_trans_timestamp[23:16];
+                        swd_trans_ram_write_en <= 1'd1;
                         swd_trans_sm <= swd_trans_sm << 1'd1;
                     end
                     SWD_TRANS_SM_WRITE_TIME3: begin
-                        packet_len <= packet_len + 1'd1;
-                        ram_write_addr <= ram_write_addr + 1'd1;
-                        ram_write_data <= swd_trans_timestamp[31:24];
-                        ram_write_en <= 1'd1;
+                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
+                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
+                        swd_trans_ram_write_data <= swd_trans_timestamp[31:24];
+                        swd_trans_ram_write_en <= 1'd1;
                         swd_trans_sm <= swd_trans_trig_wtime_first ? SWD_TRANS_SM_WRITE_DATA0 : swd_trans_trig_ret_sm;
                     end
                 endcase
@@ -1301,6 +1352,37 @@ module DAP_SWJ #(
             end
         end
     end
+
+// `ifdef USE_JTAG
+    // JTAG IR 配置解码逻辑
+    // 根据命令选择对应的配置
+    reg [19:0] jtag_ir_conf_selected;
+    reg [2:0] jtag_index;
+    reg jtag_index_recv_status;
+    wire [3:0] jtag_ir_len = jtag_ir_conf_selected[19:16];
+    wire [7:0] jtag_ir_before_len = jtag_ir_conf_selected[15:8];
+    wire [7:0] jtag_ir_after_len = jtag_ir_conf_selected[7:0];
+
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            jtag_index_recv_status <= 1'd0;
+            jtag_ir_conf_selected <= 20'd0;
+            jtag_index <= 3'd0;
+        end
+        else begin
+            if (jtag_index_recv_status == 1'd0) begin
+                if ((start[`CMD_WRITE_ABORT_SHIFT] | start[`CMD_TRANSFER_SHIFT] | start[`CMD_TRANSFER_BLOCK_SHIFT] | start[`CMD_JTAG_IDCODE_SHIFT]) & dap_in_tvalid) begin
+                    jtag_index_recv_status <= 1'd1;
+                    jtag_index <= dap_in_tdata[2:0];
+                    jtag_ir_conf_selected <= SWJ_JTAG_IR_CONF_REG[dap_in_tdata[2:0]];
+                end
+            end
+            else if (done) begin
+                jtag_index_recv_status <= 1'd0;
+            end
+        end
+    end
+// `endif
 
     assign dap_in_tready[`CMD_SWJ_SEQUENCE_SHIFT] = ~swj_seq_sm[1];
 
@@ -1354,4 +1436,53 @@ module DAP_SWJ #(
             swd_trans_sm <= SWD_TRANS_SM_TRIGGER;
         end
     endtask
+
+    DAP_Seqence dap_seqence_inst(
+                    // 控制器时钟
+                    .clk(clk),
+                    .resetn(resetn),
+
+                    // 串行时钟
+                    .sclk(sclk),
+                    .sclk_out(sclk_out),
+                    .sclk_negedge(sclk_negedge),
+                    .sclk_sampling(sclk_sampling),
+                    .sclk_sampling_en(sclk_sampling_en),
+
+                    // 控制器输入输出
+                    .seq_tx_valid(seq_tx_valid),
+                    .seq_tx_cmd(seq_tx_cmd),
+                    .seq_tx_data(seq_tx_data),
+                    .seq_tx_full(seq_tx_full),
+
+                    .seq_rx_valid(seq_rx_valid),
+                    .seq_rx_flag(seq_rx_flag),
+                    .seq_rx_data(seq_rx_data),
+
+                    .DAP_TRANS_WAIT_RETRY(SWJ_WAIT_RETRY),
+                    .SWD_TURN_CYCLE(SWD_CONF_TURN),
+                    .SWD_CONF_FORCE_DATA(SWD_CONF_FORCE_DATA),
+                    .SWD_CONF_TURN_CLK(SWD_CONF_TURN_CLK),
+                    
+// `ifdef USE_JTAG
+                    // JTAG IR配置信号 (解码后的值由DAP_SWJ根据cmd[8:6]选择)
+                    .JTAG_COUNT(JTAG_CR_COUNT),
+                    .JTAG_IR_LEN(jtag_ir_len),
+                    .JTAG_IR_BEFORE_LEN(jtag_ir_before_len),
+                    .JTAG_IR_AFTER_LEN(jtag_ir_after_len),
+// `endif
+
+                    // GPIO
+                    .SWCLK_TCK_O(SWCLK_TCK_O),
+                    .SWDIO_TMS_T(SWDIO_TMS_T),
+                    .SWDIO_TMS_O(SWDIO_TMS_O),
+                    .SWDIO_TMS_I(SWDIO_TMS_I),
+                    .SWO_TDO_I(SWO_TDO_I),
+                    .TDI_O(TDI_O),
+                    // input RTCK_I,
+                    .SRST_I(SRST_I),
+                    .SRST_O(SRST_O),
+                    .TRST_I(TRST_I),
+                    .TRST_O(TRST_O)
+                );
 endmodule

@@ -93,8 +93,8 @@
 
 /**
  * JTAG_Transfer
- * | 15 14 13 12 | 11 10  9 |    8  7  6 |          5 |           4 |  3 |  2 |   1 |     0 |
- * |  0  1  1  1 |  0  0  0 | JTAG Index | Match Mask | Value Match | A3 | A2 | RnW | APnDP |
+ * | 15 14 13 12 | 11 10  9 |    8  7  6 | 5 | 4 |  3 |  2 |   1 |     0 |
+ * |  0  1  1  1 |  0  0  0 | JTAG Index | 0 | 0 | A3 | A2 | RnW | APnDP |
  */
 `define SEQ_CMD_JTAG_TRANSFER       4'd7
 
@@ -111,3 +111,5 @@
  *  Bit 5: nTRST
  */
 `define SEQ_CMD_SWJ_PINS                4'd15
+
+`define USE_JTAG
