@@ -64,8 +64,8 @@
 
 /**
  * JTAG_Sequence
- * | 15 14 13 12 | 11 10  9  8 |   7 | 6  5  4  3  2  1  0 |
- * |  0  0  1  1 |  0  0  0  0 | TMS |   Number of cycles  |
+ * | 15 14 13 12 | 11 10  9  8 |   7 | 6  5  4 |        3  2  1  0 |
+ * |  0  0  1  1 |  0  0  0  0 | TMS | 0  0  0 | Number of cycles  |
  * Number of cycles [1-64]
  */
 `define SEQ_CMD_JTAG_SEQ            4'd3
@@ -111,5 +111,3 @@
  *  Bit 5: nTRST
  */
 `define SEQ_CMD_SWJ_PINS                4'd15
-
-`define USE_JTAG

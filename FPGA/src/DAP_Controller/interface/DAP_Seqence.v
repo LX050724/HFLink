@@ -1,7 +1,5 @@
 `include "DAP_Cmd.v"
 
-// `define USE_FIFO
-
 module DAP_Seqence (
         // 控制器时钟
         input clk,
@@ -29,13 +27,11 @@ module DAP_Seqence (
         input SWD_CONF_FORCE_DATA,
         input SWD_CONF_TURN_CLK,
 
-`ifdef USE_JTAG
         // JTAG IR配置信号
         input [3:0] JTAG_COUNT,
         input [3:0] JTAG_IR_LEN,
         input [7:0] JTAG_IR_BEFORE_LEN,
         input [7:0] JTAG_IR_AFTER_LEN,
-`endif
 
         // GPIO
         output SWCLK_TCK_O,
@@ -46,57 +42,23 @@ module DAP_Seqence (
         output reg TDI_O,
         // input RTCK_I,
         input SRST_I,
-        output reg SRST_O,
+        output SRST_O,
         input TRST_I,
-        output reg TRST_O
+        output TRST_O
     );
 
-`ifdef USE_FIFO
+    localparam CMD_INDEX_SWD_SEQ = 0;
+    localparam CMD_INDEX_SWJ_PINS = 1;
+    localparam CMD_INDEX_SWD_TRANS = 2;
+    localparam CMD_INDEX_JTAG_IR = 3;
+    localparam CMD_INDEX_JTAG_IDCODE = 4;
+    localparam CMD_INDEX_JTAG_SEQ = 5;
+    localparam CMD_INDEX_JTAG_TRANS = 6;
+    localparam CMD_INDEX_MAX = 7;
 
-    reg tx_nxt;
-    wire [1:0] seq_tx_fifo_rnum;
-    wire tx_valid = seq_tx_fifo_rnum[0];
-    wire [15:0] tx_cmd;
-    wire [31:0] tx_data;
-
-    fifo_top seq_tx_fifo(
-                 .WrReset(~resetn), //input WrReset
-                 .RdReset(~resetn), //input RdReset
-                 .WrClk(clk), //input WrClk
-                 .WrEn(seq_tx_valid), //input WrEn
-                 .Data({seq_tx_cmd, seq_tx_data}), //input [47:0] Data
-
-                 .RdClk(sclk), //input RdClk
-                 .RdEn(1'd1), //input RdEn
-                 .Q({tx_cmd, tx_data}), //output [47:0] Q
-                 .Rnum(seq_tx_fifo_rnum), //output [1:0] Rnum
-                 .Empty(), //output Empty
-                 .Full() //output Full
-             );
-
-    reg rx_valid;
-    reg [15:0] rx_flag;
-    reg [31:0] rx_data;
-    wire [1:0] seq_rx_fifo_rnum;
-    assign seq_rx_valid = seq_rx_fifo_rnum[0];
-    fifo_top seq_rx_fifo(
-                 .WrReset(~resetn), //input WrReset
-                 .RdReset(~resetn), //input RdReset
-                 .WrClk(sclk), //input WrClk
-                 .WrEn(rx_valid), //input WrEn
-                 .Data({rx_flag, rx_data}), //input [47:0] Data
-
-                 .RdClk(clk), //input RdClk
-                 .RdEn(1'd1), //input RdEn
-                 .Q({seq_rx_flag, seq_rx_data}), //output [47:0] Q
-                 .Rnum(Rnum), //output [1:0] Rnum
-                 .Empty(), //output Empty
-                 .Full() //output Full
-             );
-
-`else
-    reg rx_valid;
-    reg rx_valid2;
+    reg [CMD_INDEX_MAX-1:0] swj_busy;
+    reg [CMD_INDEX_MAX-1:0] rx_valid;
+    reg [CMD_INDEX_MAX-1:0] rx_valid2;
     reg [15:0] rx_flag;
     reg [31:0] rx_data;
 
@@ -104,7 +66,6 @@ module DAP_Seqence (
     reg tx_valid_ff1;
     reg tx_valid_ff2;
     reg tx_valid;
-    reg tx_nxt;
     reg [15:0] tx_cmd;
     reg [31:0] tx_data;
     always @(posedge sclk or negedge resetn) begin
@@ -121,7 +82,7 @@ module DAP_Seqence (
                 tx_cmd <= seq_tx_cmd;
                 tx_data <= seq_tx_data;
             end
-            else if (tx_nxt) begin
+            else if (swj_busy) begin
                 tx_valid <= 1'd0;
             end
             tx_valid_ff1 <= seq_tx_valid;
@@ -131,25 +92,64 @@ module DAP_Seqence (
 
     reg rx_valid_ff1;
     reg rx_valid_ff2;
+    reg rx_valid_ff3;
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
             rx_valid_ff1 <= 1'd0;
             rx_valid_ff2 <= 1'd0;
+            rx_valid_ff3 <= 1'd0;
         end
         else begin
-            rx_valid_ff1 <= rx_valid;
+            rx_valid_ff1 <= rx_valid != 0 || rx_valid2 != 0;  // 只要任一命令的rx_valid被置位就认为有有效数据
             rx_valid_ff2 <= rx_valid_ff1;
+            rx_valid_ff3 <= rx_valid_ff2;
         end
     end
 
     assign seq_rx_flag = rx_flag;
     assign seq_rx_data = rx_data;
-    assign seq_rx_valid = rx_valid_ff2;
+    assign seq_rx_valid = rx_valid_ff2 & (rx_valid_ff3 ^ rx_valid_ff2);  // rx_valid在当前周期被置位，前一个周期没有被置位，说明是新数据到达
+    // assign seq_rx_valid = rx_valid_ff2;
 
-`endif
+    // ========== 输出多路复用器 ==========
+    always @(*) begin
+        // 初始化为0
+        rx_flag = 16'd0;
+        rx_data = 32'd0;
+
+        casez((rx_valid | rx_valid2)) /*synthesis parallel_case*/
+            7'b??????1: begin // SWD SEQ
+                rx_flag = 16'd0;
+                rx_data = {24'd0, swd_seq_rx_data};
+            end
+            7'b?????1?: begin // SWJ PINS
+                rx_flag = 16'd0;
+                rx_data = {24'd0, swj_pins_rx_data};
+            end
+            7'b????1??: begin // SWD TRANSFER
+                rx_flag = {12'd0, swd_trans_rx_flag};
+                rx_data = swd_trans_rx_data;
+            end
+            7'b???1???: begin // JTAG IR
+                rx_flag = 16'd0;
+                rx_data = 32'd0;
+            end
+            7'b??1????: begin // JTAG IDCODE
+                rx_flag = 16'd0;
+                rx_data = jtag_idcode_rx_data;
+            end
+            7'b?1?????: begin // JTAG SEQ
+                rx_flag = 16'd0;
+                rx_data = {24'd0, jtag_seq_rx_data};
+            end
+            7'b1??????: begin // JTAG TRANSFER
+                rx_flag = {13'd0, jtag_trans_rx_flag};
+                rx_data = jtag_trans_rx_data[34:3];
+            end
+        endcase
+    end
 
     // JTAG IR 配置值直接来自输入端口，由DAP_SWJ根据cmd[8:6]解码后传递
-    wire [2:0] jtag_index = tx_cmd[8:6];
     wire [7:0] jtag_ir_after_len = JTAG_IR_AFTER_LEN;
     wire [3:0] jtag_ir_len = JTAG_IR_LEN;
     wire [7:0] jtag_ir_before_len = JTAG_IR_BEFORE_LEN;
@@ -157,17 +157,108 @@ module DAP_Seqence (
 
     wire [3:0] current_cmd = tx_cmd[15:12];
 
-    reg clock_oen;
+    // ========== 各命令独立clock_oen寄存器数组 ==========
+    reg [CMD_INDEX_MAX-1:0] clock_oen;
+    reg [CMD_INDEX_MAX-1:0] delay_clk_en;
     reg clock_idle;
     assign SWCLK_TCK_O = clock_oen ? sclk_out : clock_idle;
 
-    reg [7:0] swj_busy;
-    reg delay_clk_en;
 
     reg [1:0] swj_seq_sm;
     reg [7:0] swj_seq_count;
 
+    // ========== 各命令独立RX寄存器 ==========
+    // SWD_SEQ
+    reg [7:0] swd_seq_rx_data;
+    reg [3:0] swd_seq_rx_flag;
 
+    // SWJ_PINS
+    reg [7:0] swj_pins_rx_data;
+
+    // SWD_TRANSFER
+    reg [31:0] swd_trans_rx_data;
+    reg [3:0] swd_trans_rx_flag;
+
+    // JTAG_IDCODE
+    reg [31:0] jtag_idcode_rx_data;
+
+    reg [2:0] jtag_trans_rx_flag;
+
+    // ========== SWJ_PINS 基础GPIO寄存器 (缺省值/空闲状态) ==========
+    reg swj_pins_swdio_o_reg;
+    reg swj_pins_swdio_t_reg;
+    reg swj_pins_tdi_o_reg;
+    reg swj_pins_srst_o_reg;
+    reg swj_pins_trst_o_reg;
+
+    // ========== SWD_SEQ 专用GPIO寄存器 (仅swdio) ==========
+    reg swd_seq_swdio_o_reg;
+    reg swd_seq_swdio_t_reg;
+
+    // ========== SWD_TRANSFER 专用GPIO寄存器 (仅swdio) ==========
+    reg swd_trans_swdio_o_reg;
+    reg swd_trans_swdio_t_reg;
+
+    // ========== JTAG_IR 专用GPIO寄存器 ==========
+    reg jtag_ir_tms_o_reg;
+    reg jtag_ir_tdi_o_reg;
+
+    // ========== JTAG_IDCODE 专用GPIO寄存器 ==========
+    reg jtag_idcode_tms_o_reg;
+    reg jtag_idcode_tdi_o_reg;
+
+    // ========== JTAG_SEQ 专用GPIO寄存器 ==========
+    reg jtag_seq_tms_o_reg;
+    reg jtag_seq_tdi_o_reg;
+
+    // ========== JTAG_TRANS 专用GPIO寄存器 ==========
+    reg jtag_trans_tms_o_reg;
+    reg jtag_trans_tdi_o_reg;
+
+
+    // ========== GPIO 输出选择器 ==========
+    always @(*) begin
+        casez (swj_busy) /*synthesis parallel_case*/
+            7'b??????1: begin  // SWD_SEQ 活跃
+                SWDIO_TMS_O = swd_seq_swdio_o_reg;
+                SWDIO_TMS_T = swd_seq_swdio_t_reg;
+                TDI_O       = swj_pins_tdi_o_reg;
+            end
+            7'b????1??: begin  // SWD_TRANSFER 活跃
+                SWDIO_TMS_O = swd_trans_swdio_o_reg;
+                SWDIO_TMS_T = swd_trans_swdio_t_reg;
+                TDI_O       = swj_pins_tdi_o_reg;
+            end
+            7'b???1???: begin  // JTAG_IR 活跃
+                SWDIO_TMS_O = jtag_ir_tms_o_reg;
+                SWDIO_TMS_T = 1'd0;
+                TDI_O       = jtag_ir_tdi_o_reg;
+            end
+            7'b??1????: begin  // JTAG_IDCODE 活跃
+                SWDIO_TMS_O = jtag_idcode_tms_o_reg;
+                SWDIO_TMS_T = 1'd0;
+                TDI_O       = jtag_idcode_tdi_o_reg;
+            end
+            7'b?1?????: begin  // JTAG_SEQ 活跃
+                SWDIO_TMS_O = jtag_seq_tms_o_reg;
+                SWDIO_TMS_T = 1'd0;
+                TDI_O       = jtag_seq_tdi_o_reg;
+            end
+            7'b1??????: begin  // JTAG_TRANS 活跃
+                SWDIO_TMS_O = jtag_trans_tms_o_reg;
+                SWDIO_TMS_T = 1'd0;
+                TDI_O       = jtag_trans_tdi_o_reg;
+            end
+            default: begin
+                SWDIO_TMS_O = swj_pins_swdio_o_reg;
+                SWDIO_TMS_T = swj_pins_swdio_t_reg;
+                TDI_O       = swj_pins_tdi_o_reg;
+            end
+        endcase
+    end
+    assign SRST_O = swj_pins_srst_o_reg;
+    assign TRST_O = swj_pins_trst_o_reg;
+    // ==============================================
 
     // JTAG IR registers
     reg [3:0] jtag_ir_sm;
@@ -179,14 +270,31 @@ module DAP_Seqence (
     reg [3:0] jtag_idcode_tx_sm;
     reg [5:0] jtag_idcode_tx_count;
     reg [3:0] jtag_idcode_rx_sm;
-    reg [31:0] jtag_idcode_rx_data;
     reg [5:0] jtag_idcode_rx_count;
+
+    reg jtag_seq_sm;
+    reg [3:0] jtag_seq_tx_count;
+    reg [3:0] jtag_seq_rx_count;
+    reg [7:0] jtag_seq_tx_data;
+    reg [7:0] jtag_seq_rx_data;
+
+    reg jtag_trans_sm;
+    reg [15:0] jtag_trans_retry_cnt;
+    reg [15:0] jtag_trans_retry_max;
+    reg [2:0] jtag_trans_index;
+    reg [3:0] jtag_trans_tx_sm;
+    reg [3:0] jtag_trans_rx_sm;
+    reg jtag_trans_abort;
+    reg [34:0] jtag_trans_tx_data;
+    reg [34:0] jtag_trans_tx_shift;
+    reg [7:0] jtag_trans_tx_count;
+    reg [34:0] jtag_trans_rx_data;
+    reg [7:0] jtag_trans_rx_count;
 
     reg swd_seq_sm;
     reg swd_seq_dir;
     reg [3:0] swd_seq_num;
     reg [7:0] swd_seq_tx_data;
-    reg [7:0] swd_seq_rx_data;
     reg [3:0] swd_seq_tx_count;
     reg [3:0] swd_seq_rx_count;
 
@@ -241,12 +349,12 @@ module DAP_Seqence (
     reg swd_trans_tx_APnDP;
     reg swd_trans_tx_RnW;
     reg [3:2] swd_trans_tx_ADDR;
+    reg [31:0] swd_trans_tx_shift;
     reg [31:0] swd_trans_tx_data;
     reg swd_trans_tx_parity;
 
     reg [3:0] swd_trans_rx_sm;
     reg [11:0] swd_trans_rx_cnt;
-    reg [31:0] swd_trans_rx_data;
     reg swd_trans_rx_parity;
     reg [2:0] swd_trans_rx_ack;
 
@@ -267,29 +375,65 @@ module DAP_Seqence (
     localparam [3:0] JTAG_CAPUTRE_IR = 4'hE;
     localparam [3:0] JTAG_TEST_LOGIC_RESET = 4'hF;
 
-    assign sclk_sampling_en = delay_clk_en;
+    assign sclk_sampling_en = delay_clk_en == 5'h1f;  // 只要有任一命令的延时使能被关闭就复位采样时钟
 
     always @(posedge sclk or negedge resetn) begin
         if (!resetn) begin
-`ifdef USE_FIFO
-            rx_valid <= 0;
-`else
-            rx_valid <= 0;
             rx_valid2 <= 0;
-`endif
 
-            clock_oen <= 1'd0;
+            // SWJ_PINS GPIO 寄存器复位
+            swj_pins_swdio_o_reg <= 1'd0;
+            swj_pins_swdio_t_reg <= 1'd1;  // 默认输入模式
+            swj_pins_tdi_o_reg <= 1'd0;
+            swj_pins_srst_o_reg <= 1'd0;
+            swj_pins_trst_o_reg <= 1'd0;
+
+            // SWD_SEQ GPIO + RX 寄存器复位
+            swd_seq_swdio_o_reg <= 1'd0;
+            swd_seq_swdio_t_reg <= 1'd0;
+            swd_seq_rx_data <= 8'd0;
+
+            // SWJ_PINS RX 寄存器复位
+            swj_pins_rx_data <= 8'd0;
+
+            // SWD_TRANSFER GPIO + RX + TX 寄存器复位
+            swd_trans_swdio_o_reg <= 1'd0;
+            swd_trans_swdio_t_reg <= 1'd0;
+            swd_trans_rx_data <= 32'd0;
+            swd_trans_rx_flag <= 4'd0;
+            swd_trans_tx_shift <= 32'd0;
+            swd_trans_tx_data <= 32'd0;
+
+            // JTAG_GPIO 寄存器复位
+            jtag_ir_tms_o_reg <= 1'd0;
+            jtag_ir_tdi_o_reg <= 1'd0;
+            jtag_idcode_tms_o_reg <= 1'd0;
+            jtag_idcode_tdi_o_reg <= 1'd0;
+            jtag_idcode_rx_data <= 32'd0;
+            jtag_seq_tms_o_reg <= 1'd0;
+            jtag_seq_tdi_o_reg <= 1'd0;
+            jtag_seq_rx_data <= 8'd0;
+            jtag_trans_tms_o_reg <= 1'd0;
+            jtag_trans_tdi_o_reg <= 1'd0;
+
+            // JTAG_TRANS 寄存器复位
+            jtag_trans_sm <= 4'd0;
+            jtag_trans_retry_cnt <= 16'd0;
+            jtag_trans_retry_max <= 16'd0;
+            jtag_trans_index <= 3'd0;
+            jtag_trans_tx_sm <= 4'd0;
+            jtag_trans_rx_sm <= 4'd0;
+            jtag_trans_abort <= 1'd0;
+            jtag_trans_tx_data <= 35'd0;
+            jtag_trans_tx_shift <= 35'd0;
+            jtag_trans_tx_count <= 8'd0;
+            jtag_trans_rx_data <= 35'd0;
+            jtag_trans_rx_count <= 8'd0;
+
+            clock_oen <= 5'd0;
             clock_idle <= 1'd1;
-            rx_flag <= 16'd0;
-            tx_nxt <= 1'd0;
-            rx_data <= 32'd0;
-            SWDIO_TMS_T <= 1'd0;
-            SWDIO_TMS_O <= 1'd0;
-            TDI_O <= 1'd1;
-            SRST_O <= 1'd1;
-            TRST_O <= 1'd1;
             swj_busy <= 8'd0;
-            delay_clk_en <= 1'd0;
+            delay_clk_en <= 5'd0;
 
             swj_seq_sm <= 0;
             swj_seq_count <= 0;
@@ -342,48 +486,36 @@ module DAP_Seqence (
 
         end
         else begin
-            tx_nxt <= 1'd0;
-
-`ifdef USE_FIFO
-
-            rx_valid <= 1'd0;
-`else
-            rx_valid2 <= rx_valid;
-            if (rx_valid2)
-                rx_valid <= 1'd0;
-`endif
-
-            delay_clk_en <= 1'd1;
-
-
+            rx_valid <= 0;
+            rx_valid2 <= swj_busy ? rx_valid : rx_valid | rx_valid2;
+            delay_clk_en <= 5'h1f;  // 默认所有命令的延时时钟使能都打开，由具体命令状态机控制时钟输出
 
             // SEQ_CMD_SWD_SEQ
             case (swd_seq_sm)
                 1'd0: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_SWD_SEQ && swj_busy == 8'd0) begin
-                        tx_nxt <= 1'd1;
+                        swj_busy[CMD_INDEX_SWD_SEQ] <= 1'd1;
                         swd_seq_num <= tx_cmd[3:0];
                         swd_seq_dir <= tx_cmd[4];
                         swd_seq_tx_count <= 4'd0;
                         swd_seq_rx_count <= 4'd0;
                         swd_seq_tx_data <= tx_data[7:0];
                         swd_seq_rx_data <= 8'd0;
-
                         swd_seq_sm <= 2'd1;
-                        delay_clk_en <= 1'd0;
+                        delay_clk_en[CMD_INDEX_SWD_SEQ] <= 1'd0;
                     end
                 end
                 1'd1: begin
                     if (sclk_negedge) begin
                         if (swd_seq_tx_count != swd_seq_num) begin
                             swd_seq_tx_count <= swd_seq_tx_count + 1'd1;
-                            {swd_seq_tx_data, SWDIO_TMS_O} <= {1'd0, swd_seq_tx_data};
+                            {swd_seq_tx_data, swd_seq_swdio_o_reg} <= {1'd0, swd_seq_tx_data};
 
-                            SWDIO_TMS_T <= swd_seq_dir;
-                            clock_oen <= 1'd1;
+                            swd_seq_swdio_t_reg <= swd_seq_dir;
+                            clock_oen[CMD_INDEX_SWD_SEQ] <= 1'd1;
                         end
                         else begin
-                            clock_oen <= 1'd0;
+                            clock_oen[CMD_INDEX_SWD_SEQ] <= 1'd0;
                         end
                     end
 
@@ -394,15 +526,14 @@ module DAP_Seqence (
                         end
                         else begin
                             // swd_seq_rx_done <= 1'd1;
-                            SWDIO_TMS_T <= 1'd0;
-                            SWDIO_TMS_O <= 1'd0;
+                            swd_seq_swdio_t_reg <= 1'd0;
+                            swd_seq_swdio_o_reg <= 1'd0;
                         end
 
                         if (swd_seq_tx_count == swd_seq_num && swd_seq_rx_count == swd_seq_num) begin
-                            rx_data[7:0] <= swd_seq_rx_data;
-                            rx_flag <= swd_seq_num;
-                            rx_valid <= 1'd1;
-                            swj_busy[0] <= 1'd0;
+                            swd_seq_rx_data <= swd_seq_rx_data;
+                            rx_valid[CMD_INDEX_SWD_SEQ] <= 1'd1;
+                            swj_busy[CMD_INDEX_SWD_SEQ] <= 1'd0;
                             swd_seq_sm <= 1'd0;
                         end
                     end
@@ -420,26 +551,26 @@ module DAP_Seqence (
 
                         // 位 1：SWDIO/TMS
                         if (swj_pin_select[1]) begin
-                            SWDIO_TMS_T <= 1'd0;
-                            SWDIO_TMS_O <= swj_pin_output[1];
+                            swj_pins_swdio_t_reg <= 1'd0;
+                            swj_pins_swdio_o_reg <= swj_pin_output[1];
                         end
                         else begin
-                            SWDIO_TMS_T <= 1'd1;
+                            swj_pins_swdio_t_reg <= 1'd1;
                         end
 
                         // 位 2：TDI
                         if (swj_pin_select[2]) begin
-                            TDI_O <= swj_pin_output[2];
+                            swj_pins_tdi_o_reg <= swj_pin_output[2];
                         end
 
                         // 位 5：nTRST
                         if (swj_pin_select[5]) begin
-                            TRST_O <= swj_pin_output[5];
+                            swj_pins_trst_o_reg <= swj_pin_output[5];
                         end
 
                         // 位 7：nRESET
                         if (swj_pin_select[7]) begin
-                            SRST_O <= swj_pin_output[7];
+                            swj_pins_srst_o_reg <= swj_pin_output[7];
                         end
 
                         swj_pin_select_reg <= swj_pin_select;
@@ -447,8 +578,7 @@ module DAP_Seqence (
                         swj_pin_sm <= 1'd1;
                         swj_us_cnt <= swj_pin_delay;
                         swj_tick_cnt <= 8'd0;
-                        swj_busy[1] <= 1'd1;
-                        tx_nxt <= 1'd1;
+                        swj_busy[CMD_INDEX_SWJ_PINS] <= 1'd1;
                     end
                 end
 
@@ -465,11 +595,10 @@ module DAP_Seqence (
                         (swj_us_cnt == 32'd0) ||
                         ((swj_pin_select_reg & (swj_pin_read ^ swj_pin_output_reg)) == 8'd0)
                     ) begin
-                        rx_data[7:0] <= swj_pin_read;
-                        rx_flag <= 16'd0;
-                        rx_valid <= 1'd1;
+                        swj_pins_rx_data <= swj_pin_read;
                         swj_pin_sm <= 1'd0;
-                        swj_busy[1] <= 1'd0;
+                        rx_valid[CMD_INDEX_SWJ_PINS] <= 1'd1;
+                        swj_busy[CMD_INDEX_SWJ_PINS] <= 1'd0;
                     end
                 end
             endcase
@@ -478,8 +607,7 @@ module DAP_Seqence (
             case (swd_trans_sm) /*synthesis parallel_case*/
                 SWD_TRANS_SM_IDLE: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_SWD_TRANSFER && swj_busy == 8'd0) begin
-                        tx_nxt <= 1'd1;
-                        swj_busy[2] <= 1'd1;
+                        swj_busy[CMD_INDEX_SWD_TRANS] <= 1'd1;
 
                         // 装载数据
                         swd_trans_tx_data <= tx_data[31:0];
@@ -495,7 +623,7 @@ module DAP_Seqence (
 
                         swd_trans_rx_parity <= 1'd0;
 
-                        delay_clk_en <= 0; // 复位延迟时钟标志
+                        delay_clk_en[CMD_INDEX_SWD_TRANS] <= 1'd0; // 复位延迟时钟标志
                         swd_trans_sm <= SWD_TRANS_SM_WORKING;
                     end
                 end
@@ -503,60 +631,61 @@ module DAP_Seqence (
                 SWD_TRANS_SM_WORKING: begin
                     if (sclk_negedge) begin
                         swd_trans_tx_sm <= swd_trans_tx_sm + 4'd1;
-                        case (swd_trans_tx_sm)
+                        case (swd_trans_tx_sm) /*synthesis parallel_case*/
                             SWD_TRANS_IO_START: begin
                                 swd_trans_tx_cnt <= 12'd0;
-                                clock_oen <= 1'd1;
-                                SWDIO_TMS_O <= 1'd1;
-                                SWDIO_TMS_T <= 1'd0;
+                                clock_oen[CMD_INDEX_SWD_TRANS] <= 1'd1;
+                                swd_trans_swdio_o_reg <= 1'd1;
+                                swd_trans_swdio_t_reg <= 1'd0;
+                                swd_trans_tx_shift <= swd_trans_tx_data;
                                 // delay_clk_en <= 0;
                             end
 
                             SWD_TRANS_IO_APnDP: begin
-                                SWDIO_TMS_O <= swd_trans_tx_APnDP;
+                                swd_trans_swdio_o_reg <= swd_trans_tx_APnDP;
                             end
 
                             SWD_TRANS_IO_RnW: begin
-                                SWDIO_TMS_O <= swd_trans_tx_RnW;
+                                swd_trans_swdio_o_reg <= swd_trans_tx_RnW;
                             end
 
                             SWD_TRANS_IO_A2: begin
-                                SWDIO_TMS_O <= swd_trans_tx_ADDR[2];
+                                swd_trans_swdio_o_reg <= swd_trans_tx_ADDR[2];
                             end
 
                             SWD_TRANS_IO_A3: begin
-                                SWDIO_TMS_O <= swd_trans_tx_ADDR[3];
+                                swd_trans_swdio_o_reg <= swd_trans_tx_ADDR[3];
                             end
 
                             SWD_TRANS_IO_PARITY: begin
-                                SWDIO_TMS_O <= swd_trans_tx_APnDP ^ swd_trans_tx_RnW ^ swd_trans_tx_ADDR[2] ^ swd_trans_tx_ADDR[3];
+                                swd_trans_swdio_o_reg <= swd_trans_tx_APnDP ^ swd_trans_tx_RnW ^ swd_trans_tx_ADDR[2] ^ swd_trans_tx_ADDR[3];
                             end
 
                             SWD_TRANS_IO_STOP: begin
-                                SWDIO_TMS_O <= 1'd0;
+                                swd_trans_swdio_o_reg <= 1'd0;
                             end
 
                             SWD_TRANS_IO_PARK: begin
-                                SWDIO_TMS_O <= 1'd1;
+                                swd_trans_swdio_o_reg <= 1'd1;
                                 swd_trans_tx_parity <= 1'd0;
                             end
 
                             SWD_TRANS_IO_TURN1: begin
-                                SWDIO_TMS_T <= 1'd1;
+                                swd_trans_swdio_t_reg <= 1'd1;
                                 if (swd_trans_tx_cnt[1:0] == swd_trans_turn_cycle) begin
                                     swd_trans_tx_cnt <= 12'd0;
-                                    clock_oen <= SWD_CONF_TURN_CLK;
+                                    clock_oen[CMD_INDEX_SWD_TRANS] <= SWD_CONF_TURN_CLK;
                                 end
                                 else begin
                                     swd_trans_tx_cnt <= swd_trans_tx_cnt + 1'd1;
                                     swd_trans_tx_sm <= SWD_TRANS_IO_TURN1;
                                     if (swd_trans_tx_cnt == 12'd1) begin
-                                        clock_oen <= SWD_CONF_TURN_CLK;
+                                        clock_oen[CMD_INDEX_SWD_TRANS] <= SWD_CONF_TURN_CLK;
                                     end
                                 end
                             end
                             SWD_TRANS_IO_ACK0: begin
-                                clock_oen <= 1'd1;
+                                clock_oen[CMD_INDEX_SWD_TRANS] <= 1'd1;
                             end
                             // SWD_TRANS_IO_ACK1: // Nothing
                             // SWD_TRANS_IO_ACK2: // Nothing
@@ -565,7 +694,7 @@ module DAP_Seqence (
                                 // 读模式下用于等待ACK结果，ACK失败生成TURN数量时钟后退出，ACK成功生成TURN段之后进入数据段生成全部时钟
                                 if (swd_trans_tx_cnt[1:0] == swd_trans_turn_cycle) begin
                                     swd_trans_tx_cnt <= 12'd0;
-                                    clock_oen <= swd_trans_tx_RnW | SWD_CONF_TURN_CLK;
+                                    clock_oen[CMD_INDEX_SWD_TRANS] <= swd_trans_tx_RnW | SWD_CONF_TURN_CLK;
 
                                     // 判断RX ACK状态
                                     if (swd_trans_rx_ack == 3'b001 || swd_force_data) begin // OK
@@ -579,15 +708,15 @@ module DAP_Seqence (
                                     swd_trans_tx_cnt <= swd_trans_tx_cnt + 1'd1;
                                     swd_trans_tx_sm <= SWD_TRANS_IO_TURN2;
                                     if (swd_trans_tx_cnt == 12'd1) begin
-                                        clock_oen <= swd_trans_tx_RnW | SWD_CONF_TURN_CLK;
+                                        clock_oen[CMD_INDEX_SWD_TRANS] <= swd_trans_tx_RnW | SWD_CONF_TURN_CLK;
                                     end
                                 end
                             end
                             SWD_TRANS_IO_DATA: begin
-                                clock_oen <= 1'd1;
-                                {swd_trans_tx_data, SWDIO_TMS_O} <= {1'd0, swd_trans_tx_data}; // 移位输出
+                                clock_oen[CMD_INDEX_SWD_TRANS] <= 1'd1;
+                                {swd_trans_tx_shift, swd_trans_swdio_o_reg} <= {1'd0, swd_trans_tx_shift}; // 移位输出
                                 if (swd_trans_tx_RnW) begin
-                                    SWDIO_TMS_O <= 1'd0;
+                                    swd_trans_swdio_o_reg <= 1'd0;
                                 end
 
                                 swd_trans_tx_parity <= swd_trans_tx_parity ^ swd_trans_tx_data[0];
@@ -600,14 +729,14 @@ module DAP_Seqence (
                                 end
                             end
                             SWD_TRANS_IO_DATA_PATIYY: begin
-                                SWDIO_TMS_O <= swd_trans_tx_RnW ? 1'd0 : swd_trans_tx_parity;
+                                swd_trans_swdio_o_reg <= swd_trans_tx_RnW ? 1'd0 : swd_trans_tx_parity;
                             end
                             SWD_TRANS_IO_DONE: begin
                                 swd_trans_tx_sm <= SWD_TRANS_IO_DONE;
                                 swd_trans_sm <= SWD_TRANS_SM_CHECK;
-                                clock_oen <= 1'd0;
-                                SWDIO_TMS_O <= 1'd0;
-                                SWDIO_TMS_T <= 1'd0;
+                                clock_oen[CMD_INDEX_SWD_TRANS] <= 1'd0;
+                                swd_trans_swdio_o_reg <= 1'd0;
+                                swd_trans_swdio_t_reg <= 1'd0;
                             end
                         endcase
                     end
@@ -642,7 +771,7 @@ module DAP_Seqence (
                                     // 读请求ACK后跟数据段
                                     // 写请求ACK后无读取内容
                                     swd_trans_rx_sm <= swd_trans_tx_RnW ? SWD_TRANS_IO_DATA : SWD_TRANS_IO_DONE;
-                                    SWDIO_TMS_T <= swd_trans_tx_RnW;
+                                    swd_trans_swdio_t_reg <= swd_trans_tx_RnW;
                                 end
                                 else begin
                                     // WAIT / ERROR / Other
@@ -662,8 +791,8 @@ module DAP_Seqence (
                             end
                             SWD_TRANS_IO_DATA_PATIYY: begin
                                 swd_trans_rx_parity <= swd_trans_rx_parity ^ SWDIO_TMS_I;
-                                SWDIO_TMS_O <= 1'd0;
-                                SWDIO_TMS_T <= 1'd0;
+                                swd_trans_swdio_o_reg <= 1'd0;
+                                swd_trans_swdio_t_reg <= 1'd0;
                             end
                             SWD_TRANS_IO_DONE: begin
                                 swd_trans_rx_sm <= SWD_TRANS_IO_DONE;
@@ -678,49 +807,44 @@ module DAP_Seqence (
                     if (swd_trans_rx_ack == 3'b010 && swd_trans_retry_cnt != swd_trans_retry_max) begin
                         // WAIT 重试
                         swd_trans_retry_cnt <= swd_trans_retry_cnt + 1'd1;
-                        delay_clk_en <= 1'd0;
+                        delay_clk_en[CMD_INDEX_SWD_TRANS] <= 1'd0;
                         swd_trans_sm <= SWD_TRANS_SM_WORKING;
                     end
                     else begin
                         // OK / WAIT Timeout / ERROR / Other
                         swd_trans_sm <= SWD_TRANS_SM_IDLE;
-
-                        rx_data <= swd_trans_rx_data;
                         case (swd_trans_rx_ack)
                             3'b001, 3'b010, 3'b100:
-                                rx_flag <= {12'd0, swd_trans_rx_parity, swd_trans_rx_ack};
+                                swd_trans_rx_flag <= {swd_trans_rx_parity, swd_trans_rx_ack};
                             default:
-                                rx_flag <= {12'd0, swd_trans_rx_parity, 3'b111};
+                                swd_trans_rx_flag <= {swd_trans_rx_parity, 3'b111};
                         endcase
-                        rx_valid <= 1'd1;
-                        swj_busy[2] <= 1'd0;
+                        rx_valid[CMD_INDEX_SWD_TRANS] <= 1'd1;
+                        swj_busy[CMD_INDEX_SWD_TRANS] <= 1'd0;
                     end
                 end
             endcase
 
-`ifdef USE_JTAG
             // SEQ_CMD_JTAG_IR
             case (jtag_ir_sm)
                 // Idle state - wait for command
                 4'd0: begin // BEGIN
                     if (tx_valid && current_cmd == `SEQ_CMD_JTAG_IR && swj_busy == 8'd0) begin
-                        tx_nxt <= 1'd1;
-                        swj_busy[3] <= 1'd1;
+                        swj_busy[CMD_INDEX_JTAG_IR] <= 1'd1;
 
                         // Get JTAG index from bits [8:6] of tx_cmd
                         jtag_ir_tx_data <= tx_data;
 
                         // Start clock and set TMS high
-                        clock_oen <= 1'd1;
+                        clock_oen[CMD_INDEX_JTAG_IR] <= 1'd1;
                         jtag_ir_sm <= 4'd1;
                     end
                 end
 
                 4'd1: begin // JTAG_RUN_TEST_IDLE -> JTAG_SELECT_DR_SCAN
                     if (sclk_negedge) begin
-                        SWDIO_TMS_O <= 1'd1;
-                        SWDIO_TMS_T <= 1'd0;
-                        TDI_O <= 1'd0;
+                        jtag_ir_tms_o_reg <= 1'd1;
+                        jtag_ir_tdi_o_reg <= 1'd0;
                         jtag_ir_sm <= 4'd2;
 
                     end
@@ -728,15 +852,15 @@ module DAP_Seqence (
 
                 4'd2: begin // JTAG_SELECT_DR_SCAN -> JTAG_SELECT_IR_SCAN
                     if (sclk_negedge) begin
-                        SWDIO_TMS_O <= 1'd1;
-                        TDI_O <= 1'd0;
+                        jtag_ir_tms_o_reg <= 1'd1;
+                        jtag_ir_tdi_o_reg <= 1'd0;
                         jtag_ir_sm <= 4'd3;
                     end
                 end
 
                 4'd3: begin // JTAG_SELECT_IR_SCAN -> JTAG_CAPUTRE_IR
                     if (sclk_negedge) begin
-                        SWDIO_TMS_O <= 1'd0;
+                        jtag_ir_tms_o_reg <= 1'd0;
                         jtag_ir_tx_count <= jtag_ir_before_len;
                         jtag_ir_sm <= 4'd4;
                     end
@@ -744,15 +868,15 @@ module DAP_Seqence (
 
                 4'd4: begin // JTAG_CAPUTRE_IR -> BEFOR==0 ? JTAG_SHIFT_IR : JTAG_SHIFT_IR.BEFOR
                     if (sclk_negedge) begin
-                        SWDIO_TMS_O <= 1'd0;
+                        jtag_ir_tms_o_reg <= 1'd0;
                         jtag_ir_sm <= (jtag_ir_tx_count == 8'd0) ? 4'd6 : 4'd5;
                     end
                 end
 
                 4'd5: begin // JTAG_SHIFT_IR.BEFOR -> JTAG_SHIFT_IR
                     if (sclk_negedge) begin
-                        SWDIO_TMS_O <= 1'd0;
-                        TDI_O <= 1'd1;
+                        jtag_ir_tms_o_reg <= 1'd0;
+                        jtag_ir_tdi_o_reg <= 1'd1;
                         if (jtag_ir_tx_count != 8'd0) begin
                             jtag_ir_tx_count <= jtag_ir_tx_count - 1'd1;
                         end
@@ -765,8 +889,8 @@ module DAP_Seqence (
 
                 4'd6: begin // JTAG_SHIFT_IR -> AFTER==0 ? JTAG_EXIT1_IR : JTAG_SHIFT_IR.AFTER
                     if (sclk_negedge) begin
-                        SWDIO_TMS_O <= 1'd0;
-                        {jtag_ir_tx_data, TDI_O} <= {1'd0, jtag_ir_tx_data};
+                        jtag_ir_tms_o_reg <= 1'd0;
+                        {jtag_ir_tx_data, jtag_ir_tdi_o_reg} <= {1'd0, jtag_ir_tx_data};
 
                         if (jtag_ir_tx_count != 8'd0) begin
                             jtag_ir_tx_count <= jtag_ir_tx_count - 1'd1;
@@ -775,7 +899,7 @@ module DAP_Seqence (
                             jtag_ir_tx_count <= jtag_ir_after_len;
                             if (jtag_ir_after_len == 8'd0) begin
                                 jtag_ir_sm <= 4'd8;
-                                SWDIO_TMS_O <= 1'd1;
+                                jtag_ir_tms_o_reg <= 1'd1;
                             end
                             else begin
                                 jtag_ir_sm <= 4'd7;
@@ -786,8 +910,8 @@ module DAP_Seqence (
 
                 4'd7: begin // JTAG_SHIFT_IR.AFTER -> JTAG_EXIT1_IR
                     if (sclk_negedge) begin
-                        SWDIO_TMS_O <= 1'd1;
-                        TDI_O <= 1'd1;
+                        jtag_ir_tms_o_reg <= 1'd1;
+                        jtag_ir_tdi_o_reg <= 1'd1;
                         if (jtag_ir_tx_count != 8'd0) begin
                             jtag_ir_tx_count <= jtag_ir_tx_count - 1'd1;
                         end
@@ -799,25 +923,24 @@ module DAP_Seqence (
 
                 4'd8: begin // JTAG_EXIT1_IR -> JTAG_UPDATE_IR
                     if (sclk_negedge) begin
-                        SWDIO_TMS_O <= 1'd1;
+                        jtag_ir_tms_o_reg <= 1'd1;
                         jtag_ir_sm <= 4'd9;
                     end
                 end
 
                 4'd9: begin // JTAG_UPDATE_IR -> JTAG_RUN_TEST_IDLE
                     if (sclk_negedge) begin
-                        SWDIO_TMS_O <= 1'd0;
+                        jtag_ir_tms_o_reg <= 1'd0;
                         jtag_ir_sm <= 4'd10;
                     end
                 end
 
                 4'd10: begin // FINISH
                     if (sclk_negedge) begin
-                        SWDIO_TMS_T <= 1'd0;
-                        SWDIO_TMS_O <= 1'd0;
-                        clock_oen <= 1'd0;
-                        rx_valid <= 1'd1;
-                        swj_busy[3] <= 1'd0;
+                        jtag_ir_tms_o_reg <= 1'd0;
+                        clock_oen[CMD_INDEX_JTAG_IR] <= 1'd0;
+                        rx_valid[CMD_INDEX_JTAG_IR] <= 1'd1;
+                        swj_busy[CMD_INDEX_JTAG_IR] <= 1'd0;
                         jtag_ir_sm <= 4'd0;
                     end
                 end
@@ -826,13 +949,14 @@ module DAP_Seqence (
             // SEQ_CMD_JTAG_IDCODE
             if (jtag_idcode_sm == 1'd0) begin
                 if (tx_valid && current_cmd == `SEQ_CMD_JTAG_IDCODE && swj_busy == 8'd0) begin
-                    swj_busy[4] <= 1'd1;
+                    swj_busy[CMD_INDEX_JTAG_IDCODE] <= 1'd1;
                     jtag_idcode_sm <= 1'd1;
                     jtag_idcode_tx_sm <= 4'd0;
                     jtag_idcode_rx_sm <= 4'd0;
-                    // 计算shift需要多少时钟
                     jtag_idcode_rx_data <= 32'd0;
-                    delay_clk_en <= 0; // 复位延迟时钟标志
+                    // 计算shift需要多少时钟
+                    jtag_idcode_rx_count <= tx_cmd[8:6];
+                    delay_clk_en[CMD_INDEX_JTAG_IDCODE] <= 1'd0; // 复位延迟时钟标志
                 end
             end
             else begin
@@ -840,47 +964,47 @@ module DAP_Seqence (
                 if (sclk_negedge) begin
                     case (jtag_idcode_tx_sm)
                         4'd0: begin // RUN_TEST_IDLE -> SELECT_DR_SCAN
-                            clock_oen <= 1'd1;
-                            SWDIO_TMS_O <= 1'd1;
-                            SWDIO_TMS_T <= 1'd0;
-                            TDI_O <= 1'd0;
+                            clock_oen[CMD_INDEX_JTAG_IDCODE] <= 1'd1;
+                            jtag_idcode_tms_o_reg <= 1'd1;
+                            jtag_idcode_tdi_o_reg <= 1'd0;
                             jtag_idcode_tx_sm <= 4'd1;
+
                         end
 
                         4'd1: begin // SELECT_DR_SCAN -> CAPTURE_DR
-                            SWDIO_TMS_O <= 1'd0;
+                            jtag_idcode_tms_o_reg <= 1'd0;
                             jtag_idcode_tx_sm <= 4'd2;
                         end
 
                         4'd2: begin // CAPTURE_DR -> SHIFT_DR (first bit)
-                            SWDIO_TMS_O <= 1'd0;
+                            jtag_idcode_tms_o_reg <= 1'd0;
                             // JTAG IDCODE指令的SHIFT_DR阶段需要发送32+(TAP数量-1)个时钟
                             jtag_idcode_tx_count <= JTAG_COUNT + 8'd30;
                             jtag_idcode_tx_sm <= 4'd3;
                         end
 
                         4'd3: begin // SHIFT_DR BEFORE+32+AFTER
-                            if (jtag_ir_tx_count != 8'd0) begin
-                                jtag_ir_tx_count <= jtag_ir_tx_count - 1'd1;
+                            if (jtag_idcode_tx_count != 8'd0) begin
+                                jtag_idcode_tx_count <= jtag_idcode_tx_count - 1'd1;
                             end
                             else begin
-                                SWDIO_TMS_O <= 1'd1;
+                                jtag_idcode_tms_o_reg <= 1'd1;
                                 jtag_idcode_tx_sm <= 4'd4;
                             end
                         end
 
                         4'd4: begin // EXIT1_DR -> UPDATE_DR
-                            SWDIO_TMS_O <= 1'd1;
+                            jtag_idcode_tms_o_reg <= 1'd1;
                             jtag_idcode_tx_sm <= 4'd5;
                         end
 
                         4'd5: begin // UPDATE_DR -> RUN_TEST_IDLE
-                            SWDIO_TMS_O <= 1'd0;
+                            jtag_idcode_tms_o_reg <= 1'd0;
                             jtag_idcode_tx_sm <= 4'd6;
                         end
 
                         4'd6: begin // FINISH
-                            clock_oen <= 1'd0;
+                            clock_oen[CMD_INDEX_JTAG_IDCODE] <= 1'd0;
                         end
                     endcase
                 end
@@ -890,14 +1014,13 @@ module DAP_Seqence (
                     case (jtag_idcode_rx_sm)
                         // RUN_TEST_IDLE -> SELECT_DR_SCAN -> CAPTURE_DR -> SHIFT_DR
                         4'd0: begin
-                            jtag_idcode_rx_sm <= 4'd1;    
-                        end 
+                            jtag_idcode_rx_sm <= 4'd1;
+                        end
                         4'd1: begin
                             jtag_idcode_rx_sm <= 4'd2;
                         end
                         4'd2: begin
-                            jtag_idcode_rx_count <= jtag_index;
-                            jtag_idcode_rx_sm <= (jtag_index == 3'd0) ? 4'd4 : 4'd3;
+                            jtag_idcode_rx_sm <= (jtag_idcode_rx_count == 3'd0) ? 4'd4 : 4'd3;
                         end
 
                         4'd3: begin // SHIFT_DR - idle cycles
@@ -929,13 +1052,243 @@ module DAP_Seqence (
                     jtag_idcode_tx_sm <= 4'd0;
                     jtag_idcode_rx_sm <= 4'd0;
                     jtag_idcode_sm <= 1'd0;
-                    rx_data <= jtag_idcode_rx_data;
-                    rx_valid <= 1'd1;
-                    swj_busy[4] <= 1'd0;
+                    jtag_idcode_rx_data <= jtag_idcode_rx_data;
+                    rx_valid[CMD_INDEX_JTAG_IDCODE] <= 1'd1;
+                    swj_busy[CMD_INDEX_JTAG_IDCODE] <= 1'd0;
                 end
             end
-`endif
 
+            // CMD_JTAG_SEQUENCE
+            case (jtag_seq_sm)
+                1'd0: begin
+                    if (tx_valid && current_cmd == `SEQ_CMD_JTAG_SEQ && swj_busy == 8'd0) begin
+                        swj_busy[CMD_INDEX_JTAG_SEQ] <= 1'd1;
+                        jtag_seq_sm <= 4'd1;
+                        jtag_seq_tx_count <= tx_cmd[3:0];
+                        jtag_seq_rx_count <= tx_cmd[3:0];
+                        jtag_seq_tx_data <= tx_data[7:0];
+                        jtag_seq_rx_data <= 8'd0;
+                        jtag_seq_tms_o_reg <= tx_cmd[7];
+                        delay_clk_en[CMD_INDEX_JTAG_SEQ] <= 1'd0; // 复位延迟时钟标志
+                    end
+                end
+                1'd1: begin
+                    if (sclk_negedge) begin
+                        clock_oen[CMD_INDEX_JTAG_SEQ] <= 1'd1;
+                        {jtag_seq_tx_data, jtag_seq_tdi_o_reg} <= {1'd0, jtag_seq_tx_data};
+
+                        if (jtag_seq_tx_count != 0) begin
+                            jtag_seq_tx_count <= jtag_seq_tx_count - 1'd1;
+                            jtag_seq_tms_o_reg <= 1'd0;
+                        end
+                        else begin
+                            clock_oen[CMD_INDEX_JTAG_SEQ] <= 1'd0;
+                        end
+                    end
+
+                    if (sclk_sampling) begin
+                        jtag_seq_rx_data <= {SWO_TDO_I, jtag_seq_rx_data[7:1]};
+                        if (jtag_seq_rx_count != 0) begin
+                            jtag_seq_rx_count <= jtag_seq_rx_count - 1'd1;
+                        end
+                        else begin
+                            // jtag_seq_rx_done <= 1'd1;
+                            jtag_seq_tms_o_reg <= 1'd0;
+                            rx_valid[CMD_INDEX_JTAG_SEQ] <= 1'd1;
+                            swj_busy[CMD_INDEX_JTAG_SEQ] <= 1'd0;
+                            jtag_seq_sm <= 4'd0;
+                        end
+                    end
+                end
+            endcase
+
+            // SEQ_CMD_JTAG_TRANSFER
+            case (jtag_trans_sm)
+                4'd0: begin
+                    if (tx_valid && (current_cmd == `SEQ_CMD_JTAG_TRANSFER || current_cmd == `SEQ_CMD_JTAG_ABORT) && swj_busy == 8'd0) begin
+                        swj_busy[CMD_INDEX_JTAG_TRANS] <= 1'd1;
+                        jtag_trans_tx_data <= {tx_data[31:0], tx_cmd[3:2], tx_cmd[0]};
+                        jtag_trans_tx_sm <= 4'd0;
+                        jtag_trans_rx_sm <= 4'd0;
+                        jtag_trans_index <= tx_cmd[8:6];
+                        jtag_trans_retry_max <= DAP_TRANS_WAIT_RETRY;
+                        jtag_trans_retry_cnt <= 16'd0;
+                        if (current_cmd == `SEQ_CMD_JTAG_TRANSFER) begin
+                            jtag_trans_abort <= 1'd0;
+                        end
+                        else begin
+                            jtag_trans_abort <= 1'd1;
+                        end
+                        delay_clk_en[CMD_INDEX_JTAG_TRANS] <= 1'd0; // 复位延迟时钟标志
+                    end
+                end
+                4'd1: begin
+                    if (sclk_negedge) begin
+                        case (jtag_trans_tx_sm)
+                            4'd0: begin  // RUN_TEST_IDLE -> SELECT_DR_SCAN
+                                clock_oen[CMD_INDEX_JTAG_TRANS] <= 1'd1;
+                                jtag_trans_tx_shift <= jtag_trans_tx_data;
+                                jtag_trans_tdi_o_reg <= 1'd0;
+                                jtag_trans_tms_o_reg <= 1'd1;
+                                jtag_trans_tx_sm <= 4'd1;
+                            end
+
+                            4'd1: begin  // SELECT_DR_SCAN -> CAPTURE_DR
+                                jtag_trans_tms_o_reg <= 1'd0;
+                                jtag_trans_tx_sm <= 4'd2;
+                            end
+
+                            4'd2: begin // CAPTURE_DR -> SHIFT_DR.BEFOR or SHIFT_DR
+                                if (jtag_trans_index != 8'd0) begin
+                                    jtag_trans_tx_count <= jtag_trans_index;
+                                    jtag_trans_tx_sm <= 4'd3;
+                                end
+                                else begin
+                                    jtag_trans_tx_count <= 8'd34;
+                                    jtag_trans_tx_sm <= 4'd4;
+                                end
+                            end
+
+                            4'd3: begin  // SHIFT_DR.BEFOR -> SHIFT_DR
+                                if (jtag_trans_tx_count != 0) begin
+                                    jtag_trans_tx_count <= jtag_trans_tx_count - 1'd1;
+                                end
+                                else begin
+                                    jtag_trans_tx_count <= 8'd34;
+                                    jtag_trans_tx_sm <= 4'd3;
+                                end
+                            end
+
+                            4'd4: begin  // SHIFT_DR
+                                jtag_trans_tdi_o_reg <= jtag_trans_tx_data[31];
+                                if (jtag_trans_tx_count != 0) begin
+                                    jtag_trans_tx_count <= jtag_trans_tx_count - 1'd1;
+                                end
+                                else begin
+                                    if (JTAG_COUNT - jtag_trans_index - 1'd1 == 0) begin
+                                        jtag_trans_tms_o_reg <= 1'd1;
+                                        jtag_trans_tx_sm <= 4'd5;
+                                    end
+                                    else begin
+                                        jtag_trans_tx_count <= JTAG_COUNT - jtag_trans_index - 1'd1;
+                                        jtag_trans_tx_sm <= 4'd4;
+                                    end
+                                end
+                            end
+
+                            4'd5: begin // SHIFT_DR.AFTER -> EXIT1_DR
+                                jtag_trans_tdi_o_reg <= 1'd0;
+                                if (jtag_trans_tx_count != 0) begin
+                                    jtag_trans_tx_count <= jtag_trans_tx_count - 1'd1;
+                                end
+                                else begin
+                                    jtag_trans_tms_o_reg <= 1'd1;
+                                    jtag_trans_tx_sm <= 4'd5;
+                                end
+                            end
+
+                            4'd6: begin // EXIT1_DR -> UPDATE_DR
+                                jtag_trans_tdi_o_reg <= 1'd0;
+                                jtag_trans_tms_o_reg <= 1'd1;
+                                jtag_trans_tx_sm <= 4'd7;
+                            end
+
+                            4'd7: begin // UPDATE_DR -> RUN_TEST_IDLE
+                                jtag_trans_tms_o_reg <= 1'd0;
+                                clock_oen[CMD_INDEX_JTAG_TRANS] <= 1'd0;
+                            end
+                        endcase
+                    end
+
+                    if (sclk_sampling) begin
+                        case (jtag_trans_rx_sm)
+                            4'd0: begin  // RUN_TEST_IDLE -> SELECT_DR_SCAN
+                                jtag_trans_rx_sm <= 4'd1;
+                            end
+
+                            4'd1: begin  // SELECT_DR_SCAN -> CAPTURE_DR
+                                jtag_trans_rx_sm <= 4'd2;
+                            end
+
+                            4'd2: begin // CAPTURE_DR -> SHIFT_DR.BEFOR or SHIFT_DR
+                                if (jtag_trans_index != 8'd0) begin
+                                    jtag_trans_rx_count <= jtag_trans_index;
+                                    jtag_trans_rx_sm <= 4'd3; // SHIFT_DR.BEFOR
+                                end
+                                else begin
+                                    jtag_trans_rx_count <= 8'd34;
+                                    jtag_trans_rx_sm <= 4'd4; // SHIFT_DR
+                                end
+                            end
+
+                            4'd3: begin  // SHIFT_DR.BEFOR -> SHIFT_DR
+                                if (jtag_trans_rx_count != 0) begin
+                                    jtag_trans_rx_count <= jtag_trans_rx_count - 1'd1;
+                                end
+                                else begin
+                                    jtag_trans_rx_count <= 8'd34;
+                                    jtag_trans_rx_sm <= 4'd3;
+                                end
+                            end
+
+                            4'd4: begin  // SHIFT_DR
+                                jtag_trans_rx_data <= {SWO_TDO_I, jtag_trans_rx_data[34:1]};
+                                if (jtag_trans_rx_count != 0) begin
+                                    jtag_trans_rx_count <= jtag_trans_rx_count - 1'd1;
+                                end
+                                else begin
+                                    if (JTAG_COUNT - jtag_trans_index - 1'd1 == 0) begin
+                                        jtag_trans_rx_sm <= 4'd5;
+                                    end
+                                    else begin
+                                        jtag_trans_rx_count <= JTAG_COUNT - jtag_trans_index - 1'd1;
+                                        jtag_trans_rx_sm <= 4'd4;
+                                    end
+                                end
+                            end
+
+                            4'd5: begin // SHIFT_DR.AFTER -> EXIT1_DR
+                                if (jtag_trans_rx_count != 0) begin
+                                    jtag_trans_rx_count <= jtag_trans_rx_count - 1'd1;
+                                end
+                                else begin
+                                    jtag_trans_rx_sm <= 4'd5;
+                                end
+                            end
+
+                            4'd6: begin // EXIT1_DR -> UPDATE_DR
+                                jtag_trans_rx_sm <= 4'd7;
+                            end
+
+                            4'd7: begin // UPDATE_DR -> RUN_TEST_IDLE
+                                jtag_trans_rx_sm <= 4'd7;
+                            end
+                        endcase
+                    end
+
+                    if (jtag_trans_tx_sm == 4'd7 && jtag_trans_rx_sm == 4'd7) begin
+                        jtag_trans_rx_sm <= 4'd0;
+                        jtag_trans_tx_sm <= 4'd0;
+                        if (jtag_idcode_rx_data[2:0] == 3'b010 && jtag_trans_retry_cnt != jtag_trans_retry_max && !jtag_trans_abort) begin
+                            // WAIT 重试
+                            jtag_trans_retry_cnt <= jtag_trans_retry_cnt + 1'd1;
+                            delay_clk_en[CMD_INDEX_JTAG_TRANS] <= 1'd0;
+                        end
+                        else begin
+                            // OK / WAIT Timeout / ERROR / Other / Abort
+                            jtag_trans_sm <= 4'd0;
+                            case (jtag_idcode_rx_data[2:0])
+                                3'b001, 3'b010, 3'b100:
+                                    jtag_trans_rx_flag <= jtag_idcode_rx_data[2:0];
+                                default:
+                                    jtag_trans_rx_flag <= 3'b111;
+                            endcase
+                            rx_valid[CMD_INDEX_JTAG_TRANS] <= 1'd1;
+                            swj_busy[CMD_INDEX_JTAG_TRANS] <= 1'd0;
+                        end
+                    end
+                end
+            endcase
         end
     end
 
