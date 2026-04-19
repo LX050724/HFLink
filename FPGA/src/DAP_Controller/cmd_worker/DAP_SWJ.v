@@ -368,7 +368,6 @@ module DAP_SWJ #(
 
     reg [2:0] jtag_idcode_sm;
     reg jtag_idcode_seq_tx_valid;
-    reg [3:0] jtag_idcode_trans_req;
 
 
     // RAM写入信号 - 每个状态机独立的寄存器
@@ -505,7 +504,7 @@ module DAP_SWJ #(
                 ram_write_data = jtag_idcode_ram_write_data;
                 ram_write_en = jtag_idcode_ram_write_en;
                 packet_len = 10'd5;
-                seq_tx_cmd = {jtag_idcode_trans_req, 5'd0, jtag_index, 6'd0};
+                seq_tx_cmd = {`SEQ_CMD_JTAG_IDCODE, 5'd0, jtag_index, 6'd0};
                 seq_tx_data = 32'd0;
                 seq_tx_valid = jtag_idcode_seq_tx_valid;
             end

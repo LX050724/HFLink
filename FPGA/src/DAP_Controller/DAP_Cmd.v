@@ -84,13 +84,6 @@
  */
 `define SEQ_CMD_JTAG_ABORT          4'd5
 
- /**
-  * JTAG_IR
-  * | 15 14 13 12 | 11 10  9 |    8  7  6 | 5 4 3 2 1 0 |
-  * |  0  1  1  0 |  0  0  0 | JTAG Index | 0 0 0 0 0 0 |
-  */
-`define SEQ_CMD_JTAG_IR             4'd6
-
 /**
  * JTAG_Transfer
  * | 15 14 13 12 | 11 10  9 |    8  7  6 | 5 | 4 |  3 |  2 |   1 |     0 |
