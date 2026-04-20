@@ -246,86 +246,90 @@ module DAP_SWJ #(
     reg [5:0] swj_pins_select;
     reg [31:0] swj_pins_wait_time;
 
-    localparam [17:0] SWD_BTRANS_SM_READ_INDEX          = 20'h0_0001;
-    localparam [17:0] SWD_BTRANS_SM_READ_COUNT_L        = 20'h0_0002;
-    localparam [17:0] SWD_BTRANS_SM_READ_COUNT_H        = 20'h0_0004;
-    localparam [17:0] SWD_BTRANS_SM_READ_REQUSET        = 20'h0_0008;
-    localparam [17:0] SWD_BTRANS_SM_READ_DATA0          = 20'h0_0010;
-    localparam [17:0] SWD_BTRANS_SM_READ_DATA1          = 20'h0_0020;
-    localparam [17:0] SWD_BTRANS_SM_READ_DATA2          = 20'h0_0040;
-    localparam [17:0] SWD_BTRANS_SM_READ_DATA3          = 20'h0_0080;
-    localparam [17:0] SWD_BTRANS_SM_PROCESS_REQ         = 20'h0_0100;
-    localparam [17:0] SWD_BTRANS_SM_TRANSFER            = 20'h0_0200;
-    localparam [17:0] SWD_BTRANS_SM_WAIT_RDBUFF         = 20'h0_0400;
-    localparam [17:0] SWD_BTRANS_SM_WRITE_DATA_0        = 20'h0_0800;
-    localparam [17:0] SWD_BTRANS_SM_WRITE_DATA_1        = 20'h0_1000;
-    localparam [17:0] SWD_BTRANS_SM_WRITE_DATA_2        = 20'h0_2000;
-    localparam [17:0] SWD_BTRANS_SM_WRITE_DATA_3        = 20'h0_4000;
-    localparam [17:0] SWD_BTRANS_SM_WRITE_COUNT_L       = 20'h0_8000;
-    localparam [17:0] SWD_BTRANS_SM_WRITE_COUNT_H       = 20'h1_0000;
-    localparam [17:0] SWD_BTRANS_SM_WRITE_RESPONSE      = 20'h2_0000;
-    localparam [17:0] SWD_BTRANS_SM_END                 = 20'h0_0000;
+    localparam [17:0] TRANS_BLOCK_SM_READ_INDEX          = 20'h0_0001;
+    localparam [17:0] TRANS_BLOCK_SM_READ_COUNT_L        = 20'h0_0002;
+    localparam [17:0] TRANS_BLOCK_SM_READ_COUNT_H        = 20'h0_0004;
+    localparam [17:0] TRANS_BLOCK_SM_READ_REQUSET        = 20'h0_0008;
+    localparam [17:0] TRANS_BLOCK_SM_READ_DATA0          = 20'h0_0010;
+    localparam [17:0] TRANS_BLOCK_SM_READ_DATA1          = 20'h0_0020;
+    localparam [17:0] TRANS_BLOCK_SM_READ_DATA2          = 20'h0_0040;
+    localparam [17:0] TRANS_BLOCK_SM_READ_DATA3          = 20'h0_0080;
+    localparam [17:0] TRANS_BLOCK_SM_PROCESS_REQ         = 20'h0_0100;
+    localparam [17:0] TRANS_BLOCK_SM_TRANSFER            = 20'h0_0200;
+    localparam [17:0] TRANS_BLOCK_SM_WAIT_RDBUFF         = 20'h0_0400;
+    localparam [17:0] TRANS_BLOCK_SM_WRITE_DATA_0        = 20'h0_0800;
+    localparam [17:0] TRANS_BLOCK_SM_WRITE_DATA_1        = 20'h0_1000;
+    localparam [17:0] TRANS_BLOCK_SM_WRITE_DATA_2        = 20'h0_2000;
+    localparam [17:0] TRANS_BLOCK_SM_WRITE_DATA_3        = 20'h0_4000;
+    localparam [17:0] TRANS_BLOCK_SM_WRITE_COUNT_L       = 20'h0_8000;
+    localparam [17:0] TRANS_BLOCK_SM_WRITE_COUNT_H       = 20'h1_0000;
+    localparam [17:0] TRANS_BLOCK_SM_WRITE_RESPONSE      = 20'h2_0000;
+    localparam [17:0] TRANS_BLOCK_SM_END                 = 20'h0_0000;
 
 
-    reg [17:0] swd_block_trans_sm /*synthesis syn_encoding="onehot"*/;
-    reg [15:0] swd_block_trans_request_cnt;
-    reg [15:0] swd_block_trans_response_cnt;
-    reg [3:0] swd_block_trans_req;
-    reg [31:0] swd_block_trans_data;
-    reg swd_block_need_post_read;
-    reg swd_block_trans_seq_tx_valid;
-    reg swd_block_trans_RnW;
-    reg swd_block_trans_err_flag;
+    reg [17:0] transfer_block_sm /*synthesis syn_encoding="onehot"*/;
+    reg [15:0] transfer_block_request_cnt;
+    reg [15:0] transfer_block_response_cnt;
+    reg [3:0] transfer_block_requset;
+    reg [31:0] transfer_block_data;
+    reg transfer_block_need_post_read;
+    reg transfer_block_seq_tx_valid;
+    reg transfer_block_RnW;
+    reg transfer_block_err_flag;
+    reg transfer_block_ir;
 
-    localparam [26:0] SWD_TRANS_SM_READ_INDEX          = 27'h000_0001;
-    localparam [26:0] SWD_TRANS_SM_READ_COUNT          = 27'h000_0002;
-    localparam [26:0] SWD_TRANS_SM_READ_REQUSET        = 27'h000_0004;
-    localparam [26:0] SWD_TRANS_SM_READ_DATA0          = 27'h000_0008;
-    localparam [26:0] SWD_TRANS_SM_READ_DATA1          = 27'h000_0010;
-    localparam [26:0] SWD_TRANS_SM_READ_DATA2          = 27'h000_0020;
-    localparam [26:0] SWD_TRANS_SM_READ_DATA3          = 27'h000_0040;
-    localparam [26:0] SWD_TRANS_SM_CHECK_POSTREAD      = 27'h000_0080;
-    localparam [26:0] SWD_TRANS_SM_READ_AP             = 27'h000_0100;
-    localparam [26:0] SWD_TRANS_SM_READ_DP             = 27'h000_0200;
-    localparam [26:0] SWD_TRANS_SM_WRITE_APDP          = 27'h000_0400;
-    localparam [26:0] SWD_TRANS_SM_MATCH_STEP1         = 27'h000_0800;
-    localparam [26:0] SWD_TRANS_SM_MATCH_STEP2         = 27'h000_1000;
-    localparam [26:0] SWD_TRANS_SM_MATCH_STEP3         = 27'h000_2000;
-    localparam [26:0] SWD_TRANS_SM_CHECK_WIRTE         = 27'h000_4000;
-    localparam [26:0] SWD_TRANS_SM_WRTE_COUNT          = 27'h000_8000;
-    localparam [26:0] SWD_TRANS_SM_WRTE_STATUS         = 27'h001_0000;
-    localparam [26:0] SWD_TRANS_SM_TRIGGER             = 27'h002_0000;
-    localparam [26:0] SWD_TRANS_SM_WAIT                = 27'h004_0000;
-    localparam [26:0] SWD_TRANS_SM_WRITE_DATA0         = 27'h008_0000;
-    localparam [26:0] SWD_TRANS_SM_WRITE_DATA1         = 27'h010_0000;
-    localparam [26:0] SWD_TRANS_SM_WRITE_DATA2         = 27'h020_0000;
-    localparam [26:0] SWD_TRANS_SM_WRITE_DATA3         = 27'h040_0000;
-    localparam [26:0] SWD_TRANS_SM_WRITE_TIME0         = 27'h080_0000;
-    localparam [26:0] SWD_TRANS_SM_WRITE_TIME1         = 27'h100_0000;
-    localparam [26:0] SWD_TRANS_SM_WRITE_TIME2         = 27'h200_0000;
-    localparam [26:0] SWD_TRANS_SM_WRITE_TIME3         = 27'h400_0000;
-    localparam [26:0] SWD_TRANS_SM_DONE                = 27'h000_0000;
+    localparam [26:0] TRANS_SM_READ_INDEX          = 27'h000_0001;
+    localparam [26:0] TRANS_SM_READ_COUNT          = 27'h000_0002;
+    localparam [26:0] TRANS_SM_READ_REQUSET        = 27'h000_0004;
+    localparam [26:0] TRANS_SM_READ_DATA0          = 27'h000_0008;
+    localparam [26:0] TRANS_SM_READ_DATA1          = 27'h000_0010;
+    localparam [26:0] TRANS_SM_READ_DATA2          = 27'h000_0020;
+    localparam [26:0] TRANS_SM_READ_DATA3          = 27'h000_0040;
+    localparam [26:0] TRANS_SM_CHECK_POSTREAD      = 27'h000_0080;
+    localparam [26:0] TRANS_SM_READ_AP             = 27'h000_0100;
+    localparam [26:0] TRANS_SM_READ_DP             = 27'h000_0200;
+    localparam [26:0] TRANS_SM_WRITE_APDP          = 27'h000_0400;
+    localparam [26:0] TRANS_SM_MATCH_STEP1         = 27'h000_0800;
+    localparam [26:0] TRANS_SM_MATCH_STEP2         = 27'h000_1000;
+    localparam [26:0] TRANS_SM_MATCH_STEP3         = 27'h000_2000;
+    localparam [26:0] TRANS_SM_CHECK_WIRTE         = 27'h000_4000;
+    localparam [26:0] TRANS_SM_WRTE_COUNT          = 27'h000_8000;
+    localparam [26:0] TRANS_SM_WRTE_STATUS         = 27'h001_0000;
+    localparam [26:0] TRANS_SM_TRIGGER             = 27'h002_0000;
+    localparam [26:0] TRANS_SM_WAIT                = 27'h004_0000;
+    localparam [26:0] TRANS_SM_WRITE_DATA0         = 27'h008_0000;
+    localparam [26:0] TRANS_SM_WRITE_DATA1         = 27'h010_0000;
+    localparam [26:0] TRANS_SM_WRITE_DATA2         = 27'h020_0000;
+    localparam [26:0] TRANS_SM_WRITE_DATA3         = 27'h040_0000;
+    localparam [26:0] TRANS_SM_WRITE_TIME0         = 27'h080_0000;
+    localparam [26:0] TRANS_SM_WRITE_TIME1         = 27'h100_0000;
+    localparam [26:0] TRANS_SM_WRITE_TIME2         = 27'h200_0000;
+    localparam [26:0] TRANS_SM_WRITE_TIME3         = 27'h400_0000;
+    localparam [26:0] TRANS_SM_DONE                = 27'h000_0000;
 
-    reg swd_trans_post_read;
-    reg swd_trans_check_write;
-    reg swd_trans_has_error;
-    reg swd_trans_match_failed;
-    reg [31:0] swd_trans_wdata;
-    reg [26:0] swd_trans_sm /*synthesis syn_encoding="onehot"*/;
-    reg [31:0] swd_trans_match_mask;
-    reg [7:0] swd_trans_num;
-    reg [7:0] swd_trans_cnt;
-    reg [7:0] swd_trans_requset;
-    reg [31:0] swd_trans_timestamp;
-    reg [15:0] swd_trans_match_cnt;
-    reg swd_trans_seq_tx_valid;
+    reg transfer_post_read;
+    reg transfer_check_write;
+    reg transfer_has_error;
+    reg transfer_match_failed;
+    reg [31:0] transfer_wdata;
+    reg [26:0] transfer_sm /*synthesis syn_encoding="onehot"*/;
+    reg [31:0] transfer_match_mask;
+    reg [7:0] transfer_num;
+    reg [7:0] transfer_cnt;
+    reg [7:0] transfer_requset;
+    reg [31:0] transfer_timestamp;
+    reg [15:0] transfer_match_cnt;
+    reg transfer_seq_tx_valid;
+    reg transfer_last_APnDP;
 
-    reg [3:0] swd_trans_trig_requset;
-    reg [26:0] swd_trans_trig_ret_sm;
-    reg swd_trans_trig_en_wdata; // 启用数据段
-    reg swd_trans_trig_en_wtime; // 启用时间戳段
-    reg swd_trans_trig_en_cnt;   // 传输成功时完成计数增加
-    reg swd_trans_trig_wtime_first; // 先写入时间戳，同时有data和time全开的效果
+    reg [3:0] transfer_trig_requset;
+    reg [26:0] transfer_trig_ret_sm;
+    reg transfer_trig_en_wdata; // 启用数据段
+    reg transfer_trig_en_wtime; // 启用时间戳段
+    reg transfer_trig_en_cnt;   // 传输成功时完成计数增加
+    reg transfer_trig_wtime_first; // 先写入时间戳，同时有data和time全开的效果
+    reg transfer_trig_ir;
+    reg transfer_first_transfer;
 
     // Bit 0: APnDP: 0 = Debug Port (DP), 1 = Access Port (AP).
     // Bit 1: RnW: 0 = Write Register, 1 = Read Register.
@@ -334,11 +338,11 @@ module DAP_SWJ #(
     // Bit 4: Value Match
     // Bit 5: Match Mask
     // Bit 7: TD_TimeStamp request
-    wire swd_trans_requset_APnDP = swd_trans_requset[0];
-    wire swd_trans_requset_RnW = swd_trans_requset[1];
-    wire swd_trans_requset_MATCH = swd_trans_requset[4];
-    wire swd_trans_requset_MASK = swd_trans_requset[5];
-    wire swd_trans_requset_TIMESTAMP = swd_trans_requset[7];
+    wire transfer_requset_APnDP = transfer_requset[0];
+    wire transfer_requset_RnW = transfer_requset[1];
+    wire transfer_requset_MATCH = transfer_requset[4];
+    wire transfer_requset_MASK = transfer_requset[5];
+    wire transfer_requset_TIMESTAMP = transfer_requset[7];
 
 
     // JTAG序列控制器状态机
@@ -390,15 +394,15 @@ module DAP_SWJ #(
     reg [7:0] swj_pins_ram_write_data;
     reg swj_pins_ram_write_en;
 
-    reg [9:0] swd_block_trans_ram_write_addr;
-    reg [7:0] swd_block_trans_ram_write_data;
-    reg swd_block_trans_ram_write_en;
-    reg [9:0] swd_block_trans_packet_len;
+    reg [9:0] transfer_block_ram_write_addr;
+    reg [7:0] transfer_block_ram_write_data;
+    reg transfer_block_ram_write_en;
+    reg [9:0] transfer_block_packet_len;
 
-    reg [9:0] swd_trans_ram_write_addr;
-    reg [7:0] swd_trans_ram_write_data;
-    reg swd_trans_ram_write_en;
-    reg [9:0] swd_trans_packet_len;
+    reg [9:0] transfer_ram_write_addr;
+    reg [7:0] transfer_ram_write_data;
+    reg transfer_ram_write_en;
+    reg [9:0] transfer_packet_len;
 
     // JTAG序列控制器信号
     reg [9:0] jtag_seq_ram_write_addr;
@@ -424,6 +428,7 @@ module DAP_SWJ #(
         end
     end
 
+    wire [3:0] SEQ_CMD_TRANSFER = SWD_MODE ? `SEQ_CMD_SWD_TRANSFER : `SEQ_CMD_JTAG_TRANSFER;
     // Combinational logic for RAM write signals and seq_tx signals based on active state machine
     always @(*) begin
         // Default: no write
@@ -437,29 +442,36 @@ module DAP_SWJ #(
 
         casez ({start_hold, 2'd0}) /* synthesis parallel_case */
             `CMD_TRANSFER_BLOCK: begin
-                ram_write_addr = swd_block_trans_ram_write_addr;
-                ram_write_data = swd_block_trans_ram_write_data;
-                ram_write_en = swd_block_trans_ram_write_en;
-                packet_len = swd_block_trans_packet_len;
-                seq_tx_cmd = {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_block_trans_req};
-                seq_tx_data = swd_block_trans_data;
-                seq_tx_valid = swd_block_trans_seq_tx_valid;
+                ram_write_addr = transfer_block_ram_write_addr;
+                ram_write_data = transfer_block_ram_write_data;
+                ram_write_en = transfer_block_ram_write_en;
+                packet_len = transfer_block_packet_len;
+                // | 11 10 |      9 |    8  7  6 |     5 |  4 |  3 |  2 |   1 |     0 |
+                // |  x  x | IDCODE | JTAG Index | Abort | IR | A3 | A2 | RnW | APnDP |
+                seq_tx_cmd = {SEQ_CMD_TRANSFER, 2'd0, 1'd0, jtag_index, 1'd0, transfer_block_ir, transfer_block_requset};
+                seq_tx_cmd = {SEQ_CMD_TRANSFER, 8'd0, transfer_block_requset};
+                seq_tx_data = transfer_block_data;
+                seq_tx_valid = transfer_block_seq_tx_valid;
             end
             `CMD_TRANSFER: begin
-                ram_write_addr = swd_trans_ram_write_addr;
-                ram_write_data = swd_trans_ram_write_data;
-                ram_write_en = swd_trans_ram_write_en;
-                packet_len = swd_trans_packet_len;
-                seq_tx_cmd = {`SEQ_CMD_SWD_TRANSFER, 8'd0, swd_trans_trig_requset};
-                seq_tx_data = swd_trans_wdata;
-                seq_tx_valid = (swd_trans_sm & SWD_TRANS_SM_TRIGGER) != 27'd0;
+                ram_write_addr = transfer_ram_write_addr;
+                ram_write_data = transfer_ram_write_data;
+                ram_write_en = transfer_ram_write_en;
+                packet_len = transfer_packet_len;
+                // | 11 10 |      9 |    8  7  6 |     5 |  4 |  3 |  2 |   1 |     0 |
+                // |  x  x | IDCODE | JTAG Index | Abort | IR | A3 | A2 | RnW | APnDP |
+                seq_tx_cmd = {SEQ_CMD_TRANSFER, 2'd0, 1'd0, jtag_index, 1'd0, transfer_trig_ir, transfer_trig_requset};
+                seq_tx_data = transfer_wdata;
+                seq_tx_valid = (transfer_sm & TRANS_SM_TRIGGER) != 27'd0;
             end
             `CMD_WRITE_ABORT: begin
                 ram_write_addr = write_abort_ram_write_addr;
                 ram_write_data = write_abort_ram_write_data;
                 ram_write_en = write_abort_ram_write_en;
                 packet_len = 10'd1;  // Write Abort always returns 1 byte
-                seq_tx_cmd = {SWD_MODE ? `SEQ_CMD_SWD_TRANSFER : `SEQ_CMD_JTAG_IDCODE, 8'd0, 4'd0};
+                // | 11 10 |      9 |    8  7  6 |     5 |  4 |  3 |  2 |   1 |     0 |
+                // |  x  x | IDCODE | JTAG Index | Abort | IR | A3 | A2 | RnW | APnDP |
+                seq_tx_cmd = {SEQ_CMD_TRANSFER, 2'd0, 1'd0, jtag_index, 1'd1, 1'd1, 4'd0};
                 seq_tx_data = write_abort_data;
                 seq_tx_valid = (write_abort_sm == WRITE_ABORT_READ_DATA3) && dap_in_tvalid;
             end
@@ -504,7 +516,9 @@ module DAP_SWJ #(
                 ram_write_data = jtag_idcode_ram_write_data;
                 ram_write_en = jtag_idcode_ram_write_en;
                 packet_len = 10'd5;
-                seq_tx_cmd = {`SEQ_CMD_JTAG_IDCODE, 5'd0, jtag_index, 6'd0};
+                // | 11 10 |      9 |    8  7  6 |     5 |  4 |  3 |  2 |   1 |     0 |
+                // |  x  x | IDCODE | JTAG Index | Abort | IR | A3 | A2 | RnW | APnDP |
+                seq_tx_cmd = {`SEQ_CMD_JTAG_SEQ, 2'd0, 1'd1, jtag_index, 6'd0};
                 seq_tx_data = 32'd0;
                 seq_tx_valid = jtag_idcode_seq_tx_valid;
             end
@@ -807,237 +821,241 @@ module DAP_SWJ #(
     // SWD Block Transfer Controller
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
-            swd_block_trans_ram_write_en <= 1'd0;
-            swd_block_trans_ram_write_data <= 8'd0;
-            swd_block_trans_ram_write_addr <= 10'd0;
-            swd_block_trans_packet_len <= 1'd0;
-            swd_block_trans_sm <= SWD_BTRANS_SM_READ_INDEX;
-            swd_block_trans_request_cnt <= 16'd0;
-            swd_block_trans_response_cnt <= 16'd0;
-            swd_block_trans_req <= 4'd0;
-            swd_block_trans_data <= 32'd0;
-            swd_block_need_post_read <= 1'd0;
-            swd_block_trans_seq_tx_valid <= 1'd0;
-            swd_block_trans_RnW <= 1'd0;
-            swd_block_trans_err_flag <= 1'd0;
+            transfer_block_ram_write_en <= 1'd0;
+            transfer_block_ram_write_data <= 8'd0;
+            transfer_block_ram_write_addr <= 10'd0;
+            transfer_block_packet_len <= 1'd0;
+            transfer_block_sm <= TRANS_BLOCK_SM_READ_INDEX;
+            transfer_block_request_cnt <= 16'd0;
+            transfer_block_response_cnt <= 16'd0;
+            transfer_block_requset <= 4'd0;
+            transfer_block_data <= 32'd0;
+            transfer_block_need_post_read <= 1'd0;
+            transfer_block_seq_tx_valid <= 1'd0;
+            transfer_block_RnW <= 1'd0;
+            transfer_block_err_flag <= 1'd0;
+            transfer_block_ir <= 1'd0;
             done[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
         end
         else begin
-            swd_block_trans_ram_write_en <= 1'd0;
-            swd_block_trans_seq_tx_valid <= 1'd0;
+            transfer_block_ram_write_en <= 1'd0;
+            transfer_block_seq_tx_valid <= 1'd0;
 
             if (start[`CMD_TRANSFER_BLOCK_SHIFT] && SWJ_CR_MODE == 1'd1) begin
-                case (swd_block_trans_sm)
-                    SWD_BTRANS_SM_READ_INDEX: begin // 读取DAP Index抛弃
-                        swd_block_trans_ram_write_addr <= 10'd2;
-                        swd_block_trans_packet_len <= 10'd3;
-                        swd_block_trans_err_flag <= 1'd0;
-                        swd_block_trans_response_cnt <= 16'd0;
+                case (transfer_block_sm)
+                    TRANS_BLOCK_SM_READ_INDEX: begin // 读取DAP Index抛弃
+                        transfer_block_ram_write_addr <= 10'd2;
+                        transfer_block_packet_len <= 10'd3;
+                        transfer_block_err_flag <= 1'd0;
+                        transfer_block_response_cnt <= 16'd0;
+                        transfer_block_ir <= 1'd1;
                         if (dap_in_tvalid) begin
-                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_COUNT_L;
+                            transfer_block_sm <= TRANS_BLOCK_SM_READ_COUNT_L;
                         end
                     end
-                    SWD_BTRANS_SM_READ_COUNT_L: begin
+                    TRANS_BLOCK_SM_READ_COUNT_L: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_request_cnt[7:0] <= dap_in_tdata;
-                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_COUNT_H;
+                            transfer_block_request_cnt[7:0] <= dap_in_tdata;
+                            transfer_block_sm <= TRANS_BLOCK_SM_READ_COUNT_H;
                         end
                     end
-                    SWD_BTRANS_SM_READ_COUNT_H: begin
+                    TRANS_BLOCK_SM_READ_COUNT_H: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_request_cnt[15:8] <= dap_in_tdata;
-                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_REQUSET;
+                            transfer_block_request_cnt[15:8] <= dap_in_tdata;
+                            transfer_block_sm <= TRANS_BLOCK_SM_READ_REQUSET;
                         end
                     end
-                    SWD_BTRANS_SM_READ_REQUSET: begin // 读requset
+                    TRANS_BLOCK_SM_READ_REQUSET: begin // 读requset
                         if (dap_in_tvalid) begin
-                            swd_block_trans_req <= dap_in_tdata[3:0];
-                            swd_block_trans_RnW <= dap_in_tdata[1];
+                            transfer_block_requset <= dap_in_tdata[3:0];
+                            transfer_block_RnW <= dap_in_tdata[1];
                             if (dap_in_tdata[1]) begin // RnW
-                                swd_block_need_post_read <= dap_in_tdata[0]; // APnDP
-                                swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                                transfer_block_need_post_read <= dap_in_tdata[0]; // APnDP
+                                transfer_block_sm <= TRANS_BLOCK_SM_PROCESS_REQ;
                             end
                             else begin
-                                swd_block_need_post_read <= 1'd0;
-                                swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA0;
+                                transfer_block_need_post_read <= 1'd0;
+                                transfer_block_sm <= TRANS_BLOCK_SM_READ_DATA0;
                             end
                         end
                     end
-                    SWD_BTRANS_SM_READ_DATA0: begin
+                    TRANS_BLOCK_SM_READ_DATA0: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_data[7:0] <= dap_in_tdata;
-                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA1;
+                            transfer_block_data[7:0] <= dap_in_tdata;
+                            transfer_block_sm <= TRANS_BLOCK_SM_READ_DATA1;
                         end
                     end
-                    SWD_BTRANS_SM_READ_DATA1: begin
+                    TRANS_BLOCK_SM_READ_DATA1: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_data[15:8] <= dap_in_tdata;
-                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA2;
+                            transfer_block_data[15:8] <= dap_in_tdata;
+                            transfer_block_sm <= TRANS_BLOCK_SM_READ_DATA2;
                         end
                     end
-                    SWD_BTRANS_SM_READ_DATA2: begin
+                    TRANS_BLOCK_SM_READ_DATA2: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_data[23:16] <= dap_in_tdata;
-                            swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA3;
+                            transfer_block_data[23:16] <= dap_in_tdata;
+                            transfer_block_sm <= TRANS_BLOCK_SM_READ_DATA3;
                         end
                     end
-                    SWD_BTRANS_SM_READ_DATA3: begin
+                    TRANS_BLOCK_SM_READ_DATA3: begin
                         if (dap_in_tvalid) begin
-                            swd_block_trans_data[31:24] <= dap_in_tdata;
-                            swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                            transfer_block_data[31:24] <= dap_in_tdata;
+                            transfer_block_sm <= TRANS_BLOCK_SM_PROCESS_REQ;
                         end
                     end
-                    SWD_BTRANS_SM_PROCESS_REQ: begin // 循环开始位置，根据请求类型触发读fifo数据或驱动SWD
-                        if (!swd_block_trans_err_flag) begin
+                    TRANS_BLOCK_SM_PROCESS_REQ: begin // 循环开始位置，根据请求类型触发读fifo数据或驱动SWD
+                        if (!transfer_block_err_flag) begin
                             // 读请求直接驱动SWD
-                            swd_block_trans_seq_tx_valid <= 1'd1;
+                            transfer_block_seq_tx_valid <= 1'd1;
                         end
-                        swd_block_trans_sm <= SWD_BTRANS_SM_TRANSFER;
+                        transfer_block_sm <= TRANS_BLOCK_SM_TRANSFER;
                     end
-                    SWD_BTRANS_SM_TRANSFER: begin // 等待传输完成
-                        if (!swd_block_trans_err_flag && (seq_rx_valid && seq_rx_flag[3:0] == 4'b0001)) begin // 正常传输完成
+                    TRANS_BLOCK_SM_TRANSFER: begin // 等待传输完成
+                        if (!transfer_block_err_flag && (seq_rx_valid && seq_rx_flag[3:0] == 4'b0001)) begin // 正常传输完成
                             // 请求计数-1
-                            swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
+                            transfer_block_request_cnt <= transfer_block_request_cnt - 1'd1;
                             // 响应计数+1
-                            swd_block_trans_response_cnt <= swd_block_trans_response_cnt + 1'd1;
-
-                            case (swd_block_trans_req[1:0])
+                            transfer_block_response_cnt <= transfer_block_response_cnt + 1'd1;
+                            transfer_block_ir <= 1'd0; // 第一次传输完成后假定不需要IR
+                            case (transfer_block_requset[1:0])
                                 2'b11: begin // Read AP
-                                    if (swd_block_need_post_read) begin
-                                        if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
-                                            // 单次读AP传输，转RDBUFF
-                                            swd_block_trans_req <= 4'b1110;
-                                            swd_block_trans_seq_tx_valid <= 1'd1;
-                                            swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
+                                    if (transfer_block_need_post_read) begin
+                                        if (transfer_block_request_cnt - 1'd1 == 16'd0) begin
+                                            // 单次读AP传输，转RDBUFF，激活IR
+                                            transfer_block_requset <= 4'b1110;
+                                            transfer_block_ir <= 1'd1;
+                                            transfer_block_seq_tx_valid <= 1'd1;
+                                            transfer_block_sm <= TRANS_BLOCK_SM_WAIT_RDBUFF;
                                         end
                                         else begin
-                                            // 多次传输的第一次传输，不写入数据直接触发下一次读取
-                                            swd_block_need_post_read <= 1'd0;
-                                            swd_block_trans_seq_tx_valid <= 1'd1;
+                                            // 多次传输的第一次传输，不写入数据直接触发下一次读取，不需要IR
+                                            transfer_block_need_post_read <= 1'd0;
+                                            transfer_block_seq_tx_valid <= 1'd1;
                                         end
                                     end
                                     else begin
-                                        swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_0;
+                                        transfer_block_sm <= TRANS_BLOCK_SM_WRITE_DATA_0;
                                     end
                                 end
                                 2'b01: begin // Write AP
-                                    if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
-                                        // 最后一次传输
-                                        swd_block_trans_req <= 4'b1110;
-                                        swd_block_trans_seq_tx_valid <= 1'd1;
-                                        swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
+                                    if (transfer_block_request_cnt - 1'd1 == 16'd0) begin
+                                        // 最后一次传输，转RDBUFF，激活IR
+                                        transfer_block_requset <= 4'b1110;
+                                        transfer_block_ir <= 1'd1;
+                                        transfer_block_seq_tx_valid <= 1'd1;
+                                        transfer_block_sm <= TRANS_BLOCK_SM_WAIT_RDBUFF;
                                     end
                                     else begin
-                                        swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA0;
+                                        transfer_block_sm <= TRANS_BLOCK_SM_READ_DATA0;
                                     end
                                 end
                                 2'b10: begin // Read DP
-                                    swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_0;
+                                    transfer_block_sm <= TRANS_BLOCK_SM_WRITE_DATA_0;
                                 end
                                 2'b00: begin // Write DP
-                                    if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
+                                    if (transfer_block_request_cnt - 1'd1 == 16'd0) begin
                                         // 完成
-                                        swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
+                                        transfer_block_sm <= TRANS_BLOCK_SM_WRITE_COUNT_L;
                                     end
                                     else begin
-                                        swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                                        transfer_block_sm <= TRANS_BLOCK_SM_PROCESS_REQ;
                                     end
                                 end
                             endcase
                         end
 
-                        if (swd_block_trans_err_flag || (seq_rx_valid && seq_rx_flag[3:0] != 4'b0001)) begin
-                            swd_block_trans_err_flag <= 1'd1;
-                            swd_block_trans_request_cnt <= swd_block_trans_request_cnt - 1'd1;
-                            if (swd_block_trans_request_cnt - 1'd1 == 16'd0) begin
-                                swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
+                        if (transfer_block_err_flag || (seq_rx_valid && seq_rx_flag[3:0] != 4'b0001)) begin
+                            transfer_block_err_flag <= 1'd1;
+                            transfer_block_request_cnt <= transfer_block_request_cnt - 1'd1;
+                            if (transfer_block_request_cnt - 1'd1 == 16'd0) begin
+                                transfer_block_sm <= TRANS_BLOCK_SM_WRITE_COUNT_L;
                             end
                             else begin
-                                if (swd_block_trans_req[1]) begin
-                                    swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                                if (transfer_block_requset[1]) begin
+                                    transfer_block_sm <= TRANS_BLOCK_SM_PROCESS_REQ;
                                 end
                                 else begin
-                                    swd_block_trans_sm <= SWD_BTRANS_SM_READ_DATA0;
+                                    transfer_block_sm <= TRANS_BLOCK_SM_READ_DATA0;
                                 end
                             end
                         end
                     end
-                    SWD_BTRANS_SM_WAIT_RDBUFF: begin
+                    TRANS_BLOCK_SM_WAIT_RDBUFF: begin
                         if (seq_rx_valid) begin
-                            if (swd_block_trans_RnW) begin
-                                swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_0;
+                            if (transfer_block_RnW) begin
+                                transfer_block_sm <= TRANS_BLOCK_SM_WRITE_DATA_0;
                             end
                             else begin
-                                swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
+                                transfer_block_sm <= TRANS_BLOCK_SM_WRITE_COUNT_L;
                             end
                         end
                     end
-                    SWD_BTRANS_SM_WRITE_DATA_0: begin
-                        swd_block_trans_ram_write_addr <= swd_block_trans_ram_write_addr + 1'd1;
-                        swd_block_trans_ram_write_data <= seq_rx_data[7:0];
-                        swd_block_trans_ram_write_en <= 1'd1;
-                        swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_1;
+                    TRANS_BLOCK_SM_WRITE_DATA_0: begin
+                        transfer_block_ram_write_addr <= transfer_block_ram_write_addr + 1'd1;
+                        transfer_block_ram_write_data <= seq_rx_data[7:0];
+                        transfer_block_ram_write_en <= 1'd1;
+                        transfer_block_sm <= TRANS_BLOCK_SM_WRITE_DATA_1;
                     end
-                    SWD_BTRANS_SM_WRITE_DATA_1: begin
-                        swd_block_trans_ram_write_addr <= swd_block_trans_ram_write_addr + 1'd1;
-                        swd_block_trans_ram_write_data <= seq_rx_data[15:8];
-                        swd_block_trans_ram_write_en <= 1'd1;
-                        swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_2;
+                    TRANS_BLOCK_SM_WRITE_DATA_1: begin
+                        transfer_block_ram_write_addr <= transfer_block_ram_write_addr + 1'd1;
+                        transfer_block_ram_write_data <= seq_rx_data[15:8];
+                        transfer_block_ram_write_en <= 1'd1;
+                        transfer_block_sm <= TRANS_BLOCK_SM_WRITE_DATA_2;
                     end
-                    SWD_BTRANS_SM_WRITE_DATA_2: begin
-                        swd_block_trans_ram_write_addr <= swd_block_trans_ram_write_addr + 1'd1;
-                        swd_block_trans_ram_write_data <= seq_rx_data[23:16];
-                        swd_block_trans_ram_write_en <= 1'd1;
-                        swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_DATA_3;
+                    TRANS_BLOCK_SM_WRITE_DATA_2: begin
+                        transfer_block_ram_write_addr <= transfer_block_ram_write_addr + 1'd1;
+                        transfer_block_ram_write_data <= seq_rx_data[23:16];
+                        transfer_block_ram_write_en <= 1'd1;
+                        transfer_block_sm <= TRANS_BLOCK_SM_WRITE_DATA_3;
                     end
-                    SWD_BTRANS_SM_WRITE_DATA_3: begin
-                        swd_block_trans_ram_write_addr <= swd_block_trans_ram_write_addr + 1'd1;
-                        swd_block_trans_ram_write_data <= seq_rx_data[31:24];
-                        swd_block_trans_ram_write_en <= 1'd1;
+                    TRANS_BLOCK_SM_WRITE_DATA_3: begin
+                        transfer_block_ram_write_addr <= transfer_block_ram_write_addr + 1'd1;
+                        transfer_block_ram_write_data <= seq_rx_data[31:24];
+                        transfer_block_ram_write_en <= 1'd1;
 
-                        if (swd_block_trans_req[0] == 1'd0) begin
-                            if (swd_block_trans_request_cnt == 16'd0) begin
-                                swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_L;
+                        if (transfer_block_requset[0] == 1'd0) begin
+                            if (transfer_block_request_cnt == 16'd0) begin
+                                transfer_block_sm <= TRANS_BLOCK_SM_WRITE_COUNT_L;
                             end
                             else begin
-                                swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                                transfer_block_sm <= TRANS_BLOCK_SM_PROCESS_REQ;
                             end
                         end
                         else begin
-                            if (swd_block_trans_request_cnt == 16'd0) begin
-                                swd_block_trans_req <= 4'b1110;
-                                swd_block_trans_seq_tx_valid <= 1'd1;
-                                swd_block_trans_sm <= SWD_BTRANS_SM_WAIT_RDBUFF;
+                            if (transfer_block_request_cnt == 16'd0) begin
+                                transfer_block_requset <= 4'b1110;
+                                transfer_block_seq_tx_valid <= 1'd1;
+                                transfer_block_sm <= TRANS_BLOCK_SM_WAIT_RDBUFF;
                             end
                             else begin
-                                swd_block_trans_sm <= SWD_BTRANS_SM_PROCESS_REQ;
+                                transfer_block_sm <= TRANS_BLOCK_SM_PROCESS_REQ;
                             end
                         end
                     end
-                    SWD_BTRANS_SM_WRITE_COUNT_L: begin
-                        swd_block_trans_ram_write_addr <= 10'd0;
-                        swd_block_trans_ram_write_data <= swd_block_trans_response_cnt[7:0];
-                        swd_block_trans_ram_write_en <= 1'd1;
-                        swd_block_trans_packet_len <= swd_block_trans_ram_write_addr + 1'd1;
-                        swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_COUNT_H;
+                    TRANS_BLOCK_SM_WRITE_COUNT_L: begin
+                        transfer_block_ram_write_addr <= 10'd0;
+                        transfer_block_ram_write_data <= transfer_block_response_cnt[7:0];
+                        transfer_block_ram_write_en <= 1'd1;
+                        transfer_block_packet_len <= transfer_block_ram_write_addr + 1'd1;
+                        transfer_block_sm <= TRANS_BLOCK_SM_WRITE_COUNT_H;
                     end
-                    SWD_BTRANS_SM_WRITE_COUNT_H: begin
-                        swd_block_trans_ram_write_addr <= 10'd1;
-                        swd_block_trans_ram_write_data <= swd_block_trans_response_cnt[15:8];
-                        swd_block_trans_ram_write_en <= 1'd1;
-                        swd_block_trans_sm <= SWD_BTRANS_SM_WRITE_RESPONSE;
+                    TRANS_BLOCK_SM_WRITE_COUNT_H: begin
+                        transfer_block_ram_write_addr <= 10'd1;
+                        transfer_block_ram_write_data <= transfer_block_response_cnt[15:8];
+                        transfer_block_ram_write_en <= 1'd1;
+                        transfer_block_sm <= TRANS_BLOCK_SM_WRITE_RESPONSE;
                     end
-                    SWD_BTRANS_SM_WRITE_RESPONSE: begin
-                        swd_block_trans_ram_write_addr <= 10'd2;
-                        swd_block_trans_ram_write_data <= {5'd0, seq_rx_flag[2:0]};
-                        swd_block_trans_ram_write_en <= 1'd1;
-                        swd_block_trans_sm <= SWD_BTRANS_SM_END;
+                    TRANS_BLOCK_SM_WRITE_RESPONSE: begin
+                        transfer_block_ram_write_addr <= 10'd2;
+                        transfer_block_ram_write_data <= {5'd0, seq_rx_flag[2:0]};
+                        transfer_block_ram_write_en <= 1'd1;
+                        transfer_block_sm <= TRANS_BLOCK_SM_END;
                         done[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd1;
                     end
                 endcase
             end
             else begin
-                swd_block_trans_sm <= SWD_BTRANS_SM_READ_INDEX;
+                transfer_block_sm <= TRANS_BLOCK_SM_READ_INDEX;
                 done[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
             end
         end
@@ -1046,367 +1064,372 @@ module DAP_SWJ #(
     // SWD Transfer Controller
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
-            swd_trans_ram_write_en <= 1'd0;
-            swd_trans_ram_write_data <= 8'd0;
-            swd_trans_ram_write_addr <= 10'd0;
-            swd_trans_packet_len <= 1'd0;
-            swd_trans_post_read <= 0;
-            swd_trans_check_write <= 0;
-            swd_trans_has_error <= 0;
-            swd_trans_match_failed <= 1'd0;
-            swd_trans_wdata <= 32'd0;
-            swd_trans_sm <= SWD_TRANS_SM_READ_INDEX;
-            swd_trans_match_mask <= 32'd0;
-            swd_trans_num <= 8'd0;
-            swd_trans_cnt <= 8'd0;
-            swd_trans_requset <= 8'd0;
-            swd_trans_timestamp <= 1'd0;
-            swd_trans_match_cnt <= 1'd0;
-            swd_trans_seq_tx_valid <= 1'd0;
-            swd_trans_trig_requset <= 4'd0;
-            swd_trans_trig_ret_sm <= 26'd0;
-            swd_trans_trig_en_wdata <= 1'd0;
-            swd_trans_trig_en_wtime <= 1'd0;
-            swd_trans_trig_en_cnt <= 1'd0;
-            swd_trans_trig_wtime_first <= 1'd0;
+            transfer_ram_write_en <= 1'd0;
+            transfer_ram_write_data <= 8'd0;
+            transfer_ram_write_addr <= 10'd0;
+            transfer_packet_len <= 1'd0;
+            transfer_post_read <= 0;
+            transfer_check_write <= 0;
+            transfer_has_error <= 0;
+            transfer_match_failed <= 1'd0;
+            transfer_wdata <= 32'd0;
+            transfer_sm <= TRANS_SM_READ_INDEX;
+            transfer_match_mask <= 32'd0;
+            transfer_num <= 8'd0;
+            transfer_cnt <= 8'd0;
+            transfer_requset <= 8'd0;
+            transfer_timestamp <= 1'd0;
+            transfer_match_cnt <= 1'd0;
+            transfer_seq_tx_valid <= 1'd0;
+            transfer_trig_requset <= 4'd0;
+            transfer_trig_ret_sm <= 26'd0;
+            transfer_trig_en_wdata <= 1'd0;
+            transfer_trig_en_wtime <= 1'd0;
+            transfer_trig_en_cnt <= 1'd0;
+            transfer_trig_wtime_first <= 1'd0;
+            transfer_trig_ir <= 1'd0;
+            transfer_first_transfer <= 1'd0;
             done[`CMD_TRANSFER_SHIFT] <= 1'd0;
         end
         else begin
-            swd_trans_ram_write_en <= 1'd0;
-            swd_trans_seq_tx_valid <= 1'd0;
+            transfer_ram_write_en <= 1'd0;
+            transfer_seq_tx_valid <= 1'd0;
 
             if (start[`CMD_TRANSFER_SHIFT] && SWJ_CR_MODE == 1'd1) begin
-                case(swd_trans_sm)
-                    SWD_TRANS_SM_READ_INDEX: begin
-                        swd_trans_post_read <= 1'd0;
-                        swd_trans_check_write <= 1'd0;
-                        swd_trans_has_error <= 1'd0;
-                        swd_trans_match_failed <= 1'd0;
-                        swd_trans_packet_len <= 10'd2;
-                        swd_trans_ram_write_addr <= 10'd1;
+                case(transfer_sm)
+                    TRANS_SM_READ_INDEX: begin
+                        transfer_post_read <= 1'd0;
+                        transfer_check_write <= 1'd0;
+                        transfer_has_error <= 1'd0;
+                        transfer_match_failed <= 1'd0;
+                        transfer_packet_len <= 10'd2;
+                        transfer_ram_write_addr <= 10'd1;
+                        transfer_first_transfer <= 1'd1;
                         if (dap_in_tvalid) begin
-                            swd_trans_sm <= SWD_TRANS_SM_READ_COUNT;
+                            transfer_sm <= TRANS_SM_READ_COUNT;
                         end
                     end
-                    SWD_TRANS_SM_READ_COUNT: begin
+                    TRANS_SM_READ_COUNT: begin
                         if (dap_in_tvalid) begin
-                            swd_trans_sm <= SWD_TRANS_SM_READ_REQUSET;
-                            swd_trans_num <= dap_in_tdata;
-                            swd_trans_cnt <= 8'd0;
+                            transfer_sm <= TRANS_SM_READ_REQUSET;
+                            transfer_num <= dap_in_tdata;
+                            transfer_cnt <= 8'd0;
                         end
                     end
-                    SWD_TRANS_SM_READ_REQUSET: begin
-                        if (swd_trans_num) begin
+                    TRANS_SM_READ_REQUSET: begin
+                        if (transfer_num) begin
                             if (dap_in_tvalid) begin
-                                swd_trans_num <= swd_trans_num - 1'd1;
-                                swd_trans_requset <= dap_in_tdata;
+                                transfer_num <= transfer_num - 1'd1;
+                                transfer_requset <= dap_in_tdata;
                                 if (dap_in_tdata[1] == 1'd0 || dap_in_tdata[5:4] != 2'd0) begin
                                     // 写请求或设置MASK有数据段的请求
-                                    swd_trans_sm <= SWD_TRANS_SM_READ_DATA0;
+                                    transfer_sm <= TRANS_SM_READ_DATA0;
                                 end
                                 else begin
                                     // READ/MATCH请求先检查是否需求处理post_read
-                                    swd_trans_sm <= swd_trans_has_error ? SWD_TRANS_SM_READ_REQUSET : SWD_TRANS_SM_CHECK_POSTREAD;
+                                    transfer_sm <= transfer_has_error ? TRANS_SM_READ_REQUSET : TRANS_SM_CHECK_POSTREAD;
                                 end
                             end
                         end
                         else begin
-                            swd_trans_sm <= swd_trans_has_error ? SWD_TRANS_SM_WRTE_COUNT : SWD_TRANS_SM_CHECK_WIRTE;
+                            transfer_sm <= transfer_has_error ? TRANS_SM_WRTE_COUNT : TRANS_SM_CHECK_WIRTE;
                         end
                     end
-                    SWD_TRANS_SM_READ_DATA0: begin
+                    TRANS_SM_READ_DATA0: begin
                         if (dap_in_tvalid) begin
-                            swd_trans_wdata[7:0] <= dap_in_tdata;
-                            if (swd_trans_requset_MASK) begin
-                                swd_trans_match_mask[7:0] <= dap_in_tdata;
+                            transfer_wdata[7:0] <= dap_in_tdata;
+                            if (transfer_requset_MASK) begin
+                                transfer_match_mask[7:0] <= dap_in_tdata;
                             end
-                            swd_trans_sm <= SWD_TRANS_SM_READ_DATA1;
+                            transfer_sm <= TRANS_SM_READ_DATA1;
                         end
                     end
-                    SWD_TRANS_SM_READ_DATA1: begin
+                    TRANS_SM_READ_DATA1: begin
                         if (dap_in_tvalid) begin
-                            swd_trans_wdata[15:8] <= dap_in_tdata;
-                            if (swd_trans_requset_MASK) begin
-                                swd_trans_match_mask[15:8] <= dap_in_tdata;
+                            transfer_wdata[15:8] <= dap_in_tdata;
+                            if (transfer_requset_MASK) begin
+                                transfer_match_mask[15:8] <= dap_in_tdata;
                             end
-                            swd_trans_sm <= SWD_TRANS_SM_READ_DATA2;
+                            transfer_sm <= TRANS_SM_READ_DATA2;
                         end
                     end
-                    SWD_TRANS_SM_READ_DATA2: begin
+                    TRANS_SM_READ_DATA2: begin
                         if (dap_in_tvalid) begin
-                            swd_trans_wdata[23:16] <= dap_in_tdata;
-                            if (swd_trans_requset_MASK) begin
-                                swd_trans_match_mask[23:16] <= dap_in_tdata;
+                            transfer_wdata[23:16] <= dap_in_tdata;
+                            if (transfer_requset_MASK) begin
+                                transfer_match_mask[23:16] <= dap_in_tdata;
                             end
-                            swd_trans_sm <= SWD_TRANS_SM_READ_DATA3;
+                            transfer_sm <= TRANS_SM_READ_DATA3;
                         end
                     end
-                    SWD_TRANS_SM_READ_DATA3: begin
+                    TRANS_SM_READ_DATA3: begin
                         if (dap_in_tvalid) begin
-                            swd_trans_wdata[31:24] <= dap_in_tdata;
-                            if (swd_trans_has_error) begin
-                                swd_trans_sm <= SWD_TRANS_SM_READ_REQUSET;
+                            transfer_wdata[31:24] <= dap_in_tdata;
+                            if (transfer_has_error) begin
+                                transfer_sm <= TRANS_SM_READ_REQUSET;
                             end
-                            else if (swd_trans_requset_MASK) begin
-                                swd_trans_match_mask[31:24] <= dap_in_tdata;
-                                swd_trans_cnt <= swd_trans_cnt + 1'd1;
-                                swd_trans_sm <= SWD_TRANS_SM_READ_REQUSET;
+                            else if (transfer_requset_MASK) begin
+                                transfer_match_mask[31:24] <= dap_in_tdata;
+                                transfer_cnt <= transfer_cnt + 1'd1;
+                                transfer_sm <= TRANS_SM_READ_REQUSET;
 `ifdef SIMULATION
 
-                                $display("WRITE MASK %08x", {dap_in_tdata, swd_trans_match_mask[23:0]});
+                                $display("WRITE MASK %08x", {dap_in_tdata, transfer_match_mask[23:0]});
 `endif
 
                             end
                             else begin
-                                swd_trans_sm <= SWD_TRANS_SM_CHECK_POSTREAD;
+                                transfer_sm <= TRANS_SM_CHECK_POSTREAD;
                             end
                         end
                     end
-                    SWD_TRANS_SM_CHECK_POSTREAD: begin
+                    TRANS_SM_CHECK_POSTREAD: begin
 `ifdef SIMULATION
-                        $display("SWD_TRANS_SM_CHECK_POSTREAD %d", swd_trans_post_read);
+                        $display("TRANS_SM_CHECK_POSTREAD %d", transfer_post_read);
 `endif
 
                         // 需要先清除post_read状态的请求：MATCH、WriteAP、WriteDP、ReadDP (ReadAP之外所有请求)
-                        if (swd_trans_post_read && (swd_trans_requset_MATCH || {swd_trans_requset_RnW, swd_trans_requset_APnDP} != 2'b11)) begin
-                            swd_trans_post_read <= 1'd0;
+                        if (transfer_post_read && (transfer_requset_MATCH || {transfer_requset_RnW, transfer_requset_APnDP} != 2'b11)) begin
+                            transfer_post_read <= 1'd0;
                             // RDBUFF
-                            swd_trans_trig_requset <= 4'b1110;
+                            transfer_trig_requset <= 4'b1110;
                             // 写入延迟数据
-                            swd_trans_trig_en_wdata <= 1'd1;
+                            transfer_trig_en_wdata <= 1'd1;
                             // 读请求按配置写入时间戳，写请求没有时间戳
-                            swd_trans_trig_en_wtime <= swd_trans_requset_RnW ? swd_trans_requset_TIMESTAMP : 1'd0;
+                            transfer_trig_en_wtime <= transfer_requset_RnW ? transfer_requset_TIMESTAMP : 1'd0;
                             // 不计入命令数量
-                            swd_trans_trig_en_cnt <= 1'd0;
-                            swd_trans_trig_wtime_first <= 1'd0;
+                            transfer_trig_en_cnt <= 1'd0;
+                            transfer_trig_wtime_first <= 1'd0;
 
-                            if (swd_trans_requset_MATCH) begin // 匹配读取请求
-                                swd_trans_trig_ret_sm <= SWD_TRANS_SM_MATCH_STEP1;
+                            if (transfer_requset_MATCH) begin // 匹配读取请求
+                                transfer_trig_ret_sm <= TRANS_SM_MATCH_STEP1;
                             end
-                            else if (swd_trans_requset_RnW == 1'd0) begin // 写请求
-                                swd_trans_trig_ret_sm <= SWD_TRANS_SM_WRITE_APDP;
+                            else if (transfer_requset_RnW == 1'd0) begin // 写请求
+                                transfer_trig_ret_sm <= TRANS_SM_WRITE_APDP;
                             end
                             else begin // 读DP请求
-                                swd_trans_trig_ret_sm <= SWD_TRANS_SM_READ_DP;
+                                transfer_trig_ret_sm <= TRANS_SM_READ_DP;
                             end
-
-                            swd_trans_sm <= SWD_TRANS_SM_TRIGGER;
+                            transfer_first_transfer <= 1'd0;
+                            transfer_trig_ir <= transfer_first_transfer | transfer_last_APnDP;
+                            transfer_last_APnDP <= 1'd0;
+                            transfer_sm <= TRANS_SM_TRIGGER;
                         end
                         else begin
-                            if (swd_trans_requset_MATCH) begin // 匹配读取请求
-                                swd_trans_sm <= swd_trans_requset_APnDP ? SWD_TRANS_SM_MATCH_STEP1 : SWD_TRANS_SM_MATCH_STEP2;
+                            if (transfer_requset_MATCH) begin // 匹配读取请求
+                                transfer_sm <= transfer_requset_APnDP ? TRANS_SM_MATCH_STEP1 : TRANS_SM_MATCH_STEP2;
                             end
-                            else if (swd_trans_requset_RnW == 1'd0) begin // 写请求
-                                swd_trans_sm <= SWD_TRANS_SM_WRITE_APDP;
+                            else if (transfer_requset_RnW == 1'd0) begin // 写请求
+                                transfer_sm <= TRANS_SM_WRITE_APDP;
                             end
-                            else if (swd_trans_requset_APnDP) begin // 读AP请求
-                                swd_trans_sm <= SWD_TRANS_SM_READ_AP;
+                            else if (transfer_requset_APnDP) begin // 读AP请求
+                                transfer_sm <= TRANS_SM_READ_AP;
                             end
                             else begin
-                                swd_trans_sm <= SWD_TRANS_SM_READ_DP;
+                                transfer_sm <= TRANS_SM_READ_DP;
                             end
                         end
                     end
-                    SWD_TRANS_SM_READ_AP: begin // 读AP
+                    TRANS_SM_READ_AP: begin // 读AP
                         //                requset, en_wdata, en_wtime, en_cnt, wtime_first, ret_sm
-                        SWD_TRANS_TRIGGER(swd_trans_requset[3:0], swd_trans_post_read, swd_trans_requset_TIMESTAMP, 1'd1, 1'd0, SWD_TRANS_SM_READ_REQUSET);
-                        swd_trans_check_write <= 1'd0;
-                        swd_trans_post_read <= 1'd1;
+                        TRANS_TRIGGER(transfer_requset[3:0], transfer_post_read, transfer_requset_TIMESTAMP, 1'd1, 1'd0, TRANS_SM_READ_REQUSET);
+                        transfer_check_write <= 1'd0;
+                        transfer_post_read <= 1'd1;
 `ifdef SIMULATION
 
-                        $display("SWD_TRANS_SM_READ_AP");
+                        $display("TRANS_SM_READ_AP");
 `endif
 
                     end
 
-                    SWD_TRANS_SM_READ_DP: begin // 读DP
+                    TRANS_SM_READ_DP: begin // 读DP
                         //                requset,          en_wdata, en_wtime, en_cnt, wtime_first,             ret_sm
-                        SWD_TRANS_TRIGGER(swd_trans_requset[3:0], 1'd1, 1'd0, 1'd1, swd_trans_requset_TIMESTAMP, SWD_TRANS_SM_READ_REQUSET);
-                        swd_trans_check_write <= 1'd0;
+                        TRANS_TRIGGER(transfer_requset[3:0], 1'd1, 1'd0, 1'd1, transfer_requset_TIMESTAMP, TRANS_SM_READ_REQUSET);
+                        transfer_check_write <= 1'd0;
                     end
 
-                    SWD_TRANS_SM_WRITE_APDP: begin // 写AP/DP
+                    TRANS_SM_WRITE_APDP: begin // 写AP/DP
                         //                requset,              en_wdata,       en_wtime,          en_cnt, wtime_first, ret_sm
-                        SWD_TRANS_TRIGGER(swd_trans_requset[3:0], 1'd0, swd_trans_requset_TIMESTAMP, 1'd1, 1'd0, SWD_TRANS_SM_READ_REQUSET);
-                        swd_trans_check_write <= 1'd1;
+                        TRANS_TRIGGER(transfer_requset[3:0], 1'd0, transfer_requset_TIMESTAMP, 1'd1, 1'd0, TRANS_SM_READ_REQUSET);
+                        transfer_check_write <= 1'd1;
                     end
 
-                    SWD_TRANS_SM_MATCH_STEP1: begin // 匹配第一步，AP预读取
+                    TRANS_SM_MATCH_STEP1: begin // 匹配第一步，AP预读取
                         //                requset,           en_wdata, en_wtime, en_cnt, wtime_first, ret_sm
-                        SWD_TRANS_TRIGGER(swd_trans_requset[3:0], 1'd0, 1'd0, 1'd0, 1'd0, SWD_TRANS_SM_MATCH_STEP2);
+                        TRANS_TRIGGER(transfer_requset[3:0], 1'd0, 1'd0, 1'd0, 1'd0, TRANS_SM_MATCH_STEP2);
                     end
 
-                    SWD_TRANS_SM_MATCH_STEP2: begin // 匹配第二步，读取正式数据
+                    TRANS_SM_MATCH_STEP2: begin // 匹配第二步，读取正式数据
                         //                requset,           en_wdata, en_wtime, en_cnt, wtime_first, ret_sm
-                        SWD_TRANS_TRIGGER(swd_trans_requset[3:0], 1'd0, 1'd0, 1'd0, 1'd0, SWD_TRANS_SM_MATCH_STEP3);
+                        TRANS_TRIGGER(transfer_requset[3:0], 1'd0, 1'd0, 1'd0, 1'd0, TRANS_SM_MATCH_STEP3);
                     end
 
-                    SWD_TRANS_SM_MATCH_STEP3: begin // 匹配第三步，循环读取匹配
-                        swd_trans_check_write <= 1'd0;
-                        if ((swd_trans_match_mask & seq_rx_data) == swd_trans_wdata) begin
-                            swd_trans_cnt <= swd_trans_cnt + 1'd1;
-                            swd_trans_sm <= SWD_TRANS_SM_READ_REQUSET;
+                    TRANS_SM_MATCH_STEP3: begin // 匹配第三步，循环读取匹配
+                        transfer_check_write <= 1'd0;
+                        if ((transfer_match_mask & seq_rx_data) == transfer_wdata) begin
+                            transfer_cnt <= transfer_cnt + 1'd1;
+                            transfer_sm <= TRANS_SM_READ_REQUSET;
                         end
-                        else if (swd_trans_match_cnt + 1'd1 == SWJ_MATCH_RETRY) begin
-                            swd_trans_match_failed <= 1'd1;
-                            swd_trans_has_error <= 1'd1;
-                            swd_trans_sm <= SWD_TRANS_SM_READ_REQUSET;
+                        else if (transfer_match_cnt + 1'd1 == SWJ_MATCH_RETRY) begin
+                            transfer_match_failed <= 1'd1;
+                            transfer_has_error <= 1'd1;
+                            transfer_sm <= TRANS_SM_READ_REQUSET;
                         end
                         else begin
                             //                requset,           en_wdata, en_wtime, en_cnt, wtime_first, ret_sm
-                            SWD_TRANS_TRIGGER(swd_trans_requset[3:0], 1'd0, 1'd0, 1'd0, 1'd0, SWD_TRANS_SM_MATCH_STEP3);
-                            swd_trans_match_cnt <= swd_trans_match_cnt + 1'd1;
+                            TRANS_TRIGGER(transfer_requset[3:0], 1'd0, 1'd0, 1'd0, 1'd0, TRANS_SM_MATCH_STEP3);
+                            transfer_match_cnt <= transfer_match_cnt + 1'd1;
                         end
                     end
-                    SWD_TRANS_SM_CHECK_WIRTE: begin
+                    TRANS_SM_CHECK_WIRTE: begin
 `ifdef SIMULATION
-                        $display("SWD_TRANS_SM_CHECK_WIRTE pr:%d wc:%d", swd_trans_post_read, swd_trans_check_write);
+                        $display("TRANS_SM_CHECK_WIRTE pr:%d wc:%d", transfer_post_read, transfer_check_write);
 `endif
 
-                        if (swd_trans_post_read) begin
+                        if (transfer_post_read) begin
                             //                requset, en_wdata, en_wtime, en_cnt, wtime_first, ret_sm
-                            SWD_TRANS_TRIGGER(4'b1110, 1'd1, 1'd0, 1'd0, 1'd0, SWD_TRANS_SM_WRTE_COUNT);
+                            TRANS_TRIGGER(4'b1110, 1'd1, 1'd0, 1'd0, 1'd0, TRANS_SM_WRTE_COUNT);
                         end
-                        else if (swd_trans_check_write) begin
+                        else if (transfer_check_write) begin
                             //                requset, en_wdata, en_wtime, en_cnt, wtime_first, ret_sm
-                            SWD_TRANS_TRIGGER(4'b1110, 1'd0, 1'd0, 1'd0, 1'd0, SWD_TRANS_SM_WRTE_COUNT);
+                            TRANS_TRIGGER(4'b1110, 1'd0, 1'd0, 1'd0, 1'd0, TRANS_SM_WRTE_COUNT);
                         end
                         else begin
-                            swd_trans_sm <= SWD_TRANS_SM_WRTE_COUNT;
+                            transfer_sm <= TRANS_SM_WRTE_COUNT;
                         end
                     end
-                    SWD_TRANS_SM_WRTE_COUNT: begin
-                        swd_trans_ram_write_addr <= 10'd0;
-                        swd_trans_ram_write_data <= swd_trans_cnt;
-                        swd_trans_ram_write_en <= 1'd1;
-                        swd_trans_sm <= swd_trans_sm << 1'd1;
+                    TRANS_SM_WRTE_COUNT: begin
+                        transfer_ram_write_addr <= 10'd0;
+                        transfer_ram_write_data <= transfer_cnt;
+                        transfer_ram_write_en <= 1'd1;
+                        transfer_sm <= transfer_sm << 1'd1;
                     end
-                    SWD_TRANS_SM_WRTE_STATUS: begin
-                        swd_trans_ram_write_addr <= 10'd1;
-                        swd_trans_ram_write_data <= {3'd0, swd_trans_match_failed, seq_rx_flag[3:0]};
-                        swd_trans_ram_write_en <= 1'd1;
-                        swd_trans_sm <= SWD_TRANS_SM_DONE;
+                    TRANS_SM_WRTE_STATUS: begin
+                        transfer_ram_write_addr <= 10'd1;
+                        transfer_ram_write_data <= {3'd0, transfer_match_failed, seq_rx_flag[3:0]};
+                        transfer_ram_write_en <= 1'd1;
+                        transfer_sm <= TRANS_SM_DONE;
                     end
-                    SWD_TRANS_SM_TRIGGER: begin
+                    TRANS_SM_TRIGGER: begin
 `ifdef SIMULATION
-                        case (swd_trans_trig_requset[1:0])
+                        case (transfer_trig_requset[1:0])
                             2'b00: begin
-                                $display("W DP %X", swd_trans_trig_requset[3:2] << 2);
+                                $display("W DP %X IR %b", transfer_trig_requset[3:2] << 2, transfer_trig_ir);
                             end
                             2'b10: begin
-                                if (swd_trans_trig_requset[3:2] == 2'b00) begin
-                                    $display("R DP %X", swd_trans_trig_requset[3:2] << 2);
+                                if (transfer_trig_requset[3:2] == 2'b00) begin
+                                    $display("R DP %X IR %b", transfer_trig_requset[3:2] << 2, transfer_trig_ir);
                                 end
                                 else begin
-                                    $display("RDBUFF");
+                                    $display("RDBUFF IR %b", transfer_trig_ir);
                                 end
                             end
                             2'b01: begin
-                                $display("W AP %X", swd_trans_trig_requset[3:2] << 2);
+                                $display("W AP %X IR %b", transfer_trig_requset[3:2] << 2, transfer_trig_ir);
                             end
                             2'b11: begin
-                                $display("R AP %X", swd_trans_trig_requset[3:2] << 2);
+                                $display("R AP %X IR %b", transfer_trig_requset[3:2] << 2, transfer_trig_ir);
                             end
                         endcase
 `endif
 
-                        swd_trans_timestamp <= clk_timer;
-                        swd_trans_sm <= SWD_TRANS_SM_WAIT;
+                        transfer_timestamp <= clk_timer;
+                        transfer_sm <= TRANS_SM_WAIT;
                     end
-                    SWD_TRANS_SM_WAIT: begin
+                    TRANS_SM_WAIT: begin
                         if (seq_rx_valid) begin
                             if (seq_rx_flag[3:0] == 4'b0001) begin
-                                if (swd_trans_trig_en_cnt) begin
-                                    swd_trans_cnt <= swd_trans_cnt + 1'd1;
+                                if (transfer_trig_en_cnt) begin
+                                    transfer_cnt <= transfer_cnt + 1'd1;
                                 end
-                                if (swd_trans_trig_wtime_first) begin
-                                    swd_trans_sm <= SWD_TRANS_SM_WRITE_TIME0;
+                                if (transfer_trig_wtime_first) begin
+                                    transfer_sm <= TRANS_SM_WRITE_TIME0;
                                 end
-                                else if (swd_trans_trig_en_wdata) begin
-                                    swd_trans_sm <= SWD_TRANS_SM_WRITE_DATA0;
+                                else if (transfer_trig_en_wdata) begin
+                                    transfer_sm <= TRANS_SM_WRITE_DATA0;
                                 end
-                                else if (swd_trans_trig_en_wtime) begin
-                                    swd_trans_sm <= SWD_TRANS_SM_WRITE_TIME0;
+                                else if (transfer_trig_en_wtime) begin
+                                    transfer_sm <= TRANS_SM_WRITE_TIME0;
                                 end
                                 else begin
-                                    swd_trans_sm <= swd_trans_trig_ret_sm;
+                                    transfer_sm <= transfer_trig_ret_sm;
                                 end
                             end
                             else begin
-                                swd_trans_has_error <= 1'd1;
-                                swd_trans_sm <= SWD_TRANS_SM_READ_REQUSET;
+                                transfer_has_error <= 1'd1;
+                                transfer_sm <= TRANS_SM_READ_REQUSET;
                             end
                         end
                     end
-                    SWD_TRANS_SM_WRITE_DATA0: begin
-                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
-                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
-                        swd_trans_ram_write_data <= seq_rx_data[7:0];
-                        swd_trans_ram_write_en <= 1'd1;
-                        swd_trans_sm <= swd_trans_sm << 1'd1;
+                    TRANS_SM_WRITE_DATA0: begin
+                        transfer_packet_len <= transfer_packet_len + 1'd1;
+                        transfer_ram_write_addr <= transfer_ram_write_addr + 1'd1;
+                        transfer_ram_write_data <= seq_rx_data[7:0];
+                        transfer_ram_write_en <= 1'd1;
+                        transfer_sm <= transfer_sm << 1'd1;
                     end
-                    SWD_TRANS_SM_WRITE_DATA1: begin
-                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
-                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
-                        swd_trans_ram_write_data <= seq_rx_data[15:8];
-                        swd_trans_ram_write_en <= 1'd1;
-                        swd_trans_sm <= swd_trans_sm << 1'd1;
+                    TRANS_SM_WRITE_DATA1: begin
+                        transfer_packet_len <= transfer_packet_len + 1'd1;
+                        transfer_ram_write_addr <= transfer_ram_write_addr + 1'd1;
+                        transfer_ram_write_data <= seq_rx_data[15:8];
+                        transfer_ram_write_en <= 1'd1;
+                        transfer_sm <= transfer_sm << 1'd1;
                     end
-                    SWD_TRANS_SM_WRITE_DATA2: begin
-                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
-                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
-                        swd_trans_ram_write_data <= seq_rx_data[23:16];
-                        swd_trans_ram_write_en <= 1'd1;
-                        swd_trans_sm <= swd_trans_sm << 1'd1;
+                    TRANS_SM_WRITE_DATA2: begin
+                        transfer_packet_len <= transfer_packet_len + 1'd1;
+                        transfer_ram_write_addr <= transfer_ram_write_addr + 1'd1;
+                        transfer_ram_write_data <= seq_rx_data[23:16];
+                        transfer_ram_write_en <= 1'd1;
+                        transfer_sm <= transfer_sm << 1'd1;
                     end
-                    SWD_TRANS_SM_WRITE_DATA3: begin
-                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
-                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
-                        swd_trans_ram_write_data <= seq_rx_data[31:24];
-                        swd_trans_ram_write_en <= 1'd1;
-                        if (!swd_trans_trig_en_wtime || swd_trans_trig_wtime_first) begin
-                            swd_trans_sm <= swd_trans_trig_ret_sm;
+                    TRANS_SM_WRITE_DATA3: begin
+                        transfer_packet_len <= transfer_packet_len + 1'd1;
+                        transfer_ram_write_addr <= transfer_ram_write_addr + 1'd1;
+                        transfer_ram_write_data <= seq_rx_data[31:24];
+                        transfer_ram_write_en <= 1'd1;
+                        if (!transfer_trig_en_wtime || transfer_trig_wtime_first) begin
+                            transfer_sm <= transfer_trig_ret_sm;
                         end
                         else begin
-                            swd_trans_sm <= swd_trans_sm << 1'd1;
+                            transfer_sm <= transfer_sm << 1'd1;
                         end
                     end
-                    SWD_TRANS_SM_WRITE_TIME0: begin
-                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
-                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
-                        swd_trans_ram_write_data <= swd_trans_timestamp[7:0];
-                        swd_trans_ram_write_en <= 1'd1;
-                        swd_trans_sm <= swd_trans_sm << 1'd1;
+                    TRANS_SM_WRITE_TIME0: begin
+                        transfer_packet_len <= transfer_packet_len + 1'd1;
+                        transfer_ram_write_addr <= transfer_ram_write_addr + 1'd1;
+                        transfer_ram_write_data <= transfer_timestamp[7:0];
+                        transfer_ram_write_en <= 1'd1;
+                        transfer_sm <= transfer_sm << 1'd1;
                     end
-                    SWD_TRANS_SM_WRITE_TIME1: begin
-                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
-                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
-                        swd_trans_ram_write_data <= swd_trans_timestamp[15:8];
-                        swd_trans_ram_write_en <= 1'd1;
-                        swd_trans_sm <= swd_trans_sm << 1'd1;
+                    TRANS_SM_WRITE_TIME1: begin
+                        transfer_packet_len <= transfer_packet_len + 1'd1;
+                        transfer_ram_write_addr <= transfer_ram_write_addr + 1'd1;
+                        transfer_ram_write_data <= transfer_timestamp[15:8];
+                        transfer_ram_write_en <= 1'd1;
+                        transfer_sm <= transfer_sm << 1'd1;
                     end
-                    SWD_TRANS_SM_WRITE_TIME2: begin
-                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
-                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
-                        swd_trans_ram_write_data <= swd_trans_timestamp[23:16];
-                        swd_trans_ram_write_en <= 1'd1;
-                        swd_trans_sm <= swd_trans_sm << 1'd1;
+                    TRANS_SM_WRITE_TIME2: begin
+                        transfer_packet_len <= transfer_packet_len + 1'd1;
+                        transfer_ram_write_addr <= transfer_ram_write_addr + 1'd1;
+                        transfer_ram_write_data <= transfer_timestamp[23:16];
+                        transfer_ram_write_en <= 1'd1;
+                        transfer_sm <= transfer_sm << 1'd1;
                     end
-                    SWD_TRANS_SM_WRITE_TIME3: begin
-                        swd_trans_packet_len <= swd_trans_packet_len + 1'd1;
-                        swd_trans_ram_write_addr <= swd_trans_ram_write_addr + 1'd1;
-                        swd_trans_ram_write_data <= swd_trans_timestamp[31:24];
-                        swd_trans_ram_write_en <= 1'd1;
-                        swd_trans_sm <= swd_trans_trig_wtime_first ? SWD_TRANS_SM_WRITE_DATA0 : swd_trans_trig_ret_sm;
+                    TRANS_SM_WRITE_TIME3: begin
+                        transfer_packet_len <= transfer_packet_len + 1'd1;
+                        transfer_ram_write_addr <= transfer_ram_write_addr + 1'd1;
+                        transfer_ram_write_data <= transfer_timestamp[31:24];
+                        transfer_ram_write_en <= 1'd1;
+                        transfer_sm <= transfer_trig_wtime_first ? TRANS_SM_WRITE_DATA0 : transfer_trig_ret_sm;
                     end
                 endcase
 
-                if (swd_trans_sm == SWD_TRANS_SM_DONE) begin
+                if (transfer_sm == TRANS_SM_DONE) begin
                     done[`CMD_TRANSFER_SHIFT] <= 1'd1;
                 end
             end
             else begin
-                swd_trans_sm <= SWD_TRANS_SM_READ_INDEX;
+                transfer_sm <= TRANS_SM_READ_INDEX;
                 done[`CMD_TRANSFER_SHIFT] <= 1'd0;
             end
         end
@@ -1633,11 +1656,11 @@ module DAP_SWJ #(
     assign dap_in_tready[`CMD_SWJ_PINS_SHIFT] = swj_pins_sm < SWJ_PINS_SM_WAIT_RESPONE;
 
     assign dap_in_tready[`CMD_TRANSFER_BLOCK_SHIFT] = (SWJ_CR_MODE == 1'd1) ?
-           (swd_block_trans_sm[7:0] != 8'd0) :
+           (transfer_block_sm[7:0] != 8'd0) :
            1'd0;
 
     assign dap_in_tready[`CMD_TRANSFER_SHIFT] = (SWJ_CR_MODE == 1'd1) ?
-           (swd_trans_sm[2] ? (swd_trans_num != 8'd0) : swd_trans_sm[6:0] != 7'd0) :
+           (transfer_sm[2] ? (transfer_num != 8'd0) : transfer_sm[6:0] != 7'd0) :
            1'd0;
 
     assign dap_in_tready[`CMD_JTAG_SEQUENCE_SHIFT] =
@@ -1659,7 +1682,7 @@ module DAP_SWJ #(
         end
     endtask
 
-    task SWD_TRANS_TRIGGER;
+    task TRANS_TRIGGER;
         input [3:0] requset;
         input en_wdata;
         input en_wtime;
@@ -1667,13 +1690,17 @@ module DAP_SWJ #(
         input wtime_first;
         input [31:0] ret_sm;
         begin
-            swd_trans_trig_requset <= requset;
-            swd_trans_trig_ret_sm <= ret_sm;
-            swd_trans_trig_en_wdata <= en_wdata;
-            swd_trans_trig_en_wtime <= en_wtime;
-            swd_trans_trig_en_cnt <= en_cnt;
-            swd_trans_trig_wtime_first <= wtime_first;
-            swd_trans_sm <= SWD_TRANS_SM_TRIGGER;
+            transfer_trig_requset <= requset;
+            transfer_trig_ret_sm <= ret_sm;
+            transfer_trig_en_wdata <= en_wdata;
+            transfer_trig_en_wtime <= en_wtime;
+            transfer_trig_en_cnt <= en_cnt;
+            transfer_trig_wtime_first <= wtime_first;
+            // IR触发条件：APnDP改变
+            transfer_trig_ir <= transfer_first_transfer | (transfer_last_APnDP ^ requset[0]);
+            transfer_first_transfer <= 1'd0;
+            transfer_last_APnDP <= requset[0];
+            transfer_sm <= TRANS_SM_TRIGGER;
         end
     endtask
 

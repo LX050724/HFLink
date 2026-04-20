@@ -107,6 +107,8 @@ module DAP_BaudGenerator#(
             sclk_sampling_r <= 1'd0;
             delay_chain_reg <= 7'd0;
             sclk_soe <= 1'd0;
+            cen_ff1 <= 1'd0;
+            cen <= 1'd0;
         end
         else begin
             cen_ff1 <= REG_CR_CEN;
