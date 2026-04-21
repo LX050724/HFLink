@@ -170,6 +170,26 @@ inline static void dap_gpio_set_tdi_odelay(DAP_TypeDef *dap, uint8_t delay)
     dap->GPIO.TDI_DELAY = delay;
 }
 
+inline static void dap_jtag_set_irlen(DAP_TypeDef *dap, uint8_t index, uint8_t irlen)
+{
+    dap->SWJ.JTAG_IR_CONF[index].IR_LEN = irlen;
+}
+
+inline static void dap_jtag_set_ir_before_len(DAP_TypeDef *dap, uint8_t index, uint8_t before_len)
+{
+    dap->SWJ.JTAG_IR_CONF[index].IR_BEFORE_LEN = before_len;
+}
+
+inline static void dap_jtag_set_ir_after_len(DAP_TypeDef *dap, uint8_t index, uint8_t after_len)
+{
+    dap->SWJ.JTAG_IR_CONF[index].IR_AFTER_LEN = after_len;
+}
+
+inline static void dap_jtag_set_tap_num(DAP_TypeDef *dap, uint8_t num)
+{
+    dap->SWJ.JTAG_CR = (dap->SWJ.JTAG_CR & ~0x0F) | (num & 0x0f);
+}
+
 // inline static void dap_gpio_set_direction(DAP_TypeDef *dap, uint8_t index, uint8_t dir)
 // {
 //     if (dir)

@@ -56,7 +56,8 @@ module DAP_Seqence (
 
     reg [CMD_INDEX_MAX-1:0] swj_busy;
     reg [CMD_INDEX_MAX-1:0] rx_valid;
-    reg [CMD_INDEX_MAX-1:0] rx_valid2;
+    reg [CMD_INDEX_MAX-1:0] rx_valid_hold;
+    reg rx_valid_delay;
     reg [15:0] rx_flag;
     reg [31:0] rx_data;
 
@@ -98,7 +99,7 @@ module DAP_Seqence (
             rx_valid_ff3 <= 1'd0;
         end
         else begin
-            rx_valid_ff1 <= rx_valid != 0 || rx_valid2 != 0;  // 只要任一命令的rx_valid被置位就认为有有效数据
+            rx_valid_ff1 <= rx_valid != 5'd0 || rx_valid_delay;
             rx_valid_ff2 <= rx_valid_ff1;
             rx_valid_ff3 <= rx_valid_ff2;
         end
@@ -111,7 +112,7 @@ module DAP_Seqence (
 
     // ========== 输出多路复用器 ==========
     always @(*) begin
-        casez((rx_valid | rx_valid2)) /*synthesis parallel_case*/
+        casez((rx_valid | rx_valid_hold)) /*synthesis parallel_case*/
             5'b????1: begin // SWD SEQ
                 rx_flag = 16'd0;
                 rx_data = {24'd0, swd_seq_rx_data};
@@ -198,12 +199,12 @@ module DAP_Seqence (
             end
             5'b?1???: begin  // JTAG_SEQ 活跃
                 SWDIO_TMS_O = jtag_seq_tms_o_reg;
-                SWDIO_TMS_T = 1'd0;
+                SWDIO_TMS_T = ~clock_oen[CMD_INDEX_JTAG_SEQ];
                 TDI_O       = jtag_seq_tdi_o_reg;
             end
             5'b1????: begin  // JTAG_TRANS 活跃
                 SWDIO_TMS_O = jtag_trans_tms_o_reg;
-                SWDIO_TMS_T = 1'd0;
+                SWDIO_TMS_T = ~clock_oen[CMD_INDEX_JTAG_TRANS];
                 TDI_O       = jtag_trans_tdi_o_reg;
             end
             default: begin
@@ -307,6 +308,7 @@ module DAP_Seqence (
     localparam [3:0] JTAG_TEST_LOGIC_RESET = 4'hF;
 
     reg jtag_seq_sm;
+    reg jtag_seq_tms;
     reg [3:0] jtag_seq_tx_count;
     reg [3:0] jtag_seq_rx_count;
     reg [7:0] jtag_seq_tx_data;
@@ -330,14 +332,16 @@ module DAP_Seqence (
     assign sclk_sampling_en = delay_clk_en == 5'h1f;  // 只要有任一命令的延时使能被关闭就复位采样时钟
 
     // ============================================================================
-    // rx_valid2 合并逻辑
+    // rx_valid_hold 合并逻辑
     // ============================================================================
     always @(posedge sclk or negedge resetn) begin
         if (!resetn) begin
-            rx_valid2 <= 0;
+            rx_valid_hold <= 5'd0;
+            rx_valid_delay <= 1'd0;
         end
         else begin
-            rx_valid2 <= swj_busy ? rx_valid : rx_valid | rx_valid2;
+            rx_valid_hold <= swj_busy != 5'd0 ? rx_valid : rx_valid | rx_valid_hold;
+            rx_valid_delay <= rx_valid != 5'd0;
         end
     end
 
@@ -442,7 +446,7 @@ module DAP_Seqence (
             delay_clk_en[CMD_INDEX_SWJ_PINS] <= 1'd1;
 
             case (swj_pin_sm) /*synthesis parallel_case*/
-                0: begin
+                1'd0: begin
                     if (tx_valid && current_cmd == `SEQ_CMD_SWJ_PINS && swj_busy == 8'd0) begin
                         // 位 0：SWCLK/TCK
                         if (swj_pin_select[0]) begin
@@ -482,7 +486,7 @@ module DAP_Seqence (
                     end
                 end
 
-                1: begin
+                1'd1: begin
                     if (swj_tick_cnt < 8'd120) begin
                         swj_tick_cnt <= swj_tick_cnt + 1'd1;
                     end
@@ -769,6 +773,7 @@ module DAP_Seqence (
     always @(posedge sclk or negedge resetn) begin
         if (!resetn) begin
             jtag_seq_sm <= 1'd0;
+            jtag_seq_tms <= 1'd0;
             jtag_seq_tx_count <= 4'd0;
             jtag_seq_rx_count <= 4'd0;
             jtag_seq_tx_data <= 8'd0;
@@ -793,27 +798,29 @@ module DAP_Seqence (
                         jtag_seq_rx_count <= tx_cmd[3:0];
                         jtag_seq_tx_data <= tx_data[7:0];
                         jtag_seq_rx_data <= 8'd0;
-                        jtag_seq_tms_o_reg <= tx_cmd[7];
+                        jtag_seq_tms <= tx_cmd[4];
                         delay_clk_en[CMD_INDEX_JTAG_SEQ] <= 1'd0; // 复位延迟时钟标志
                     end
                 end
                 1'd1: begin
                     if (sclk_negedge) begin
-                        clock_oen[CMD_INDEX_JTAG_SEQ] <= 1'd1;
-                        {jtag_seq_tx_data, jtag_seq_tdi_o_reg} <= {1'd0, jtag_seq_tx_data};
-
+                        
                         if (jtag_seq_tx_count != 0) begin
+                            clock_oen[CMD_INDEX_JTAG_SEQ] <= 1'd1;
+                            {jtag_seq_tx_data, jtag_seq_tdi_o_reg} <= {1'd0, jtag_seq_tx_data};
+                            jtag_seq_tms_o_reg <= jtag_seq_tms;
                             jtag_seq_tx_count <= jtag_seq_tx_count - 1'd1;
-                            jtag_seq_tms_o_reg <= 1'd0;
                         end
                         else begin
+                            jtag_seq_tms_o_reg <= 1'd0;
+                            jtag_seq_tdi_o_reg <= 1'd0;
                             clock_oen[CMD_INDEX_JTAG_SEQ] <= 1'd0;
                         end
                     end
 
                     if (sclk_sampling) begin
-                        jtag_seq_rx_data <= {SWO_TDO_I, jtag_seq_rx_data[7:1]};
                         if (jtag_seq_rx_count != 0) begin
+                            jtag_seq_rx_data <= {SWO_TDO_I, jtag_seq_rx_data[7:1]};
                             jtag_seq_rx_count <= jtag_seq_rx_count - 1'd1;
                         end
                         else begin

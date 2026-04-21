@@ -513,9 +513,9 @@ typedef struct {
     __IO uint32_t SWD_CR;
     __IO uint32_t JTAG_CR;
     struct {
+      __IO uint32_t IR_AFTER_LEN : 8;
+      __IO uint32_t IR_BEFORE_LEN : 8;
       __IO uint32_t IR_LEN : 4;
-      __IO uint32_t IR_AFTER_LEN : 14;
-      __IO uint32_t IR_BEFORE_LEN : 4;
     } JTAG_IR_CONF [8];
   } SWJ;
 } DAP_TypeDef;

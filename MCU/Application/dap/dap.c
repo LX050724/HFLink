@@ -1,11 +1,12 @@
 #include "DAP_config.h"
 #include "cmsis_compiler.h"
-#include "dap.h"
 #include "config_db/config_db.h"
+#include "dap.h"
 #include "usb/usbd_core.h"
 #include <GOWIN_M1.h>
 #include <GOWIN_M1_dap.h>
 #include <string.h>
+
 
 #ifdef DEBUG
 #include "SEGGER_RTT.h"
@@ -22,6 +23,7 @@ static void dap_transfer_configure_handler(DAP_TypeDef *dap);
 static void dap_host_status_handler(DAP_TypeDef *dap);
 static void dap_swj_clock_handler(DAP_TypeDef *dap);
 static void dap_swd_configure_handler(DAP_TypeDef *dap);
+static void dap_jtag_configure_handler(DAP_TypeDef *dap);
 static void dap_swo_transport_handler(DAP_TypeDef *dap);
 static void dap_swo_mode_handler(DAP_TypeDef *dap);
 void dap_vendor0_handler(DAP_TypeDef *dap);
@@ -52,6 +54,9 @@ void dap_irq_handler(DAP_TypeDef *dap)
     case ID_DAP_SWD_Configure:
         dap_swd_configure_handler(dap);
         break;
+    case ID_DAP_JTAG_Configure:
+        dap_jtag_configure_handler(dap);
+        break;
     case ID_DAP_SWO_Transport:
         dap_swo_transport_handler(dap);
         break;
@@ -66,7 +71,7 @@ void dap_irq_handler(DAP_TypeDef *dap)
         dap_write_data(dap, 0xff);
     }
 
-    DAP->SR = 0x80000000;
+    DAP->SR = 1;
 }
 
 static void dap_get_info_handler(DAP_TypeDef *dap)
@@ -103,7 +108,7 @@ static void dap_get_info_handler(DAP_TypeDef *dap)
         break;
     case DAP_ID_CAPABILITIES:
         dap_write_data(dap, 0x02);
-        dap_write_data(dap, 0xB1);
+        dap_write_data(dap, 0xB3);
         dap_write_data(dap, 0x01);
         break;
     case DAP_ID_TIMESTAMP_CLOCK:
@@ -192,7 +197,7 @@ static void dap_swj_clock_handler(DAP_TypeDef *dap)
     {
         reload = SystemCoreClock / clock;
     }
-    
+
     if (reload == 0)
     {
         DAP_DEBUG("SWJ Clock %d, Error\n", clock);
@@ -245,6 +250,42 @@ static void dap_swd_configure_handler(DAP_TypeDef *dap)
     {
         DAP_DEBUG("SWD tr %d, data phase %d, ignore\n", turn_cycle, data_phase);
     }
+    dap_write_data(dap, 0);
+}
+
+static void dap_jtag_configure_handler(DAP_TypeDef *dap)
+{
+    uint8_t irlen[8] = {0};
+    uint8_t ir_before = 0;
+    uint8_t ir_after = 0;
+    uint8_t count = dap_read_data(dap);
+    DAP_DEBUG("JTAG configure count %d\n", count);
+    if (count > 8)
+    {
+        dap_write_data(dap, 0xff);
+        return;
+    }
+    dap_jtag_set_tap_num(dap, count);
+    for (int i = 0; i < count; i++)
+    {
+        irlen[i] = dap_read_data(dap);
+        dap_jtag_set_ir_before_len(dap, i, ir_before);
+        dap_jtag_set_irlen(dap, i, irlen[i]);
+        ir_before += irlen[i];  
+        ir_after += irlen[i];
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        ir_after -= irlen[i];
+        dap_jtag_set_ir_after_len(dap, i, ir_after);
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        DAP_DEBUG("[%d] %d, %d, %d\n", i, dap->SWJ.JTAG_IR_CONF[i].IR_BEFORE_LEN, dap->SWJ.JTAG_IR_CONF[i].IR_LEN, dap->SWJ.JTAG_IR_CONF[i].IR_AFTER_LEN);
+    }
+
     dap_write_data(dap, 0);
 }
 

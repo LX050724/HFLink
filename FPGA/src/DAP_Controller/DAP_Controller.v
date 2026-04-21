@@ -291,7 +291,7 @@ module DAP_Controller #(
     // 一阶段解码器，命令字转换独热码
     reg [`CMD_REG_WIDTH-1:0] cmd_decoder_reslut;
     always @(*) begin
-        cmd_decoder_reslut = 12'd1;
+        cmd_decoder_reslut = 14'd0;
         case ((dap_sm == DAP_SM_WAIT_CMD) ? dap_in_tdata : processing_cmd)
             // ID_DAP_Transfer
             8'h05:
@@ -377,7 +377,7 @@ module DAP_Controller #(
     // MCU部分操作信号
     wire AHB_WRITE_DR = write_en && addr_equ(addr, DAP_DR_ADDR) && byte_strobe[0];
     wire AHB_READ_DR = read_en && addr_equ(addr, DAP_DR_ADDR);
-    wire AHB_CLEAR_FLAG = write_en && addr_equ(addr, DAP_SR_ADDR) && byte_strobe[3] && hwdatas[31];
+    wire AHB_CLEAR_FLAG = write_en && addr_equ(addr, DAP_SR_ADDR) && byte_strobe[0] && hwdatas[0];
 
     /*********************************************** MCU HELPER ***********************************************/
     reg [9:0] mcu_write_addr;
@@ -697,7 +697,7 @@ module DAP_Controller #(
                     hreadyouts = 1'd1;
                 end
                 DAP_SR_ADDR[ADDRWIDTH-1:2]: begin
-                    hrdatas = {worker_start_flags[`CMD_MCU_HELPER_SHIFT], 30'd0};
+                    hrdatas = worker_start_flags;
                     hreadyouts = 1'd1;
                 end
                 DAP_DR_ADDR[ADDRWIDTH-1:2]: begin
