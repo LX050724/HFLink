@@ -320,7 +320,6 @@ module DAP_SWJ #(
     reg [31:0] transfer_timestamp;
     reg [15:0] transfer_match_cnt;
     reg transfer_seq_tx_valid;
-    reg transfer_last_APnDP;
 
     reg [3:0] transfer_trig_requset;
     reg [26:0] transfer_trig_ret_sm;
@@ -329,7 +328,7 @@ module DAP_SWJ #(
     reg transfer_trig_en_cnt;   // 传输成功时完成计数增加
     reg transfer_trig_wtime_first; // 先写入时间戳，同时有data和time全开的效果
     reg transfer_trig_ir;
-    reg transfer_first_transfer;
+    reg transfer_trig_first_transfer;
 
     // Bit 0: APnDP: 0 = Debug Port (DP), 1 = Access Port (AP).
     // Bit 1: RnW: 0 = Write Register, 1 = Read Register.
@@ -1087,7 +1086,7 @@ module DAP_SWJ #(
             transfer_trig_en_cnt <= 1'd0;
             transfer_trig_wtime_first <= 1'd0;
             transfer_trig_ir <= 1'd0;
-            transfer_first_transfer <= 1'd0;
+            transfer_trig_first_transfer <= 1'd0;
             done[`CMD_TRANSFER_SHIFT] <= 1'd0;
         end
         else begin
@@ -1103,7 +1102,7 @@ module DAP_SWJ #(
                         transfer_match_failed <= 1'd0;
                         transfer_packet_len <= 10'd2;
                         transfer_ram_write_addr <= 10'd1;
-                        transfer_first_transfer <= 1'd1;
+                        transfer_trig_first_transfer <= 1'd1;
                         if (dap_in_tvalid) begin
                             transfer_sm <= TRANS_SM_READ_COUNT;
                         end
@@ -1209,9 +1208,7 @@ module DAP_SWJ #(
                             else begin // 读DP请求
                                 transfer_trig_ret_sm <= TRANS_SM_READ_DP;
                             end
-                            transfer_first_transfer <= 1'd0;
-                            transfer_trig_ir <= transfer_first_transfer | transfer_last_APnDP;
-                            transfer_last_APnDP <= 1'd0;
+                            transfer_trig_ir <= transfer_trig_first_transfer | transfer_trig_requset[0];
                             transfer_sm <= TRANS_SM_TRIGGER;
                         end
                         else begin
@@ -1332,6 +1329,7 @@ module DAP_SWJ #(
                         endcase
 `endif
 
+                        transfer_trig_first_transfer <= 1'd0;
                         transfer_timestamp <= clk_timer;
                         transfer_sm <= TRANS_SM_WAIT;
                     end
@@ -1654,13 +1652,9 @@ module DAP_SWJ #(
 
     assign dap_in_tready[`CMD_SWJ_PINS_SHIFT] = swj_pins_sm < SWJ_PINS_SM_WAIT_RESPONE;
 
-    assign dap_in_tready[`CMD_TRANSFER_BLOCK_SHIFT] = (SWJ_CR_MODE == 1'd1) ?
-           (transfer_block_sm[7:0] != 8'd0) :
-           1'd0;
+    assign dap_in_tready[`CMD_TRANSFER_BLOCK_SHIFT] = transfer_block_sm[7:0] != 8'd0;
 
-    assign dap_in_tready[`CMD_TRANSFER_SHIFT] = (SWJ_CR_MODE == 1'd1) ?
-           (transfer_sm[2] ? (transfer_num != 8'd0) : transfer_sm[6:0] != 7'd0) :
-           1'd0;
+    assign dap_in_tready[`CMD_TRANSFER_SHIFT] = transfer_sm[2] ? (transfer_num != 8'd0) : transfer_sm[6:0] != 7'd0;
 
     assign dap_in_tready[`CMD_JTAG_SEQUENCE_SHIFT] =
            (jtag_seq_sm == JTAG_SEQ_SM_READ_SEQ_COUNT || jtag_seq_sm == JTAG_SEQ_SM_READ_SEQ_INFO || jtag_seq_sm == JTAG_SEQ_SM_READ_DATA);
@@ -1695,10 +1689,7 @@ module DAP_SWJ #(
             transfer_trig_en_wtime <= en_wtime;
             transfer_trig_en_cnt <= en_cnt;
             transfer_trig_wtime_first <= wtime_first;
-            // IR触发条件：APnDP改变
-            transfer_trig_ir <= transfer_first_transfer | (transfer_last_APnDP ^ requset[0]);
-            transfer_first_transfer <= 1'd0;
-            transfer_last_APnDP <= requset[0];
+            transfer_trig_ir <= transfer_trig_first_transfer | (transfer_trig_requset[0] ^ requset[0]);
             transfer_sm <= TRANS_SM_TRIGGER;
         end
     endtask

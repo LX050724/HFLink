@@ -187,7 +187,7 @@ inline static void dap_jtag_set_ir_after_len(DAP_TypeDef *dap, uint8_t index, ui
 
 inline static void dap_jtag_set_tap_num(DAP_TypeDef *dap, uint8_t num)
 {
-    dap->SWJ.JTAG_CR = (dap->SWJ.JTAG_CR & ~0x0F) | (num & 0x0f);
+    dap->SWJ.JTAG_CR = (dap->SWJ.JTAG_CR & ~0x0F) | num;
 }
 
 // inline static void dap_gpio_set_direction(DAP_TypeDef *dap, uint8_t index, uint8_t dir)

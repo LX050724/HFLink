@@ -262,10 +262,12 @@ static void dap_jtag_configure_handler(DAP_TypeDef *dap)
     DAP_DEBUG("JTAG configure count %d\n", count);
     if (count > 8)
     {
+        for (int i = 0; i < count; i++)
+            dap_read_data(DAP);
         dap_write_data(dap, 0xff);
         return;
     }
-    dap_jtag_set_tap_num(dap, count);
+    dap_jtag_set_tap_num(dap, count - 1);
     for (int i = 0; i < count; i++)
     {
         irlen[i] = dap_read_data(dap);
