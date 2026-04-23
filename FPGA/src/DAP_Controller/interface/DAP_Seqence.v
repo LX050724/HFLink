@@ -927,7 +927,7 @@ module DAP_Seqence (
                                 jtag_trans_tms_o_reg <= 1'd0;
                                 jtag_trans_tdi_o_reg <= 1'd1;
                                 jtag_trans_tx_count <= jtag_trans_tx_count - 1'd1;
-                                if (jtag_trans_tx_count - 1'd1 != 14'd0) begin
+                                if (jtag_trans_tx_count - 1'd1 != 8'd0) begin
                                     jtag_trans_tx_sm <= jtag_trans_tx_sm;
                                 end
                                 else begin
@@ -938,7 +938,7 @@ module DAP_Seqence (
                                 jtag_trans_tms_o_reg <= 1'd0;
                                 {jtag_trans_tx_shift, jtag_trans_tdi_o_reg} <= {1'd0, jtag_trans_tx_shift};
                                 jtag_trans_tx_count <= jtag_trans_tx_count - 1'd1;
-                                if (jtag_trans_tx_count - 1'd1 != 14'd0) begin
+                                if (jtag_trans_tx_count - 1'd1 != 8'd0) begin
                                     jtag_trans_tx_sm <= jtag_trans_tx_sm;
                                 end
                                 else begin
@@ -953,7 +953,7 @@ module DAP_Seqence (
                                 jtag_trans_tms_o_reg <= 1'd0;
                                 jtag_trans_tdi_o_reg <= 1'd1;
                                 jtag_trans_tx_count <= jtag_trans_tx_count - 1'd1;
-                                if (jtag_trans_tx_count - 1'd1 != 14'd0) begin
+                                if (jtag_trans_tx_count - 1'd1 != 8'd0) begin
                                     jtag_trans_tx_sm <= jtag_trans_tx_sm;
                                 end
                                 else begin
@@ -976,8 +976,8 @@ module DAP_Seqence (
                             end
                             5'd11: begin // Capture-DR -> Shift-DR Before
                                 jtag_trans_tms_o_reg <= 1'd0;
-                                jtag_trans_tx_count <= JTAG_COUNT - jtag_trans_index;
-                                if (JTAG_COUNT - jtag_trans_index == 0) begin
+                                jtag_trans_tx_count <= jtag_trans_index;
+                                if (jtag_trans_index == 3'd0) begin
                                     if (jtag_trans_idcode) begin
                                         jtag_trans_tx_count <= 6'd32;
                                         jtag_trans_rx_count <= 6'd32;
@@ -993,7 +993,7 @@ module DAP_Seqence (
                                 jtag_trans_tms_o_reg <= 1'd0;
                                 jtag_trans_tdi_o_reg <= 1'd0;
                                 jtag_trans_tx_count <= jtag_trans_tx_count - 1'd1;
-                                if (jtag_trans_tx_count - 1'd1 != 14'd0) begin
+                                if (jtag_trans_tx_count - 1'd1 != 8'd0) begin
                                     jtag_trans_tx_sm <= jtag_trans_tx_sm;
                                 end
                                 else begin
@@ -1012,12 +1012,12 @@ module DAP_Seqence (
                                 jtag_trans_tms_o_reg <= 1'd0;
                                 {jtag_trans_tx_shift, jtag_trans_tdi_o_reg} <= {1'd0, jtag_trans_tx_shift};
                                 jtag_trans_tx_count <= jtag_trans_tx_count - 1'd1;
-                                if (jtag_trans_tx_count - 1'd1 != 14'd0) begin
+                                if (jtag_trans_tx_count - 1'd1 != 8'd0) begin
                                     jtag_trans_tx_sm <= jtag_trans_tx_sm;
                                 end
                                 else begin
-                                    jtag_trans_tx_count <= jtag_trans_index;
-                                    if (jtag_trans_index == 0) begin
+                                    jtag_trans_tx_count <= JTAG_COUNT - jtag_trans_index;
+                                    if (JTAG_COUNT - jtag_trans_index == 0) begin
                                         jtag_trans_tms_o_reg <= 1'd1;  // -> Exit1-DR
                                         jtag_trans_tx_sm <= jtag_trans_tx_sm + 2;
                                     end
@@ -1027,7 +1027,7 @@ module DAP_Seqence (
                                 jtag_trans_tms_o_reg <= 1'd0;
                                 jtag_trans_tdi_o_reg <= 1'd0;
                                 jtag_trans_tx_count <= jtag_trans_tx_count - 1'd1;
-                                if (jtag_trans_tx_count - 1'd1 != 14'd0) begin
+                                if (jtag_trans_tx_count - 1'd1 != 8'd0) begin
                                     jtag_trans_tx_sm <= jtag_trans_tx_sm;
                                 end
                                 else begin
@@ -1061,10 +1061,10 @@ module DAP_Seqence (
                         end
                     end
 
-                    if (jtag_trans_tx_sm == 5'd18) begin
-                        jtag_trans_tx_sm <= 4'd0;
+                    if (jtag_trans_tx_sm == 5'd26) begin
                         if ((jtag_trans_rx_shift[2:0] == 3'b010) && (jtag_trans_retry_cnt != jtag_trans_retry_max) && !(jtag_trans_abort | jtag_trans_idcode)) begin
                             // WAIT 重试
+                            jtag_trans_tx_sm <= 5'd9;
                             jtag_trans_retry_cnt <= jtag_trans_retry_cnt + 1'd1;
                             delay_clk_en[CMD_INDEX_JTAG_TRANS] <= 1'd0;
                         end

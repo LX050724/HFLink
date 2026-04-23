@@ -1,3 +1,5 @@
+from cmath import rect
+import re
 from typing import List
 import usb.core
 import asyncio
@@ -38,8 +40,25 @@ class DAP_SWD_Seqence:
         else:
             self.cmd = int.to_bytes(bit_num & 0x1f | dir)
 
-
-class DAP_SWD_Requset:
+class DAP_JTAG_Seqence:
+    def __init__(self, bit_num: int, tms: bool=False, tdo_capture: bool=False, data: bytes|None=None):
+        self.bit_num = bit_num
+        self.data = data[0:self.byte_num]
+        if (bit_num == 64):
+            bit_num = 0
+        seq_info = bit_num & 0x1f
+        if tms:
+            seq_info |= 0x40
+        if tdo_capture:
+            seq_info |= 0x80
+        self.cmd = seq_info.to_bytes(1) + bytes(data)
+        self.success = False
+        self.read_data = None
+        if tdo_capture:
+            self.read_num = bit_num
+        else:
+            self.read_num = 0
+class DAP_Requset:
     def __init__(self, req:int, data: int|None=None):
         self.req = req
         self.data = data
@@ -158,7 +177,7 @@ class DAP:
         return self.swj_seqence(17*8, b'\xff\xff\xff\xff\xff\xff\xff\x9e\xe7\xff\xff\xff\xff\xff\xff\xff\x00')
 
     def swd_read_idcode(self):
-        ret = self.swd_transfer_block(1, DAP_TRANS_READ | DAP_TRANS_DP)
+        ret = self.transfer_block(1, DAP_TRANS_READ | DAP_TRANS_DP)
         return int.from_bytes(ret[-4:].tobytes(), 'little')
 
     def transfer_abort(self):
@@ -204,7 +223,7 @@ class DAP:
         # self._read(rd_len)
         return rd_len
 
-    def swd_transfer_block(self, trans_num, requse, data:List[int]|int|None=None):
+    def transfer_block(self, trans_num, requse, data:List[int]|int|None=None):
         cmd = b'\x06\x00' + int.to_bytes(trans_num, 2, 'little') + int.to_bytes(requse, 1)
         if (requse & DAP_TRANS_READ) == 0:
             if type(data) is list:
@@ -214,7 +233,7 @@ class DAP:
         self._write(cmd)
         return self._read()
 
-    def swd_transfer(self, requsets: List[DAP_SWD_Requset]):
+    def transfer(self, requsets: List[DAP_Requset]):
         cmd = b'\x05\x00' + len(requsets).to_bytes(1)
         for req in requsets:
             cmd += req.cmd
@@ -233,6 +252,35 @@ class DAP:
         cmd = b'\x13' + ((turn & 0x03) | (data_phase & 0x01) << 2).to_bytes(1)
         self.write(cmd)
         return self.read()
+    
+    def jtag_seqence(self, seq: List[DAP_JTAG_Seqence]):
+        cmd = b'\x14' + len(seq).to_bytes(1)
+        recv_len = 2
+        for item in seq:
+            cmd += item.cmd
+            recv_len += item.read_num
+        self._write(cmd)
+        recv_data = BytesIO(self._read(recv_len, 1000))
+        recv_data.read(1)
+        status = recv_data.read(1)
+        for i in range(len(seq)):
+            seq[i].read_data = recv_data.read(seq[i].read_num)
+        return status
+
+    def jtag_idcode(self, jtag_index: int):
+        cmd = b'\x16' + jtag_index.to_bytes(1)
+        self._write(cmd)
+        read_data = self._read(6, 1000).tobytes()
+        if len(read_data) != 6 or read_data[0] != 0x16:
+            raise RuntimeError('not match')
+        if read_data[1] != 0:
+            raise RuntimeError(f'status error: 0x{read_data[1]:02x}')
+        return int.from_bytes(read_data[2:], 'little')
+    
+    def jtag_configure(self, ir_len: List[int]):
+        cmd = b'\x15' + len(ir_len).to_bytes(1) + bytes(ir_len)
+        self._write(cmd)
+        return self._read(2, 1000)
 
     def read(self, n=512, timeout=10):
         return self._read(n, timeout)

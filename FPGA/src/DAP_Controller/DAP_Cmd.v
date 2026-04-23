@@ -49,11 +49,19 @@
 /**
  * SWD_Sequence
  * | 15 14 13 12 | 11 10  9  8  7  6  5 |    4 |       3  2  1  0 |
- * |  0  0  0  1 |  x  x  x  x  x  x  x | mode | Number of cycles |
+ * |  0  0  0  0 |  x  x  x  x  x  x  x | mode | Number of cycles |
  * mode 0: output; 1: input
  * Number of cycles [1-8]
  */
-`define SEQ_CMD_SWD_SEQ             4'd1
+`define SEQ_CMD_SWD_SEQ             4'd0
+
+/**
+ * JTAG_Sequence
+ * | 15 14 13 12 | 11 10  9  8  7  6  5 |   4 |        3  2  1  0 |
+ * |  0  0  0  1 |  x  x  x  x  x  x  x | TMS |  Number of cycles |
+ * Number of cycles [1-8]
+ */
+`define SEQ_CMD_JTAG_SEQ            4'd1
 
 /**
  * SWD_Transfer
@@ -68,14 +76,6 @@
  * |  0  0  1  1 |  x  x | IDCODE | JTAG Index | Abort | IR | A3 | A2 | RnW | APnDP |
  */
 `define SEQ_CMD_JTAG_TRANSFER       4'd3
-
-/**
- * JTAG_Sequence
- * | 15 14 13 12 | 11 10  9  8  7  6  5 |   4 |        3  2  1  0 |
- * |  0  1  0  0 |  x  x  x  x  x  x  x | TMS |  Number of cycles |
- * Number of cycles [1-8]
- */
-`define SEQ_CMD_JTAG_SEQ            4'd4
 
 /**
  * SWJ_Pins

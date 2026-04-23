@@ -406,7 +406,6 @@ module DAP_SWJ #(
     reg [9:0] jtag_seq_ram_write_addr;
     reg [7:0] jtag_seq_ram_write_data;
     reg jtag_seq_ram_write_en;
-    reg [9:0] jtag_seq_packet_len;
 
     // JTAG IDCODE控制器信号
     reg [9:0] jtag_idcode_ram_write_addr;
@@ -447,7 +446,6 @@ module DAP_SWJ #(
                 // | 11 10 |      9 |    8  7  6 |     5 |  4 |  3 |  2 |   1 |     0 |
                 // |  x  x | IDCODE | JTAG Index | Abort | IR | A3 | A2 | RnW | APnDP |
                 seq_tx_cmd = {SEQ_CMD_TRANSFER, 2'd0, 1'd0, jtag_index, 1'd0, transfer_block_ir, transfer_block_requset};
-                seq_tx_cmd = {SEQ_CMD_TRANSFER, 8'd0, transfer_block_requset};
                 seq_tx_data = transfer_block_data;
                 seq_tx_valid = transfer_block_seq_tx_valid;
             end
@@ -504,7 +502,7 @@ module DAP_SWJ #(
                 ram_write_addr = jtag_seq_ram_write_addr;
                 ram_write_data = jtag_seq_ram_write_data;
                 ram_write_en = jtag_seq_ram_write_en;
-                packet_len = jtag_seq_packet_len;  // JTAG Sequence returns captured TDO data length
+                packet_len = jtag_seq_ram_write_addr + 1'd1;  // JTAG Sequence returns captured TDO data length
                 seq_tx_cmd = {`SEQ_CMD_JTAG_SEQ, 7'd0, jtag_seq_tms, jtag_seq_trans_num};
                 seq_tx_data = {24'd0, jtag_seq_send_data};
                 seq_tx_valid = jtag_seq_tx_valid;
@@ -516,7 +514,7 @@ module DAP_SWJ #(
                 packet_len = 10'd5;
                 // | 11 10 |      9 |    8  7  6 |     5 |  4 |  3 |  2 |   1 |     0 |
                 // |  x  x | IDCODE | JTAG Index | Abort | IR | A3 | A2 | RnW | APnDP |
-                seq_tx_cmd = {`SEQ_CMD_JTAG_SEQ, 2'd0, 1'd1, jtag_index, 6'd0};
+                seq_tx_cmd = {`SEQ_CMD_JTAG_TRANSFER, 3'h1, jtag_index, 6'h10};
                 seq_tx_data = 32'd0;
                 seq_tx_valid = jtag_idcode_seq_tx_valid;
             end
@@ -1445,7 +1443,6 @@ module DAP_SWJ #(
             jtag_seq_ram_write_en <= 1'd0;
             jtag_seq_ram_write_data <= 8'd0;
             jtag_seq_ram_write_addr <= 10'd0;
-            jtag_seq_packet_len <= 10'd0;
             jtag_seq_sm <= JTAG_SEQ_SM_READ_SEQ_COUNT;
             jtag_seq_tms <= 1'd0;
             jtag_seq_capture_tdo <= 1'd0;
@@ -1454,7 +1451,6 @@ module DAP_SWJ #(
             jtag_seq_trans_num <= 4'd0;
             jtag_seq_send_data <= 8'd0;
             jtag_seq_tx_valid <= 1'd0;
-            jtag_seq_packet_len <= 10'd0;
             done[`CMD_JTAG_SEQUENCE_SHIFT] <= 1'd0;
         end
         else begin
@@ -1467,7 +1463,6 @@ module DAP_SWJ #(
                         // 读取Number of Sequences
                         if (dap_in_tvalid) begin
                             jtag_seq_num <= dap_in_tdata;
-                            jtag_seq_packet_len <= 10'd1;
                             jtag_seq_ram_write_addr <= 10'd0;
                             jtag_seq_ram_write_data <= 8'd0;
                             jtag_seq_ram_write_en <= 1'd1;
@@ -1509,7 +1504,6 @@ module DAP_SWJ #(
                                 jtag_seq_ram_write_addr <= jtag_seq_ram_write_addr + 1'd1;
                                 jtag_seq_ram_write_data <= seq_rx_data[7:0];
                                 jtag_seq_ram_write_en <= 1'd1;
-                                jtag_seq_packet_len <= jtag_seq_packet_len + 1'd1;
                             end
 
                             // 检查当前序列是否完成
