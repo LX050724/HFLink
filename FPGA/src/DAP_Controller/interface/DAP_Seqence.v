@@ -131,7 +131,7 @@ module DAP_Seqence (
             end
             5'b1????: begin // JTAG TRANSFER
                 rx_flag = {13'd0, jtag_trans_rx_flag};
-                rx_data = jtag_trans_rx_shift[34:3];
+                rx_data = jtag_trans_rx_data;
             end
             default: begin
                 rx_flag = 16'd0;
@@ -328,6 +328,9 @@ module DAP_Seqence (
     reg [7:0] jtag_trans_tx_count;
     reg [34:0] jtag_trans_rx_shift;
     reg [7:0] jtag_trans_rx_count;
+
+    wire [2:0] jtag_trans_rx_ack = {jtag_trans_rx_shift[2], jtag_trans_rx_shift[0], jtag_trans_rx_shift[1]};
+    wire [31:0] jtag_trans_rx_data = jtag_trans_rx_shift[34:3];
 
     assign sclk_sampling_en = delay_clk_en == 5'h1f;  // 只要有任一命令的延时使能被关闭就复位采样时钟
 
@@ -1061,8 +1064,8 @@ module DAP_Seqence (
                         end
                     end
 
-                    if (jtag_trans_tx_sm == 5'd26) begin
-                        if ((jtag_trans_rx_shift[2:0] == 3'b010) && (jtag_trans_retry_cnt != jtag_trans_retry_max) && !(jtag_trans_abort | jtag_trans_idcode)) begin
+                    if (jtag_trans_tx_sm == 5'd18) begin
+                        if ((jtag_trans_rx_ack == 3'b010) && (jtag_trans_retry_cnt != jtag_trans_retry_max) && !(jtag_trans_abort | jtag_trans_idcode)) begin
                             // WAIT 重试
                             jtag_trans_tx_sm <= 5'd9;
                             jtag_trans_retry_cnt <= jtag_trans_retry_cnt + 1'd1;
@@ -1074,9 +1077,9 @@ module DAP_Seqence (
                                 jtag_trans_rx_flag <= 3'd001;
                             end
                             else begin
-                                case (jtag_trans_rx_shift[2:0])
+                                case (jtag_trans_rx_ack)
                                     3'b001, 3'b010, 3'b100:
-                                        jtag_trans_rx_flag <= jtag_trans_rx_shift[2:0];
+                                        jtag_trans_rx_flag <= jtag_trans_rx_ack;
                                     default:
                                         jtag_trans_rx_flag <= 3'b111;
                                 endcase
