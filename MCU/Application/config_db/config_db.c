@@ -76,7 +76,7 @@ int config_data_load()
                 0,
                 0,
                 0,
-                0,
+                60,
             },
         .led_mode = 0,
         .freq_mapping_enable = 0,

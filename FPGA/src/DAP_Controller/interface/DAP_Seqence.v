@@ -221,7 +221,7 @@ module DAP_Seqence (
     end
     assign SRST_O = swj_pins_srst_o_reg;
     assign TRST_O = swj_pins_trst_o_reg;
-    assign SWCLK_TCK_O = clock_oen ? sclk_out : swj_pins_swclk_o_reg;
+    assign SWCLK_TCK_O = clock_oen ? sclk_out : 1'd0;
     // ==============================================
 
     // ========== SWD_SEQ 状态机寄存器 ==========
@@ -314,6 +314,7 @@ module DAP_Seqence (
 
     reg jtag_seq_sm;
     reg jtag_seq_tms;
+    reg [3:0] jtag_seq_num;
     reg [3:0] jtag_seq_tx_count;
     reg [3:0] jtag_seq_rx_count;
     reg [7:0] jtag_seq_tx_data;
@@ -413,10 +414,6 @@ module DAP_Seqence (
                             // swd_seq_rx_done <= 1'd1;
                             swd_seq_swdio_t_reg <= 1'd0;
                             swd_seq_swdio_o_reg <= 1'd0;
-                        end
-
-                        if (swd_seq_tx_count == swd_seq_num && swd_seq_rx_count == swd_seq_num) begin
-                            swd_seq_rx_shift <= swd_seq_rx_shift;
                             rx_valid[CMD_INDEX_SWD_SEQ] <= 1'd1;
                             swj_busy[CMD_INDEX_SWD_SEQ] <= 1'd0;
                             swd_seq_sm <= 1'd0;
@@ -447,7 +444,7 @@ module DAP_Seqence (
             delay_clk_en[CMD_INDEX_SWJ_PINS] <= 1'd0;
             clock_oen[CMD_INDEX_SWJ_PINS] <= 1'd0;
             swj_busy[CMD_INDEX_SWJ_PINS] <= 1'd0;
-            swj_pins_swclk_o_reg <= 1'd1;
+            swj_pins_swclk_o_reg <= 1'd0;
         end
         else begin
             rx_valid[CMD_INDEX_SWJ_PINS] <= 1'd0;
@@ -782,6 +779,7 @@ module DAP_Seqence (
         if (!resetn) begin
             jtag_seq_sm <= 1'd0;
             jtag_seq_tms <= 1'd0;
+            jtag_seq_num <= 4'd0;
             jtag_seq_tx_count <= 4'd0;
             jtag_seq_rx_count <= 4'd0;
             jtag_seq_tx_data <= 8'd0;
@@ -802,8 +800,9 @@ module DAP_Seqence (
                     if (tx_valid && current_cmd == `SEQ_CMD_JTAG_SEQ && swj_busy == 8'd0) begin
                         swj_busy[CMD_INDEX_JTAG_SEQ] <= 1'd1;
                         jtag_seq_sm <= 4'd1;
-                        jtag_seq_tx_count <= tx_cmd[3:0];
-                        jtag_seq_rx_count <= tx_cmd[3:0];
+                        jtag_seq_num <= tx_cmd[3:0];
+                        jtag_seq_tx_count <= 4'd0;
+                        jtag_seq_rx_count <= 4'd0;
                         jtag_seq_tx_data <= tx_data[7:0];
                         jtag_seq_rx_shift <= 8'd0;
                         jtag_seq_tms <= tx_cmd[4];
@@ -812,12 +811,11 @@ module DAP_Seqence (
                 end
                 1'd1: begin
                     if (sclk_negedge) begin
-
-                        if (jtag_seq_tx_count != 0) begin
+                        if (jtag_seq_tx_count != jtag_seq_num) begin
                             clock_oen[CMD_INDEX_JTAG_SEQ] <= 1'd1;
                             {jtag_seq_tx_data, jtag_seq_tdi_o_reg} <= {1'd0, jtag_seq_tx_data};
                             jtag_seq_tms_o_reg <= jtag_seq_tms;
-                            jtag_seq_tx_count <= jtag_seq_tx_count - 1'd1;
+                            jtag_seq_tx_count <= jtag_seq_tx_count + 1'd1;
                         end
                         else begin
                             jtag_seq_tms_o_reg <= 1'd0;
@@ -827,12 +825,11 @@ module DAP_Seqence (
                     end
 
                     if (sclk_sampling) begin
-                        if (jtag_seq_rx_count != 0) begin
-                            jtag_seq_rx_shift <= {SWO_TDO_I, jtag_seq_rx_shift[7:1]};
-                            jtag_seq_rx_count <= jtag_seq_rx_count - 1'd1;
+                        if (jtag_seq_rx_count != jtag_seq_num) begin
+                            jtag_seq_rx_count <= jtag_seq_rx_count + 1'd1;
+                            jtag_seq_rx_shift[jtag_seq_rx_count] <= SWO_TDO_I;
                         end
                         else begin
-                            // jtag_seq_rx_done <= 1'd1;
                             jtag_seq_tms_o_reg <= 1'd0;
                             rx_valid[CMD_INDEX_JTAG_SEQ] <= 1'd1;
                             swj_busy[CMD_INDEX_JTAG_SEQ] <= 1'd0;

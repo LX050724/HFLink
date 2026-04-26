@@ -175,6 +175,11 @@ inline static void dap_jtag_set_irlen(DAP_TypeDef *dap, uint8_t index, uint8_t i
     dap->SWJ.JTAG_IR_CONF[index].IR_LEN = irlen;
 }
 
+inline static uint8_t dap_jtag_get_irlen(DAP_TypeDef *dap, uint8_t index)
+{
+    return dap->SWJ.JTAG_IR_CONF[index].IR_LEN;
+}
+
 inline static void dap_jtag_set_ir_before_len(DAP_TypeDef *dap, uint8_t index, uint8_t before_len)
 {
     dap->SWJ.JTAG_IR_CONF[index].IR_BEFORE_LEN = before_len;

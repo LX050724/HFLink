@@ -41,16 +41,16 @@ class DAP_SWD_Seqence:
             self.cmd = int.to_bytes(bit_num & 0x1f | dir)
 
 class DAP_JTAG_Seqence:
-    def __init__(self, bit_num: int, tms: bool=False, tdo_capture: bool=False, data: bytes|None=None):
+    def __init__(self, bit_num: int, data: bytes, tms: bool=False, tdo_capture: bool=False):
         self.bit_num = bit_num
-        self.data = data[0:self.byte_num]
         if (bit_num == 64):
             bit_num = 0
-        seq_info = bit_num & 0x1f
+        seq_info = bit_num & 0x3f
         if tms:
             seq_info |= 0x40
         if tdo_capture:
             seq_info |= 0x80
+        self.data = data[0:self.bit_num//8+1]
         self.cmd = seq_info.to_bytes(1) + bytes(data)
         self.success = False
         self.read_data = None
@@ -264,7 +264,10 @@ class DAP:
         recv_data.read(1)
         status = recv_data.read(1)
         for i in range(len(seq)):
-            seq[i].read_data = recv_data.read(seq[i].read_num)
+            if seq[i].read_num > 0:
+                seq[i].read_data = recv_data.read((seq[i].read_num + 7) // 8)
+            else:
+                seq[i].read_data = None
         return status
 
     def jtag_idcode(self, jtag_index: int):
