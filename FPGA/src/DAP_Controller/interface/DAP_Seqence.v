@@ -192,6 +192,11 @@ module DAP_Seqence (
                 SWDIO_TMS_T = swd_seq_swdio_t_reg;
                 TDI_O       = swj_pins_tdi_o_reg;
             end
+            5'b???1?: begin // SWJ_PINS 活跃
+                SWDIO_TMS_O = swj_pins_swdio_o_reg;
+                SWDIO_TMS_T = swj_pins_swdio_t_reg;
+                TDI_O       = swj_pins_tdi_o_reg;
+            end
             5'b??1??: begin  // SWD_TRANSFER 活跃
                 SWDIO_TMS_O = swd_trans_swdio_o_reg;
                 SWDIO_TMS_T = swd_trans_swdio_t_reg;
@@ -208,9 +213,9 @@ module DAP_Seqence (
                 TDI_O       = jtag_trans_tdi_o_reg;
             end
             default: begin
-                SWDIO_TMS_O = swj_pins_swdio_o_reg;
-                SWDIO_TMS_T = swj_pins_swdio_t_reg;
-                TDI_O       = swj_pins_tdi_o_reg;
+                SWDIO_TMS_O = 1'd0;
+                SWDIO_TMS_T = 1'd0;
+                TDI_O       = 1'd0;
             end
         endcase
     end

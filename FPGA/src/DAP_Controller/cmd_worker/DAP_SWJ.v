@@ -273,8 +273,10 @@ module DAP_SWJ #(
     reg [3:0] transfer_block_requset;
     reg [31:0] transfer_block_data;
     reg transfer_block_need_post_read;
+    reg transfer_block_need_rdbuff;
     reg transfer_block_seq_tx_valid;
     reg transfer_block_RnW;
+    reg transfer_block_APnDP;
     reg transfer_block_err_flag;
     reg transfer_block_ir;
 
@@ -425,6 +427,7 @@ module DAP_SWJ #(
         end
     end
 
+    // wire [3:0] SEQ_CMD_TRANSFER = `SEQ_CMD_SWD_TRANSFER;
     wire [3:0] SEQ_CMD_TRANSFER = SWD_MODE ? `SEQ_CMD_SWD_TRANSFER : `SEQ_CMD_JTAG_TRANSFER;
     // Combinational logic for RAM write signals and seq_tx signals based on active state machine
     always @(*) begin
@@ -827,8 +830,10 @@ module DAP_SWJ #(
             transfer_block_requset <= 4'd0;
             transfer_block_data <= 32'd0;
             transfer_block_need_post_read <= 1'd0;
+            transfer_block_need_rdbuff <= 1'd0;
             transfer_block_seq_tx_valid <= 1'd0;
             transfer_block_RnW <= 1'd0;
+            transfer_block_APnDP <= 1'd0;
             transfer_block_err_flag <= 1'd0;
             transfer_block_ir <= 1'd0;
             done[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
@@ -860,17 +865,39 @@ module DAP_SWJ #(
                             transfer_block_request_cnt[15:8] <= dap_in_tdata;
                             transfer_block_sm <= TRANS_BLOCK_SM_READ_REQUSET;
                         end
+`ifdef SIMULATION
+                        $display("Transmit Count: %d", {dap_in_tdata, transfer_block_request_cnt[7:0]});
+`endif
+
                     end
                     TRANS_BLOCK_SM_READ_REQUSET: begin // 读requset
                         if (dap_in_tvalid) begin
                             transfer_block_requset <= dap_in_tdata[3:0];
                             transfer_block_RnW <= dap_in_tdata[1];
+                            transfer_block_APnDP <= dap_in_tdata[0];
                             if (dap_in_tdata[1]) begin // RnW
-                                transfer_block_need_post_read <= dap_in_tdata[0]; // APnDP
+                                if (SWD_MODE) begin
+                                    // SWD读AP需要预读加RDBUFF
+                                    transfer_block_need_post_read <= dap_in_tdata[0];
+                                    transfer_block_need_rdbuff <= dap_in_tdata[0];
+                                end
+                                else begin
+                                    // JTAG模式全需要预读加RDBUFF
+                                    transfer_block_need_post_read <= 1'd1;
+                                    transfer_block_need_rdbuff <= 1'd1;
+                                end
+
                                 transfer_block_sm <= TRANS_BLOCK_SM_PROCESS_REQ;
+`ifdef SIMULATION
+
+                                $display("transfer_block_need_post_read: %d", dap_in_tdata[0] || (SWD_MODE == 1'd0));
+`endif
+
                             end
                             else begin
+                                // 写模式都需要RDBUFF确认
                                 transfer_block_need_post_read <= 1'd0;
+                                transfer_block_need_rdbuff <= 1'd1;
                                 transfer_block_sm <= TRANS_BLOCK_SM_READ_DATA0;
                             end
                         end
@@ -914,7 +941,7 @@ module DAP_SWJ #(
                             transfer_block_response_cnt <= transfer_block_response_cnt + 1'd1;
                             transfer_block_ir <= 1'd0; // 第一次传输完成后假定不需要IR
                             case (transfer_block_requset[1:0])
-                                2'b11: begin // Read AP
+                                2'b11, 2'b10: begin // Read AP/DP
                                     if (transfer_block_need_post_read) begin
                                         if (transfer_block_request_cnt - 1'd1 == 16'd0) begin
                                             // 单次读AP传输，转RDBUFF，激活IR
@@ -933,7 +960,7 @@ module DAP_SWJ #(
                                         transfer_block_sm <= TRANS_BLOCK_SM_WRITE_DATA_0;
                                     end
                                 end
-                                2'b01: begin // Write AP
+                                2'b01, 2'b00: begin // Write AP/DP
                                     if (transfer_block_request_cnt - 1'd1 == 16'd0) begin
                                         // 最后一次传输，转RDBUFF，激活IR
                                         transfer_block_requset <= 4'b1110;
@@ -943,18 +970,6 @@ module DAP_SWJ #(
                                     end
                                     else begin
                                         transfer_block_sm <= TRANS_BLOCK_SM_READ_DATA0;
-                                    end
-                                end
-                                2'b10: begin // Read DP
-                                    transfer_block_sm <= TRANS_BLOCK_SM_WRITE_DATA_0;
-                                end
-                                2'b00: begin // Write DP
-                                    if (transfer_block_request_cnt - 1'd1 == 16'd0) begin
-                                        // 完成
-                                        transfer_block_sm <= TRANS_BLOCK_SM_WRITE_COUNT_L;
-                                    end
-                                    else begin
-                                        transfer_block_sm <= TRANS_BLOCK_SM_PROCESS_REQ;
                                     end
                                 end
                             endcase
@@ -979,9 +994,11 @@ module DAP_SWJ #(
                     TRANS_BLOCK_SM_WAIT_RDBUFF: begin
                         if (seq_rx_valid) begin
                             if (transfer_block_RnW) begin
+                                // 读模式需要写入数据
                                 transfer_block_sm <= TRANS_BLOCK_SM_WRITE_DATA_0;
                             end
                             else begin
+                                // 写模式确认ACK后抛弃数据
                                 transfer_block_sm <= TRANS_BLOCK_SM_WRITE_COUNT_L;
                             end
                         end
@@ -1008,24 +1025,23 @@ module DAP_SWJ #(
                         transfer_block_ram_write_addr <= transfer_block_ram_write_addr + 1'd1;
                         transfer_block_ram_write_data <= seq_rx_data[31:24];
                         transfer_block_ram_write_en <= 1'd1;
-
-                        if (transfer_block_requset[0] == 1'd0) begin
-                            if (transfer_block_request_cnt == 16'd0) begin
-                                transfer_block_sm <= TRANS_BLOCK_SM_WRITE_COUNT_L;
-                            end
-                            else begin
-                                transfer_block_sm <= TRANS_BLOCK_SM_PROCESS_REQ;
-                            end
-                        end
-                        else begin
-                            if (transfer_block_request_cnt == 16'd0) begin
+                        if (transfer_block_request_cnt == 16'd0) begin
+                            // 最后一次传输
+                            if (transfer_block_need_rdbuff) begin
+                                // 需要RDBUFF，清除标志并触发RDBUFF
+                                transfer_block_need_rdbuff <= 1'd0;
                                 transfer_block_requset <= 4'b1110;
                                 transfer_block_seq_tx_valid <= 1'd1;
                                 transfer_block_sm <= TRANS_BLOCK_SM_WAIT_RDBUFF;
                             end
                             else begin
-                                transfer_block_sm <= TRANS_BLOCK_SM_PROCESS_REQ;
+                                // 不需要RDBUFF结束传输
+                                transfer_block_sm <= TRANS_BLOCK_SM_WRITE_COUNT_L;
                             end
+                        end
+                        else begin
+                            // 继续请求
+                            transfer_block_sm <= TRANS_BLOCK_SM_PROCESS_REQ;
                         end
                     end
                     TRANS_BLOCK_SM_WRITE_COUNT_L: begin
@@ -1034,6 +1050,11 @@ module DAP_SWJ #(
                         transfer_block_ram_write_en <= 1'd1;
                         transfer_block_packet_len <= transfer_block_ram_write_addr + 1'd1;
                         transfer_block_sm <= TRANS_BLOCK_SM_WRITE_COUNT_H;
+`ifdef SIMULATION
+
+                        $display("Transfer Block Write Head");
+`endif
+
                     end
                     TRANS_BLOCK_SM_WRITE_COUNT_H: begin
                         transfer_block_ram_write_addr <= 10'd1;
@@ -1110,6 +1131,11 @@ module DAP_SWJ #(
                             transfer_sm <= TRANS_SM_READ_REQUSET;
                             transfer_num <= dap_in_tdata;
                             transfer_cnt <= 8'd0;
+`ifdef SIMULATION
+
+                            $display("transfer_num %d", dap_in_tdata);
+`endif
+
                         end
                     end
                     TRANS_SM_READ_REQUSET: begin
@@ -1125,6 +1151,11 @@ module DAP_SWJ #(
                                     // READ/MATCH请求先检查是否需求处理post_read
                                     transfer_sm <= transfer_has_error ? TRANS_SM_READ_REQUSET : TRANS_SM_CHECK_POSTREAD;
                                 end
+`ifdef SIMULATION
+
+                                $display("transfer_requset RnW:%b APnDP:%b", dap_in_tdata[1], dap_in_tdata[0]);
+`endif
+
                             end
                         end
                         else begin
@@ -1237,9 +1268,11 @@ module DAP_SWJ #(
                     end
 
                     TRANS_SM_READ_DP: begin // 读DP
+                        // JTAG模式下需要预读取
                         //                requset,          en_wdata, en_wtime, en_cnt, wtime_first,             ret_sm
-                        TRANS_TRIGGER(transfer_requset[3:0], 1'd1, 1'd0, 1'd1, transfer_requset_TIMESTAMP, TRANS_SM_READ_REQUSET);
+                        TRANS_TRIGGER(transfer_requset[3:0], (SWD_MODE ? 1'd1 : transfer_post_read), 1'd0, 1'd1, transfer_requset_TIMESTAMP, TRANS_SM_READ_REQUSET);
                         transfer_check_write <= 1'd0;
+                        transfer_post_read <= (SWD_MODE == 1'd0);
                     end
 
                     TRANS_SM_WRITE_APDP: begin // 写AP/DP
@@ -1305,28 +1338,6 @@ module DAP_SWJ #(
                         transfer_sm <= TRANS_SM_DONE;
                     end
                     TRANS_SM_TRIGGER: begin
-`ifdef SIMULATION
-                        case (transfer_trig_requset[1:0])
-                            2'b00: begin
-                                $display("W DP %X IR %b", transfer_trig_requset[3:2] << 2, transfer_trig_ir);
-                            end
-                            2'b10: begin
-                                if (transfer_trig_requset[3:2] == 2'b00) begin
-                                    $display("R DP %X IR %b", transfer_trig_requset[3:2] << 2, transfer_trig_ir);
-                                end
-                                else begin
-                                    $display("RDBUFF IR %b", transfer_trig_ir);
-                                end
-                            end
-                            2'b01: begin
-                                $display("W AP %X IR %b", transfer_trig_requset[3:2] << 2, transfer_trig_ir);
-                            end
-                            2'b11: begin
-                                $display("R AP %X IR %b", transfer_trig_requset[3:2] << 2, transfer_trig_ir);
-                            end
-                        endcase
-`endif
-
                         transfer_trig_first_transfer <= 1'd0;
                         transfer_timestamp <= clk_timer;
                         transfer_sm <= TRANS_SM_WAIT;
@@ -1687,6 +1698,42 @@ module DAP_SWJ #(
             transfer_sm <= TRANS_SM_TRIGGER;
         end
     endtask
+
+`ifdef SIMULATION
+
+    task print_requset;
+        input [3:0] requset;
+        input ir_en;
+        begin
+            case (requset[1:0])
+                2'b00: begin
+                    $display(">>>> W DP %X IR %b", requset[3:2] << 2, ir_en);
+                end
+                2'b10: begin
+                    if (requset[3:2] == 2'b00) begin
+                        $display(">>>> R DP %X IR %b", requset[3:2] << 2, ir_en);
+                    end
+                    else begin
+                        $display(">>>> RDBUFF IR %b", ir_en);
+                    end
+                end
+                2'b01: begin
+                    $display(">>>> W AP %X IR %b", requset[3:2] << 2, ir_en);
+                end
+                2'b11: begin
+                    $display(">>>> R AP %X IR %b", requset[3:2] << 2, ir_en);
+                end
+            endcase
+        end
+    endtask
+
+
+    always @(posedge clk) begin
+        if (seq_tx_valid) begin
+            print_requset(seq_tx_cmd[3:0], seq_tx_cmd[4]);
+        end
+    end
+`endif
 
     DAP_Seqence dap_seqence_inst(
                     // 控制器时钟

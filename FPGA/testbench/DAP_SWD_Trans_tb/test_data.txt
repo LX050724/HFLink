@@ -1,3 +1,4 @@
+12 // DAP_SWJ_Sequence
 ff // Sequence Bit Count // DAP_SWJ_Sequence
 00
 01
@@ -31,15 +32,28 @@ ff // Sequence Bit Count // DAP_SWJ_Sequence
 1D
 1E
 1F
-02 // Sequence Count // DAP_SWD_Sequence
+
+1D // DAP_SWD_Sequence
+02 // Sequence Count
 0f // Output 15b
 55
 AA
 8f // Input 15b
+
+06 // DAP_TransferBlock
+00 // DAP index
+02 00 // count
+02 // R DP
+
+06 // DAP_TransferBlock
 00 // DAP index DAP_TransferBlock
-02
-00
-01
+02 00 // count
+03 // R AP
+
+06 // DAP_TransferBlock
+00 // DAP index
+02 00 // count
+00 // W DP
 01
 02
 03
@@ -48,7 +62,22 @@ AA
 06
 07
 08
-00 // DAP index  DAP_Transfer
+
+06 // DAP_TransferBlock
+00 // DAP index DAP_TransferBlock
+02 00 // count
+01 // W AP
+01
+02
+03
+04
+05
+06
+07
+08
+
+05 // DAP_Transfer
+00 // DAP index
 07 // Transfer Count
 80 // Transfer Request W DP0
 12
@@ -81,3 +110,5 @@ BB
 34
 56
 78
+
+FF // END

@@ -43,7 +43,8 @@ module DAP_SWD_Trans_tb();
     reg [3:0] ahb_byte_strobe;
     reg [`CMD_REAL_NUM-1:0] start;
     wire [`CMD_REAL_NUM-1:0] done;
-    wire read_en = dap_in_tready & start ? 1'd1 : 1'd0;
+    reg wait_status = 0;
+    wire read_en = dap_in_tready & start ? 1'd1 : (cnt > 5 && wait_status == 0);
 
     assign done[1:0] = 0;
 
@@ -68,8 +69,8 @@ module DAP_SWD_Trans_tb();
                     // BAUD_TIMING
                     ahb_write_en <= 1;
                     ahb_addr <= 12'h004;
-                    ahb_wdata <= 32'h0001_0001;
-                    // ahb_wdata <= 32'h0002_0002;
+                    // ahb_wdata <= 32'h0001_0001;
+                    ahb_wdata <= 32'h0002_0002;
                     ahb_byte_strobe <= 4'hf;
                 end
                 1: begin
@@ -90,95 +91,73 @@ module DAP_SWD_Trans_tb();
                     // SWJ_SWD_CR
                     ahb_write_en <= 1;
                     ahb_addr <= 12'h080 + 12'h008;
-                    ahb_wdata <= {1'd0, 1'd0, 2'd2};
-                    // ahb_wdata <= {1'd1, 1'd0, 2'd0};
+                    // ahb_wdata <= {1'd0, 1'd0, 2'd2};
+                    ahb_wdata <= {1'd1, 1'd0, 2'd0};
                     ahb_byte_strobe <= 4'hf;
                 end
                 4: begin
                     // BAUD_CR
                     ahb_write_en <= 1;
                     ahb_addr <= 12'h000;
-                    ahb_wdata <= 32'h0002_0001;
-                    // ahb_wdata <= 32'h0000_0001;
+                    // ahb_wdata <= 32'h0002_0001;
+                    ahb_wdata <= 32'h0000_0001;
                     ahb_byte_strobe <= 4'hf;
                 end
 
-                10: begin
-                    start[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd1;
-                    $display("TEST: DAP_SWJ_Sequence");
-                end
-                11: begin
-                    if (done[`CMD_SWJ_SEQUENCE_SHIFT]) begin
-                        start[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd0;
-                        swd_sm <= 0;
-                        #1
-                        $display("packet_len: %d", packet_len);
-                        for (i = 0; i < packet_len; i = i + 1) begin
-                            $display("%08x: %02x", i, output_data[i]);
-                        end
-                    end
-                    else begin
-                        cnt <= cnt;
-                    end
-                end
-                12: begin
-                    start[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd1;
-                    swd_sm = 0;
-                    $display("TEST: DAP_SWD_Sequence");
-                end
-                13: begin
-                    if (done[`CMD_SWD_SEQUENCE_SHIFT]) begin
-                        start[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd0;
-                        swd_sm <= 0;
-                        #1
-                        $display("packet_len: %d", packet_len);
-                        for (i = 0; i < packet_len; i = i + 1) begin
-                            $display("%08x: %02x", i, output_data[i]);
-                        end
-                    end
-                    else begin
-                        cnt <= cnt;
-                    end
-                end
-                14: begin
-                    start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd1;
-                    swd_sm = 0;
-                    $display("TEST: DAP_TransferBlock");
-                end
-                15: begin
-                    if (done[`CMD_TRANSFER_BLOCK_SHIFT]) begin
-                        start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd0;
-                        #1
-                        $display("packet_len: %d", packet_len);
-                        for (i = 0; i < packet_len; i = i + 1) begin
-                            $display("%08x: %02x", i, output_data[i]);
-                        end
-                    end
-                    else begin
-                        cnt <= cnt;
-                    end
-                end
-                16: begin
-                    start[`CMD_TRANSFER_SHIFT] <= 1'd1;
-                    $display("TEST: DAP_Transfer");
-                end
-                17: begin
-                    if (done[`CMD_TRANSFER_SHIFT]) begin
-                        start[`CMD_TRANSFER_SHIFT] <= 1'd0;
-                        #1
-                        $display("packet_len: %d", packet_len);
-                        for (i = 0; i < packet_len; i = i + 1) begin
-                            $display("%08x: %02x", i, output_data[i]);
-                        end
-                    end
-                    else begin
-                        cnt <= cnt;
-                    end
-                end
             endcase
 
             if (cnt == 32'h0001_0000) begin
                 $finish(1);
+            end
+        end
+    end
+
+    always @(posedge clk) begin
+        if (cnt == 5) begin
+            $display("start test");
+        end
+        else if (cnt > 5) begin
+            if (wait_status == 0) begin
+                wait_status <= 1'd1;
+                $display("===============================================");
+                case (dap_in_tdata)
+                    8'h05: begin
+                        $display("TEST: DAP_Transfer");
+                        start[`CMD_TRANSFER_SHIFT] <= 1'd1;
+                    end
+                    8'h06: begin
+                        $display("TEST: DAP_TransferBlock");
+                        start[`CMD_TRANSFER_BLOCK_SHIFT] <= 1'd1;
+                    end
+                    8'h12: begin
+                        $display("TEST: DAP_SWJ_Seqence");
+                        start[`CMD_SWJ_SEQUENCE_SHIFT] <= 1'd1;
+                    end
+                    8'h1d: begin
+                        $display("TEST: DAP_SWD_Seqence");
+                        start[`CMD_SWD_SEQUENCE_SHIFT] <= 1'd1;
+                    end
+                    8'hff: begin
+                        $display("end test");
+                        $finish(1);
+                    end
+                    default: begin
+                        $display("unknown cmd %02x", dap_in_tdata);
+                        $finish(1);
+                    end
+                endcase
+            end
+            else begin
+                if (done[9:0] != 0) begin
+                    start <= 0;
+                    wait_status <= 0;
+                    swd_sm <= 0;
+                    #1
+                    $display("packet_len: %d", packet_len);
+                    for (i = 0; i < packet_len; i = i + 1) begin
+                        $display("%08x: %02x", i, output_data[i]);
+                    end
+                end
             end
         end
     end
