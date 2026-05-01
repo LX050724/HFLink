@@ -84,7 +84,7 @@ module DAP_SWD_Trans_tb();
                     // SWJ_CR
                     ahb_write_en <= 1;
                     ahb_addr <= 12'h080 + 12'h000;
-                    ahb_wdata <= 32'h0000_0001;
+                    ahb_wdata <= 32'h0000_0000;
                     ahb_byte_strobe <= 4'hf;
                 end
                 3: begin

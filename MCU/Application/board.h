@@ -11,13 +11,6 @@ extern "C" {
 #define print(fmt, ...)
 #endif
 
-#define LED_RED_PIN GPIO_Pin_0
-#define LED_GREEN_PIN GPIO_Pin_1
-#define LED_BLUE_PIN GPIO_Pin_2
-#define LED_ALL_PIN (GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2)
-
-#define POWER_CTL_PIN GPIO_Pin_3
-
 uint32_t crc32(uint32_t init, uint8_t *data, uint32_t length);
 
 #ifdef __cplusplus

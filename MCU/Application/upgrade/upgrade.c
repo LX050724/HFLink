@@ -1,7 +1,7 @@
 #include "upgrade.h"
-#include <GOWIN_M1_qspi_flash.h>
 #include <string.h>
 #include "board.h"
+#include "spiflash/spiflash.h"
 
 #define FPGA_BITSTREAM_BEGIN_ADDR 0x00000000U
 #define FPGA_BITSTREAM_END_ADDR 0x00100000U
@@ -20,7 +20,7 @@ static volatile uint32_t upg_write_addr;
 static volatile uint32_t upg_checksum = 0xFFFFFFFFU;
 static volatile uint8_t upg_busy_flag;
 static volatile UPG_Status status;
-static volatile uint8_t upg_buffer[256];
+static uint8_t upg_buffer[256];
 
 
 void upgrade_loop(void)
@@ -32,14 +32,7 @@ void upgrade_loop(void)
     case UPG_ERASE: {
         for (uint32_t addr = FPGA_BITSTREAM_BEGIN_ADDR; addr < FPGA_BITSTREAM_END_ADDR; addr += 0x10000)
         {
-            do
-            {
-                qspi_flash_write_enable();
-            } while ((qspi_flash_read_status() & 0x02) == 0);
-            qspi_flash_64ksector_erase(addr);
-            while (qspi_flash_is_busy())
-            {
-            }
+            spiflash_erase_block_64k(SPI, addr);
         }
         status = UPG_WAIT_DATA;
         upg_write_addr = FPGA_BITSTREAM_BEGIN_ADDR;
@@ -49,14 +42,7 @@ void upgrade_loop(void)
         break;
     }
     case UPG_PROGRAM: {
-        do
-        {
-            qspi_flash_write_enable();
-        } while ((qspi_flash_read_status() & 0x02) == 0);
-        qspi_flash_page_program(256, upg_write_addr, upg_buffer);
-        while (qspi_flash_is_busy())
-        {
-        }
+        spiflash_page_program(SPI, upg_write_addr, upg_buffer, 256);
         upg_write_addr += 256;
         if (upg_write_addr >= upg_firm_size)
         {
@@ -75,7 +61,7 @@ void upgrade_loop(void)
             uint32_t len = upg_firm_size - (addr - FPGA_BITSTREAM_BEGIN_ADDR);
             if (len > 256)
                 len = 256;
-            qspi_flash_fast_read_quad(addr, upg_buffer, len);
+            spiflash_read_data(SPI, addr, upg_buffer, len);
             temp = crc32(~temp, upg_buffer, len);
         }
         upg_checksum = temp;

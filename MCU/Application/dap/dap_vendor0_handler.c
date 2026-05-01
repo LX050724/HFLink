@@ -122,16 +122,8 @@ static void dap_config_handler(DAP_TypeDef *dap)
         else
         {
             global_config.supply5V_enable = dap_read_data(dap);
+            dap_gpio_write_pin(dap, DAP_GPIO_DO_POWER_CTL_O, global_config.supply5V_enable);
             dap_write_data(dap, 0x00);
-        }
-        uint8_t en = global_config.supply5V_enable;
-        if (en == 1)
-        {
-            GPIO_WriteBits(GPIO0, POWER_CTL_PIN);
-        }
-        else if (en == 0)
-        {
-            GPIO_ResetBit(GPIO0, POWER_CTL_PIN);
         }
         break;
     }
@@ -223,6 +215,14 @@ static void dap_config_handler(DAP_TypeDef *dap)
         else
         {
             global_config.led_mode = dap_read_data(dap);
+            if (global_config.led_mode == 1)
+            {
+                dap_gpio_set_led_mode(dap, DAP_GPIO_CR_LED_MODE_MANUAL);
+            }
+            else
+            {
+                dap_gpio_set_led_mode(dap, DAP_GPIO_CR_LED_MODE_DEFAULT);
+            }
             dap_write_data(dap, 0x00);
         }
         break;

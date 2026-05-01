@@ -1,4 +1,4 @@
-#include "GOWIN_M1_qspi_flash.h"
+#include "spiflash/spiflash.h"
 #include "board.h"
 #include "config_db.h"
 #include <string.h>
@@ -25,7 +25,7 @@ int config_data_load()
 
     while (addr < FLASH_CONFIG_END_ADDR)
     {
-        qspi_flash_fast_read_quad(addr, (uint8_t *)&temp_config, sizeof(temp_config));
+        spiflash_read_data(SPI, addr, (uint8_t *)&temp_config, sizeof(temp_config));
         crc = crc32(0xffffffff, (uint8_t *)&temp_config.clock_freq_mapping,
                     sizeof(temp_config) - offsetof(ConfigData_t, clock_freq_mapping));
 
@@ -104,25 +104,10 @@ int config_data_save()
     if (next_flash_addr == 0 || next_flash_addr == FLASH_CONFIG_ADDR)
     {
         next_flash_addr = FLASH_CONFIG_ADDR;
-        do
-        {
-            qspi_flash_write_enable();
-        } while ((qspi_flash_read_status() & 0x02) == 0);
-        qspi_flash_4ksector_erase(next_flash_addr);
-        while (qspi_flash_is_busy())
-        {
-        }
+        spiflash_erase_sector(SPI, next_flash_addr);
     }
 
-    // 写入数据
-    do
-    {
-        qspi_flash_write_enable();
-    } while ((qspi_flash_read_status() & 0x02) == 0);
-    qspi_flash_page_program(FLASH_PAGE_SIZE, next_flash_addr, (uint8_t *)&global_config);
-    while (qspi_flash_is_busy())
-    {
-    }
+    spiflash_page_program(SPI, next_flash_addr, (uint8_t *)&global_config, FLASH_PAGE_SIZE);
 
     // 更新页地址，如果超过配置区范围则回绕到起始地址
     next_flash_addr += FLASH_PAGE_SIZE;

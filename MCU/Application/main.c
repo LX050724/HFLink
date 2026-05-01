@@ -10,8 +10,9 @@
 
 #include "ads1115/ads1115.h"
 #include "dap/dap.h"
+#include "spiflash/spiflash.h"
 #include "usb/usbd_core.h"
-#include <GOWIN_M1_qspi_flash.h>
+
 
 #include "board.h"
 #include "config_db/config_db.h"
@@ -20,7 +21,7 @@ uint8_t adc_channel;
 // 0: VREF*4; 1: CURRENT
 int16_t adc_result[2];
 
-uint8_t led_status;
+static void led_default_mode_loop(void);
 
 int main(void)
 {
@@ -38,27 +39,30 @@ int main(void)
     NVIC_EnableIRQ(EXTINT_1_IRQn);
     DAP->CR = 0x80000001;
 
-    // 初始化QSPI和FLash，读取序列号
-    qspi_flash_init();
-    qspi_flash_Enable();
+    // 初始化SPI Flash，读取序列号
+    spiflash_init(SPI, CLKSEL_CLK_DIV_2, 0);
 
     do
     {
         uint8_t flash_unique_id[16];
-        qspi_flash_read_unique_id(flash_unique_id);
+        spiflash_read_unique_id(SPI, flash_unique_id);
         usbd_set_serial_number(flash_unique_id);
     } while (0);
 
     // 初始化存储库
     config_data_load();
 
-    // 初始化GPIO
-    if (global_config.supply5V_enable)
+    // 初始化GPIO, 设置LED为低电平
+    dap_gpio_disable_directio(DAP);
+    dap_gpio_disable_spi_mode(DAP);
+    dap_gpio_write_pin(DAP, DAP_GPIO_DO_POWER_CTL_O, global_config.supply5V_enable);
+    dap_gpio_set_led_cmp(DAP, 0, 255, 0);
+
+    // 设置LED模式
+    if (global_config.led_mode == 0)
     {
-        GPIO_SetBit(GPIO0, POWER_CTL_PIN);
+        dap_gpio_set_led_mode(DAP, DAP_GPIO_CR_LED_MODE_DEFAULT);
     }
-    GPIO_SetBit(GPIO0, LED_ALL_PIN);
-    GPIO_SetOutEnable(GPIO0, LED_ALL_PIN | POWER_CTL_PIN);
 
     // 初始化USB
     NVIC_EnableIRQ(EXTINT_0_IRQn);
@@ -70,15 +74,12 @@ int main(void)
     axisuart_enable(AXIS_UART);
 
     // 配置IODELAY
-    do
-    {
-        DAP->GPIO.TCK_DELAY = global_config.iodelay_param[0];
-        DAP->GPIO.TMS_T_DELAY = global_config.iodelay_param[1];
-        DAP->GPIO.TMS_O_DELAY = global_config.iodelay_param[2];
-        DAP->GPIO.TMS_I_DELAY = global_config.iodelay_param[3];
-        DAP->GPIO.TDO_DELAY = global_config.iodelay_param[4];
-        DAP->GPIO.TDI_DELAY = global_config.iodelay_param[5];
-    } while (0);
+    DAP->GPIO.TCK_DELAY = global_config.iodelay_param[0];
+    DAP->GPIO.TMS_T_DELAY = global_config.iodelay_param[1];
+    DAP->GPIO.TMS_O_DELAY = global_config.iodelay_param[2];
+    DAP->GPIO.TMS_I_DELAY = global_config.iodelay_param[3];
+    DAP->GPIO.TDO_DELAY = global_config.iodelay_param[4];
+    DAP->GPIO.TDI_DELAY = global_config.iodelay_param[5];
 
     // 加载DAP控制器默认参数
     dap_baud_set_reload(DAP, 10);
@@ -119,23 +120,35 @@ int main(void)
             }
         }
 
-        if (timer_get_tick(TIMER_LED) == 0)
-        {
-            timer_set_tick(TIMER_LED, 10);
-            if (adc_result[0] < 1200 / 4)
-            {
-                GPIO_SetBit(GPIO0, LED_ALL_PIN);
-                GPIO_ResetBit(GPIO0, LED_RED_PIN);
-            }
-            else
-            {
-                GPIO_SetBit(GPIO0, LED_ALL_PIN);
-                GPIO_ResetBit(GPIO0, LED_GREEN_PIN);
-            }
-            led_status = !led_status;
-        }
-
         upgrade_loop();
+        if (global_config.led_mode == 0)
+        {
+            led_default_mode_loop();
+        }
+    }
+}
+
+static void led_default_mode_loop(void)
+{
+    if (timer_get_tick(TIMER_LED) == 0)
+    {
+        timer_set_tick(TIMER_LED, 10);
+
+        if (adc_result[0] < 1200 / 4)
+        {
+            // VREFG 电压低，红灯
+            dap_gpio_set_led_cmp(DAP, 255, 0, 0);
+        }
+        else if ((dap_gpio_get_status(DAP) & DAP_GPIO_STATUS_SRST_I) == 0)
+        {
+            // VTRG 电压正常，复位信号拉低，黄灯
+            dap_gpio_set_led_cmp(DAP, 255, 128, 0);
+        }
+        else
+        {
+            // 正常状态，绿灯
+            dap_gpio_set_led_cmp(DAP, 0, 255, 0);
+        }
     }
 }
 

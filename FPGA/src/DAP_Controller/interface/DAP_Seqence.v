@@ -437,8 +437,8 @@ module DAP_Seqence (
             swj_pins_swdio_o_reg <= 1'd0;
             swj_pins_swdio_t_reg <= 1'd0;
             swj_pins_tdi_o_reg <= 1'd0;
-            swj_pins_srst_o_reg <= 1'd0;
-            swj_pins_trst_o_reg <= 1'd0;
+            swj_pins_srst_o_reg <= 1'd1;
+            swj_pins_trst_o_reg <= 1'd1;
             swj_pins_rx_data <= 8'd0;
             rx_valid[CMD_INDEX_SWJ_PINS] <= 1'd0;
             delay_clk_en[CMD_INDEX_SWJ_PINS] <= 1'd0;

@@ -5,12 +5,12 @@ module HFLink_TOP(
         ,inout MCU_SWCLK
         // ,input reset
 
-        ,inout FLASH_SPI_HOLDN_io
-        ,inout FLASH_SPI_CSN_io
-        ,inout FLASH_SPI_MISO_io
-        ,inout FLASH_SPI_MOSI_io
-        ,inout FLASH_SPI_WPN_io
-        ,inout FLASH_SPI_CLK_io
+        ,output FLASH_SPI_CSN
+        ,input FLASH_SPI_MISO
+        ,output FLASH_SPI_MOSI
+        ,output FLASH_SPI_CLK
+        ,output FLASH_SPI_HOLDN
+        ,output FLASH_SPI_WPN
 
         // 独立串口连接器
         ,output EXT_UART_TX
@@ -30,7 +30,7 @@ module HFLink_TOP(
         ,output EXT_TRST_O
 
         // RGB & PWRCTL
-        ,inout [3:0] GPIO
+        ,output [3:0] GPIO
 
         // IIC
         ,inout IIC_SDA
@@ -53,6 +53,9 @@ module HFLink_TOP(
     wire m1_halt;
     wire [3:0] intr;
     assign ready_led = !m1_halt;
+
+    assign FLASH_SPI_HOLDN = 1'd1;
+    assign FLASH_SPI_WPN = 1'd1;
 
     wire [31:0] AHB1HRDATA;
     wire        AHB1HREADYOUT;
@@ -111,6 +114,11 @@ module HFLink_TOP(
               );
 
     wire cm_nreset = n_reset & lock;
+
+    wire MCU_SPI_MOSI;
+    wire MCU_SPI_MISO;
+    wire MCU_SPI_CLK;
+    wire MCU_SPI_CSN;
 
     Gowin_EMPU_M1_Top Cortex_M1 (
                           //.LOCKUP(lockup), //output LOCKUP
@@ -171,19 +179,15 @@ module HFLink_TOP(
                           .APB1PCLK(APB1PCLK), //output APB1PCLK
                           .APB1PRESET(APB1PRESET), //output APB1PRESET
 
-                          // EXFLASH
-                          .FLASH_SPI_HOLDN(FLASH_SPI_HOLDN_io), //inout FLASH_SPI_HOLDN
-                          .FLASH_SPI_CSN(FLASH_SPI_CSN_io), //inout FLASH_SPI_CSN
-                          .FLASH_SPI_MISO(FLASH_SPI_MISO_io), //inout FLASH_SPI_MISO
-                          .FLASH_SPI_MOSI(FLASH_SPI_MOSI_io), //inout FLASH_SPI_MOSI
-                          .FLASH_SPI_WPN(FLASH_SPI_WPN_io), //inout FLASH_SPI_WPN
-                          .FLASH_SPI_CLK(FLASH_SPI_CLK_io), //inout FLASH_SPI_CLK
+                          // SPI
+                          .MOSI(MCU_SPI_MOSI), //output MOSI
+                          .MISO(MCU_SPI_MISO), //input MISO
+                          .SCLK(MCU_SPI_CLK), //output SCLK
+                          .NSS(MCU_SPI_CSN), //output NSS
 
                           // IIC
                           .SDA(IIC_SDA),
                           .SCL(IIC_SCL),
-
-                          .GPIO(GPIO),
 
                           .EXTINT(intr) //input [3:0] EXTINT
                       );
@@ -296,6 +300,8 @@ module HFLink_TOP(
                         .UART_TX(LOC_UART_TX),
                         .UART_RX(LOC_UART_RX)
                     );
+    wire LOC_SPI_MUX;
+    wire LOC_SPI_MISO;
 
     DAP_Controller dap_controller_inst(
                        .hclk(AHB2HCLK),
@@ -343,6 +349,18 @@ module HFLink_TOP(
                        .EXT_UART_RX(EXT_UART_RX),
 
                        .LOC_UART_TX(LOC_UART_TX),
-                       .LOC_UART_RX(LOC_UART_RX)
+                       .LOC_UART_RX(LOC_UART_RX),
+
+                       .LOC_SPI_CSN(MCU_SPI_CSN),
+                       .LOC_SPI_MISO(LOC_SPI_MISO),
+                       .LOC_SPI_MOSI(MCU_SPI_MOSI),
+                       .LOC_SPI_CLK(MCU_SPI_CLK),
+                       .LOC_SPI_MUX(LOC_SPI_MUX),
+                       .DAP_GPIO(GPIO)
                    );
+
+    assign MCU_SPI_MISO = LOC_SPI_MUX ? LOC_SPI_MISO : FLASH_SPI_MISO;
+    assign FLASH_SPI_CSN = LOC_SPI_MUX ? 1'd1 : MCU_SPI_CSN;
+    assign FLASH_SPI_MOSI = LOC_SPI_MUX ? 1'd0 : MCU_SPI_MOSI;
+    assign FLASH_SPI_CLK = LOC_SPI_MUX ? 1'd0 : MCU_SPI_CLK;
 endmodule

@@ -7,7 +7,6 @@
 #include <GOWIN_M1_dap.h>
 #include <string.h>
 
-
 #ifdef DEBUG
 #include "SEGGER_RTT.h"
 #define DAP_DEBUG(fmt, ...) SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__)
@@ -273,7 +272,7 @@ static void dap_jtag_configure_handler(DAP_TypeDef *dap)
         irlen[i] = dap_read_data(dap);
         dap_jtag_set_ir_before_len(dap, i, ir_before);
         dap_jtag_set_irlen(dap, i, irlen[i]);
-        ir_before += irlen[i];  
+        ir_before += irlen[i];
         ir_after += irlen[i];
     }
 
@@ -285,7 +284,8 @@ static void dap_jtag_configure_handler(DAP_TypeDef *dap)
 
     for (int i = 0; i < count; i++)
     {
-        DAP_DEBUG("[%d] %d, %d, %d\n", i, dap->SWJ.JTAG_IR_CONF[i].IR_BEFORE_LEN, dap->SWJ.JTAG_IR_CONF[i].IR_LEN, dap->SWJ.JTAG_IR_CONF[i].IR_AFTER_LEN);
+        DAP_DEBUG("[%d] %d, %d, %d\n", i, dap->SWJ.JTAG_IR_CONF[i].IR_BEFORE_LEN, dap->SWJ.JTAG_IR_CONF[i].IR_LEN,
+                  dap->SWJ.JTAG_IR_CONF[i].IR_AFTER_LEN);
     }
 
     dap_write_data(dap, 0);
@@ -320,6 +320,36 @@ static void dap_host_status_handler(DAP_TypeDef *dap)
 {
     uint8_t type = dap_read_data(dap);
     uint8_t status = dap_read_data(dap);
+
+    if (global_config.led_mode == 1)
+    {
+        switch (type)
+        {
+        case DAP_DEBUGGER_CONNECTED:
+            if (status)
+            {
+                dap_gpio_set_led_cmp(dap, 0, 0, 255);
+            }
+            else
+            {
+                dap_gpio_set_led_cmp(dap, 0, 255, 0);
+            }
+            break;
+        case DAP_TARGET_RUNNING:
+            if (status)
+            {
+                dap_gpio_set_led_cmp(dap, 200, 0, 255);
+            }
+            else
+            {
+                dap_gpio_set_led_cmp(dap, 0, 0, 255);
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
     DAP_DEBUG("Host status %02x, %02x\n", type, status);
     dap_write_data(dap, 0);
 }

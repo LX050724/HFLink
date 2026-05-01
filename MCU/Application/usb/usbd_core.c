@@ -54,6 +54,7 @@ void usbd_init_desc(void)
 struct cdc_line_coding line_coding;
 void cdc_acm_class_interface_request_handler(USBD_TypeDef *usbd, const struct usb_setup_packet *setup)
 {
+    (void)usbd;
     struct cdc_line_coding *line_coding = (struct cdc_line_coding *)&USBD->LINECODE;
     switch (setup->bRequest)
     {

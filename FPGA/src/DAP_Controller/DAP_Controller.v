@@ -56,7 +56,16 @@ module DAP_Controller #(
 
         // 独立串口连接器
         output EXT_UART_TX,
-        input EXT_UART_RX
+        input EXT_UART_RX,
+
+        // 内部SPI信号
+        input LOC_SPI_CSN,
+        output LOC_SPI_MISO,
+        input LOC_SPI_MOSI,
+        input LOC_SPI_CLK,
+        output LOC_SPI_MUX,
+
+        output [3:0] DAP_GPIO
     );
 
     // ----------------------------------------
@@ -185,7 +194,7 @@ module DAP_Controller #(
     localparam [ADDRWIDTH-1:0] DAP_GPIO_DI_ADDR          = 12'h028;
     localparam [ADDRWIDTH-1:0] DAP_GPIO_DO_ADDR          = 12'h02C;
 
-    localparam [ADDRWIDTH-1:0] DAP_SWJ_CR_ADDR           = 12'h030;
+    localparam [ADDRWIDTH-1:0] DAP_SWJ_CR_ADDR           = 12'h040;
 
 
     function addr_equ;
@@ -679,10 +688,19 @@ module DAP_Controller #(
                  .LOC_SRST_I(LOC_SRST_I),
                  .LOC_SRST_O(LOC_SRST_O),
 
-                 .SWD_MODE(SWD_MODE),
-                 .LOC_UART_TX(LOC_UART_TX),
-                 .LOC_UART_RX(LOC_UART_RX)
-             );
+                  .SWD_MODE(SWD_MODE),
+                  .LOC_UART_TX(LOC_UART_TX),
+                  .LOC_UART_RX(LOC_UART_RX),
+
+                  .LOC_SPI_CSN(LOC_SPI_CSN),
+                  .LOC_SPI_MISO(LOC_SPI_MISO),
+                  .LOC_SPI_MOSI(LOC_SPI_MOSI),
+                  .LOC_SPI_CLK(LOC_SPI_CLK),
+                  .LOC_SPI_MUX(LOC_SPI_MUX),
+
+                  .DAP_BUSY(dap_sm == DAP_SM_WORKING),
+                  .DAP_GPIO(DAP_GPIO)
+              );
 
 
     always @(*) begin
@@ -714,13 +732,13 @@ module DAP_Controller #(
                     hrdatas = baudgenerator_hrdatas;
                     hreadyouts = 1'd1;
                 end
-                // GPIO ADDR RANGE 2x
-                (10'b0000_0010_??): begin
+                // GPIO ADDR RANGE 2x 3x
+                (10'b0000_001?_??): begin
                     hrdatas = gpio_hrdatas;
                     hreadyouts = 1'd1;
                 end
-                // SWJ ADDR RANGE 3x 4x 5x
-                (10'b0000_0011_??), (10'b0000_010?_??): begin
+                // SWJ ADDR RANGE 4x 5x 6x 7x
+                (10'b0000_01??_??): begin
                     hrdatas = swj_hrdatas;
                     hreadyouts = 1'd1;
                 end

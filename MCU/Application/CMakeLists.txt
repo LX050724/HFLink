@@ -10,6 +10,7 @@ add_executable(HFLinkAPP
     ads1115/ads1115.c
     upgrade/upgrade.c
     config_db/config_db.c
+    spiflash/spiflash.c
 )
 
 target_include_directories(HFLinkAPP PRIVATE ${CMAKE_CURRENT_LIST_DIR} easyflash)

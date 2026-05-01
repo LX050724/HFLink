@@ -499,12 +499,18 @@ typedef struct {
     __IO uint8_t TMS_I_DELAY;
     __IO uint8_t TDO_DELAY;
     __IO uint8_t TDI_DELAY;
-    uint8_t RESERVED0;
+    __I uint8_t RESERVED0;
+
     __I uint16_t GPIO_STATUS;
-    __I uint16_t SWD_MODE;
+    __I uint16_t RESERVED1;
+
     __IO uint8_t DIRECTIO_DO;
     __IO uint8_t DIRECTIO_SET;
     __IO uint8_t DIRECTIO_RESET;
+    __I uint8_t RESERVED2;
+
+    __IO uint8_t LED_CMP[3];
+    __I uint8_t RESERVED3[13];
   } GPIO;
   struct {
     __IO uint32_t CR;

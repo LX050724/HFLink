@@ -17,7 +17,7 @@ module DAP_GPIO #(
         input SWD_MODE,
 
         // 独立串口连接器
-        output EXT_UART_TX,
+        output reg EXT_UART_TX,
         input EXT_UART_RX,
 
         // SWD/JTAG连接器端口
@@ -29,9 +29,22 @@ module DAP_GPIO #(
         output EXT_TDI_O,
         input EXT_RTCK_I,
         input EXT_SRST_I,
-        output EXT_SRST_O,
+        output reg EXT_SRST_O,
         input EXT_TRST_I,
-        output EXT_TRST_O,
+        output reg EXT_TRST_O,
+
+        // DAP忙信号
+        input DAP_BUSY,
+
+        // LED控制信号
+        output [3:0] DAP_GPIO,
+
+        // 内部SPI信号
+        input LOC_SPI_CSN,
+        output LOC_SPI_MISO,
+        input LOC_SPI_MOSI,
+        input LOC_SPI_CLK,
+        output LOC_SPI_MUX,
 
         // 内部SWJ信号
         input LOC_SWCLK_TCK_O,
@@ -46,7 +59,7 @@ module DAP_GPIO #(
         input LOC_SRST_O,
 
         // 内部SWO信号
-        output LOC_SWO_I,
+        output reg LOC_SWO_I,
 
         // 内部返回时钟信号
         output LOC_RTCK_I,
@@ -63,20 +76,22 @@ module DAP_GPIO #(
     localparam [ADDRWIDTH-1:0] SWDIO_TMS_I_DELAY_ADDR = BASE_ADDR + 4; // RW
     localparam [ADDRWIDTH-1:0] TDO_I_DELAY_ADDR = BASE_ADDR + 5; // RW
     localparam [ADDRWIDTH-1:0] TDI_O_DELAY_ADDR = BASE_ADDR + 6; // RW
-    localparam [ADDRWIDTH-1:0] GPIO_MODE_ADDR = BASE_ADDR + 8; // R
-    localparam [ADDRWIDTH-1:0] GPIO_STATUS_ADDR = BASE_ADDR + 10; // R
+    localparam [ADDRWIDTH-1:0] GPIO_STATUS_ADDR = BASE_ADDR + 8; // R
+    localparam [ADDRWIDTH-1:0] GPIO_MODE_ADDR = BASE_ADDR + 10; // R
     localparam [ADDRWIDTH-1:0] GPIO_DO_ADDR = BASE_ADDR + 12; // RW
     localparam [ADDRWIDTH-1:0] GPIO_DO_SET_ADDR = BASE_ADDR + 13; // W
     localparam [ADDRWIDTH-1:0] GPIO_DO_RESET_ADDR = BASE_ADDR + 14; // W
+    localparam [ADDRWIDTH-1:0] GPIO_LED_R_PWM_ADDR = BASE_ADDR + 16; // RW
+    localparam [ADDRWIDTH-1:0] GPIO_LED_G_PWM_ADDR = BASE_ADDR + 17; // RW
+    localparam [ADDRWIDTH-1:0] GPIO_LED_B_PWM_ADDR = BASE_ADDR + 18; // RW
 
     reg [7:0] GPIO_REG_CR;
-    reg [1:0] GPIO_DO;
+    reg [7:0] GPIO_DO;
 
     wire ALONE_UART_CON = GPIO_REG_CR[0];
-    wire TRST_DIRECT_EN = GPIO_REG_CR[1];
-    wire SRST_DIRECT_EN = GPIO_REG_CR[2];
-    wire TRST_DO = GPIO_DO[0];
-    wire SRST_DO = GPIO_DO[1];
+    wire DIRECT_IO_EN = GPIO_REG_CR[1];
+    wire SPI_MODE_EN = GPIO_REG_CR[2];
+    wire LED_MODE = GPIO_REG_CR[3];
 
     reg [7:0] SWCLK_TCK_O_DELAY;
     reg [7:0] SWDIO_TMS_T_DELAY;
@@ -85,10 +100,57 @@ module DAP_GPIO #(
     reg [7:0] TDO_I_DELAY;
     reg [7:0] TDI_O_DELAY;
 
+    reg [7:0] RGB_PWM_CMP [2:0];
+
+    reg mux_swclk_tck_o;
+    reg mux_swdio_tms_t;
+    reg mux_swdio_tms_o;
+    reg mux_tdi_o;
+
+    assign LOC_SPI_MUX = SPI_MODE_EN;
+    assign LOC_SPI_MISO = LOC_SWO_TDO_I;
+
+    always @(*) begin
+        if (SPI_MODE_EN) begin
+            mux_swclk_tck_o = LOC_SPI_CLK;
+            mux_swdio_tms_t = 1'd0;
+            mux_swdio_tms_o = LOC_SPI_CSN;
+            mux_tdi_o = LOC_SPI_MOSI;
+            EXT_SRST_O = GPIO_DO[4];
+            EXT_TRST_O = GPIO_DO[5];
+        end
+        else if (DIRECT_IO_EN) begin
+            mux_swclk_tck_o = GPIO_DO[0];
+            mux_swdio_tms_t = GPIO_DO[1];
+            mux_swdio_tms_o = GPIO_DO[2];
+            mux_tdi_o = GPIO_DO[3];
+            EXT_SRST_O = GPIO_DO[4];
+            EXT_TRST_O = GPIO_DO[5];
+        end
+        else begin
+            mux_swclk_tck_o = LOC_SWCLK_TCK_O;
+            mux_swdio_tms_t = LOC_SWDIO_TMS_T;
+            mux_swdio_tms_o = LOC_SWDIO_TMS_O;
+            mux_tdi_o = (!ALONE_UART_CON && SWD_MODE) ? LOC_UART_TX : LOC_TDI_O;
+            EXT_SRST_O = LOC_TRST_O;
+            EXT_TRST_O = LOC_SRST_O;
+        end
+
+        EXT_UART_TX = ALONE_UART_CON ? LOC_UART_TX : 1'd1;
+        LOC_SWO_I = SWD_MODE ? LOC_SWO_TDO_I : 1'd0;
+    end
+
+    assign DAP_GPIO[3] = GPIO_DO[7];
+
+
+    assign LOC_TRST_I = EXT_TRST_I;
+    assign LOC_SRST_I = EXT_SRST_I;
+    assign LOC_UART_RX = EXT_UART_RX;
+
 
     IODELAY #(.DYN_DLY_EN("TRUE")) SWCLK_TCK_O_delay_inst (
                 .DO(EXT_SWCLK_TCK_O),
-                .DI(LOC_SWCLK_TCK_O),
+                .DI(mux_swclk_tck_o),
                 .SDTAP(1'd0),
                 .VALUE(1'd0),
                 .DLYSTEP(SWCLK_TCK_O_DELAY)
@@ -96,7 +158,7 @@ module DAP_GPIO #(
 
     IODELAY #(.DYN_DLY_EN("TRUE")) SWDIO_TMS_T_delay_inst (
                 .DO(EXT_SWDIO_TMS_T),
-                .DI(LOC_SWDIO_TMS_T),
+                .DI(mux_swdio_tms_t),
                 .SDTAP(1'd0),
                 .VALUE(1'd0),
                 .DLYSTEP(SWDIO_TMS_T_DELAY)
@@ -104,7 +166,7 @@ module DAP_GPIO #(
 
     IODELAY #(.DYN_DLY_EN("TRUE")) SWDIO_TMS_O_delay_inst (
                 .DO(EXT_SWDIO_TMS_O),
-                .DI(LOC_SWDIO_TMS_O),
+                .DI(mux_swdio_tms_o),
                 .SDTAP(1'd0),
                 .VALUE(1'd0),
                 .DLYSTEP(SWDIO_TMS_O_DELAY)
@@ -128,19 +190,13 @@ module DAP_GPIO #(
 
     IODELAY #(.DYN_DLY_EN("TRUE")) TDI_O_delay_inst (
                 .DO(EXT_TDI_O),
-                .DI((!ALONE_UART_CON && SWD_MODE) ? LOC_UART_TX : LOC_TDI_O),
+                .DI(mux_tdi_o),
                 .SDTAP(1'd0),
                 .VALUE(1'd0),
                 .DLYSTEP(TDI_O_DELAY)
             );
 
-    assign LOC_TRST_I = EXT_TRST_I;
-    assign EXT_TRST_O = TRST_DIRECT_EN ? TRST_DO : LOC_TRST_O;
-    assign LOC_SRST_I = EXT_SRST_I;
-    assign EXT_SRST_O = SRST_DIRECT_EN ? SRST_DO : LOC_SRST_O;
-    assign EXT_UART_TX = ALONE_UART_CON ? LOC_UART_TX : 1'd1;
-    assign LOC_UART_RX = EXT_UART_RX;
-    assign LOC_SWO_I = SWD_MODE ? LOC_SWO_TDO_I : 1'd0;
+
 
     always @(posedge clk or negedge resetn) begin : ahb_mem_write_ctrl
         if (!resetn) begin
@@ -151,7 +207,10 @@ module DAP_GPIO #(
             SWDIO_TMS_I_DELAY <= 8'd0;
             TDO_I_DELAY <= 8'd0;
             TDI_O_DELAY <= 8'd0;
-            GPIO_DO <= 2'd0;
+            GPIO_DO <= 8'd0;
+            RGB_PWM_CMP[0] <= 8'd0;
+            RGB_PWM_CMP[1] <= 8'd0;
+            RGB_PWM_CMP[2] <= 8'd0;
         end
         else begin
             if (ahb_write_en) begin
@@ -182,10 +241,56 @@ module DAP_GPIO #(
                         if (ahb_byte_strobe[2])
                             GPIO_DO <= GPIO_DO & ~ahb_wdata[16+:8];
                     end
+                    GPIO_LED_R_PWM_ADDR[ADDRWIDTH-1:2]: begin
+                        if (ahb_byte_strobe[0])
+                            RGB_PWM_CMP[0] <= ahb_wdata[ 0+:8];
+                        if (ahb_byte_strobe[1])
+                            RGB_PWM_CMP[1] <= ahb_wdata[ 8+:8];
+                        if (ahb_byte_strobe[2])
+                            RGB_PWM_CMP[2] <= ahb_wdata[16+:8];
+                    end
                 endcase
             end
         end
     end
+
+    // LED PWM Controller
+    reg [7:0] pwm_cnt;
+    reg [2:0] led_output;
+    reg [7:0] busy_delay;
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            pwm_cnt <= 8'd0;
+            led_output[2:0] <= 3'b000;
+            busy_delay <= 8'd0;
+        end
+        else begin
+            // 8位PWM计数器循环递增
+            pwm_cnt <= pwm_cnt + 8'd1;
+
+            // RGB PWM输出：计数器小于比较值时输出高电平
+            // DAP_GPIO[0] = R, DAP_GPIO[1] = G, DAP_GPIO[2] = B
+            led_output[0] <= (pwm_cnt < RGB_PWM_CMP[0]) ? 1'b1 : 1'b0;
+            led_output[1] <= (pwm_cnt < RGB_PWM_CMP[1]) ? 1'b1 : 1'b0;
+            led_output[2] <= (pwm_cnt < RGB_PWM_CMP[2]) ? 1'b1 : 1'b0;
+
+            // LED模式切换，DAP忙时绿灯熄灭，空闲状态按正常亮度显示
+            if (LED_MODE && DAP_BUSY) begin
+                busy_delay <= 8'hff;
+            end
+
+            if (busy_delay) begin
+                if (pwm_cnt == 8'h00) begin
+                    busy_delay <= busy_delay - 1'd1;
+                end
+                led_output[0] <= 1'd0;
+                led_output[1] <= 1'd0;
+            end
+        end
+    end
+
+    // 低电平LED点亮，此处取反
+    assign DAP_GPIO[2:0] = ~led_output;
 
     reg [9:0] GPIO_SYMPLE;
     always @(posedge clk or negedge resetn) begin
@@ -194,16 +299,16 @@ module DAP_GPIO #(
         end
         else begin
             GPIO_SYMPLE <= {
-                            LOC_SWCLK_TCK_O,
-                            LOC_SWDIO_TMS_T,
-                            LOC_SWDIO_TMS_O,
+                            mux_swclk_tck_o,
+                            mux_swdio_tms_t,
+                            mux_swdio_tms_o,
                             LOC_SWDIO_TMS_I,
                             LOC_SWO_TDO_I,
-                            LOC_TDI_O,
-                            LOC_TRST_I,
-                            LOC_TRST_O,
-                            LOC_SRST_I,
-                            LOC_SRST_O
+                            mux_tdi_o,
+                            EXT_TRST_I,
+                            EXT_TRST_O,
+                            EXT_SRST_I,
+                            EXT_SRST_O
                         };
         end
     end
@@ -215,10 +320,12 @@ module DAP_GPIO #(
                     ahb_rdata = {SWDIO_TMS_O_DELAY, SWDIO_TMS_T_DELAY, SWCLK_TCK_O_DELAY, GPIO_REG_CR};
                 SWDIO_TMS_I_DELAY_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = {8'd0, TDI_O_DELAY, TDO_I_DELAY, SWDIO_TMS_I_DELAY};
-                GPIO_MODE_ADDR[ADDRWIDTH-1:2]:
-                    ahb_rdata = {15'd0, SWD_MODE, 6'd0, GPIO_SYMPLE};
+                GPIO_STATUS_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = {22'd0, GPIO_SYMPLE};
                 GPIO_DO_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = {24'd0, GPIO_DO};
+                GPIO_LED_R_PWM_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = {8'd0, RGB_PWM_CMP[2], RGB_PWM_CMP[1], RGB_PWM_CMP[0]};
                 default:
                     ahb_rdata = {32{1'bx}};
             endcase
