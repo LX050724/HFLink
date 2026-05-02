@@ -87,6 +87,10 @@ void cdc_acm_class_interface_request_handler(USBD_TypeDef *usbd, const struct us
         break;
     }
     case CDC_REQUEST_SEND_BREAK:
+        if (setup->wValue)
+        {
+            axisuart_send_break(AXIS_UART);
+        }
         break;
     }
 }

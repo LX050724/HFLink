@@ -38,6 +38,7 @@ module APB_Stream_UART#(
     wire UART_CR_EN_PARTY = uart_cr_reg[1];   // 校验位使能
     wire UART_CR_PARTY_ODD = uart_cr_reg[2];  // 0:偶校验 1:奇校验
     wire [1:0] UART_CR_STOP_BIT = uart_cr_reg[4:3]; // 停止位长度 0: 1b; 1: 1.5b; other: 2b
+    wire UART_BREAK = uart_cr_reg[29];
     wire UART_CR_DTR = uart_cr_reg[30];
     wire UART_CR_RTS = uart_cr_reg[31];
     wire [27:0] UART_BUAD_DIV_I = uart_baud_reg[4+:28];
@@ -100,7 +101,11 @@ module APB_Stream_UART#(
     wire uart_baud_clk_div4 = (uart_baud_cnt_q[1:0] == 2'd0) & uart_baud_clk;
 
     always @(posedge PCLK or negedge PRESETn) begin
-        if (!PRESETn || !UART_CR_EN) begin
+        if (!PRESETn) begin
+            uart_baud_cnt_i <= 28'd0;
+            uart_baud_cnt_q <= 4'd0;
+        end
+        else if (!UART_CR_EN) begin
             uart_baud_cnt_i <= 28'd0;
             uart_baud_cnt_q <= 4'd0;
         end
@@ -124,22 +129,37 @@ module APB_Stream_UART#(
     /***************************** 串口发送 *****************************/
     reg [3:0] tx_sm;
     reg tx_data_ready;
+    reg [3:0] tx_break_timer;
     reg [7:0] tx_data_buf;
     reg [7:0] tx_shift_reg;
     reg tx_party_reg;
 
     always @(posedge PCLK or negedge PRESETn) begin
-        if (!PRESETn || !UART_CR_EN) begin
-            tx_sm <= 13'd0;
+        if (!PRESETn) begin
+            tx_sm <= 4'd0;
             tx_party_reg <= 1'd0;
             tx_shift_reg <= 8'd0;
             tx_data_ready <= 1'd0;
-            tx_tready <= 1'd1;
+            tx_tready <= 1'd0;
+            tx_break_timer <= 4'd0;
             tx_data_buf <= 8'd0;
-            UART_TX <= 1'd1;
+            UART_TX <= 1'd0;
             UART_DE <= 1'd0;
         end
+        else if (!UART_CR_EN) begin
+            UART_TX <= 1'd1;
+            UART_DE <= 1'd0;
+            tx_sm <= 4'd0;
+            tx_data_ready <= 1'd0;
+            tx_tready <= 1'd0;
+        end
         else begin
+
+            // 写break位
+            if (PSEL && !PENABLE && PWRITE && PADDR[ADDRWIDTH-1:2] == 2'd0 && PSTRB[3] && PWDATA[29]) begin
+                tx_break_timer <= 4'd15;
+            end
+
             if (!tx_data_ready) begin
                 tx_tready <= 1'd1;
                 if (tx_tready & tx_tvalid) begin
@@ -151,13 +171,24 @@ module APB_Stream_UART#(
 
             case (tx_sm)
                 0: begin
-                    if (tx_data_ready && uart_baud_clk_div4) begin
-                        tx_party_reg <= 1'd0;
-                        tx_shift_reg <= tx_data_buf;
-                        tx_data_ready <= 1'd0;
-                        UART_TX <= 1'd0;
-                        UART_DE <= 1'd1;
-                        tx_sm <= 4'd1;
+                    if (uart_baud_clk_div4) begin
+                        if (tx_break_timer) begin
+                            tx_break_timer <= tx_break_timer - 1'd1;
+                            UART_TX <= 1'd0;
+                            UART_DE <= 1'd1;
+                        end
+                        else if (tx_data_ready) begin
+                            tx_party_reg <= 1'd0;
+                            tx_shift_reg <= tx_data_buf;
+                            tx_data_ready <= 1'd0;
+                            UART_TX <= 1'd0;
+                            UART_DE <= 1'd1;
+                            tx_sm <= 4'd1;
+                        end
+                        else begin
+                            UART_TX <= 1'd1;
+                            UART_DE <= 1'd0;
+                        end
                     end
                 end
                 1,2,3,4,5,6,7,8: begin
@@ -272,9 +303,9 @@ module APB_Stream_UART#(
     reg uart_rx1;
     wire uart_rx = uart_rx1;
     always @(posedge PCLK or negedge PRESETn) begin
-        if (!PRESETn || !UART_CR_EN) begin
-            uart_rx0 <= 1'd1;
-            uart_rx1 <= 1'd1;
+        if (!PRESETn) begin
+            uart_rx0 <= 1'd0;
+            uart_rx1 <= 1'd0;
         end
         else begin
             uart_rx0 <= UART_RX;
@@ -294,8 +325,8 @@ module APB_Stream_UART#(
     wire rx_data_party = (rx_data_shift[0] ^ rx_data_shift[1] ^ rx_data_shift[2] ^ rx_data_shift[3] ^ rx_data_shift[4] ^ rx_data_shift[5] ^ rx_data_shift[6] ^ rx_data_shift[7]);
 
     always @(posedge PCLK or negedge PRESETn) begin
-        if (!PRESETn || !UART_CR_EN) begin
-            uart_oversimple_shift <= 4'hf;
+        if (!PRESETn) begin
+            uart_oversimple_shift <= 4'h0;
             uart_oversimple_cnt <= 2'd0;
             rx_data_valid <= 1'd0;
             rx_data_shift <= 8'd0;
@@ -303,6 +334,10 @@ module APB_Stream_UART#(
             rx_tdata <= 8'd0;
             rx_tvalid <= 1'd0;
             rx_find_start <= 1'd0;
+        end
+        else if (!UART_CR_EN) begin
+            rx_find_start <= 1'd0;
+            rx_sm <= 4'd0;
         end
         else begin
             rx_tvalid <= 1'd0;
@@ -319,7 +354,8 @@ module APB_Stream_UART#(
                             // 找到起始位
                             uart_oversimple_cnt <= 2'd1;
                             rx_find_start <= 1'd1;
-                        end else if (uart_oversimple_cnt == 2'b11) begin
+                        end
+                        else if (uart_oversimple_cnt == 2'b11) begin
                             if (uart_oversimple_result == 0)
                                 rx_sm <= 1'd1;
                             rx_find_start <= 1'd0;
@@ -367,7 +403,8 @@ module APB_Stream_UART#(
                                     rx_tdata <= rx_data_shift;
                                     rx_tvalid <= rx_data_valid;
                                     rx_sm <= 0;
-                                end else begin
+                                end
+                                else begin
                                     rx_sm <= 11;
                                 end
                             end

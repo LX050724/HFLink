@@ -228,6 +228,7 @@ module USB_DESC#(
                                 setup_sm <= IDLE;
                             end
                             CDC_REQUEST_SEND_BREAK: begin
+                                intr <= 1'd1;
                                 setup_sm <= IDLE;
                             end
                             default: begin

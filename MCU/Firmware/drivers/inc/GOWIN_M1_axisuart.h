@@ -43,6 +43,11 @@ static inline void axisuart_set_dtr(AXIS_UART_TypeDef *uart, uint8_t dtr)
     uart->CR = (uart->CR & ~AXISUART_CR_DTR) | ((!!dtr) << AXISUART_CR_DTR_Pos);
 }
 
+static inline void axisuart_send_break(AXIS_UART_TypeDef *uart)
+{
+    uart->CR |= AXISUART_CR_BREAK;
+}
+
 void axisuart_set_baud(AXIS_UART_TypeDef *uart, uint32_t baud);
 
 #ifdef __cplusplus

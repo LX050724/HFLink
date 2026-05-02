@@ -964,6 +964,9 @@ typedef struct {
 #define AXISUART_CR_STOP_BIT_1_5   (1UL << AXISUART_CR_STOP_BIT_Pos)
 #define AXISUART_CR_STOP_BIT_2     (2UL << AXISUART_CR_STOP_BIT_Pos)
 
+#define AXISUART_CR_BREAK_Pos (29)
+#define AXISUART_CR_BREAK ((uint32_t) 0x20000000)
+
 #define AXISUART_CR_DTR_Pos (30)
 #define AXISUART_CR_DTR ((uint32_t) 0x40000000)
 
