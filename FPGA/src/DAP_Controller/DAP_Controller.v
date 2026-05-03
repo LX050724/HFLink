@@ -6,6 +6,7 @@ module DAP_Controller #(
         parameter GPIO_NUM = 4
     ) (
         input  wire                  sclk,
+        input  wire                  cali_clk,
         input  wire                  hclk,       // clock
         input  wire                  hresetn,    // reset
 
@@ -653,6 +654,8 @@ module DAP_Controller #(
                  .BASE_ADDR(DAP_GPIO_CR_DELAY_ADDR)
              ) dap_gpio_inst (
                  .clk(hclk),
+                 .cali_clk(cali_clk),
+                 
                  .resetn(hresetn),
 
                  .ahb_write_en(write_en),

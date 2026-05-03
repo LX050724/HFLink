@@ -3,6 +3,7 @@ module DAP_GPIO #(
         parameter [ADDRWIDTH-1:0] BASE_ADDR = 0
     )(
         input clk,
+        input cali_clk,
         input resetn,
 
         // AHB MEM接口
@@ -77,7 +78,7 @@ module DAP_GPIO #(
     localparam [ADDRWIDTH-1:0] TDO_I_DELAY_ADDR = BASE_ADDR + 5; // RW
     localparam [ADDRWIDTH-1:0] TDI_O_DELAY_ADDR = BASE_ADDR + 6; // RW
     localparam [ADDRWIDTH-1:0] GPIO_STATUS_ADDR = BASE_ADDR + 8; // R
-    localparam [ADDRWIDTH-1:0] GPIO_MODE_ADDR = BASE_ADDR + 10; // R
+    localparam [ADDRWIDTH-1:0] GPIO_CALI_ADDR = BASE_ADDR + 10; // R
     localparam [ADDRWIDTH-1:0] GPIO_DO_ADDR = BASE_ADDR + 12; // RW
     localparam [ADDRWIDTH-1:0] GPIO_DO_SET_ADDR = BASE_ADDR + 13; // W
     localparam [ADDRWIDTH-1:0] GPIO_DO_RESET_ADDR = BASE_ADDR + 14; // W
@@ -93,6 +94,9 @@ module DAP_GPIO #(
     wire SPI_MODE_EN = GPIO_REG_CR[2];
     wire LED_MODE = GPIO_REG_CR[3];
 
+    wire CALI_EN = GPIO_REG_CR[4];
+    wire [1:0] CALI_SEL = GPIO_REG_CR[6:5];
+
     reg [7:0] SWCLK_TCK_O_DELAY;
     reg [7:0] SWDIO_TMS_T_DELAY;
     reg [7:0] SWDIO_TMS_O_DELAY;
@@ -107,34 +111,41 @@ module DAP_GPIO #(
     reg mux_swdio_tms_o;
     reg mux_tdi_o;
 
+    // wire mux_swclk_tck_o = LOC_SWCLK_TCK_O;
+    // wire mux_swdio_tms_t = LOC_SWDIO_TMS_T;
+    // wire mux_swdio_tms_o = LOC_SWDIO_TMS_O;
+    // wire mux_tdi_o = (!ALONE_UART_CON && SWD_MODE) ? LOC_UART_TX : LOC_TDI_O;
+
     assign LOC_SPI_MUX = SPI_MODE_EN;
     assign LOC_SPI_MISO = LOC_SWO_TDO_I;
 
     always @(*) begin
-        if (SPI_MODE_EN) begin
-            mux_swclk_tck_o = LOC_SPI_CLK;
-            mux_swdio_tms_t = 1'd0;
-            mux_swdio_tms_o = LOC_SPI_CSN;
-            mux_tdi_o = LOC_SPI_MOSI;
-            EXT_SRST_O = GPIO_DO[4];
-            EXT_TRST_O = GPIO_DO[5];
-        end
-        else if (DIRECT_IO_EN) begin
-            mux_swclk_tck_o = GPIO_DO[0];
-            mux_swdio_tms_t = GPIO_DO[1];
-            mux_swdio_tms_o = GPIO_DO[2];
-            mux_tdi_o = GPIO_DO[3];
-            EXT_SRST_O = GPIO_DO[4];
-            EXT_TRST_O = GPIO_DO[5];
-        end
-        else begin
-            mux_swclk_tck_o = LOC_SWCLK_TCK_O;
-            mux_swdio_tms_t = LOC_SWDIO_TMS_T;
-            mux_swdio_tms_o = LOC_SWDIO_TMS_O;
-            mux_tdi_o = (!ALONE_UART_CON && SWD_MODE) ? LOC_UART_TX : LOC_TDI_O;
-            EXT_SRST_O = LOC_TRST_O;
-            EXT_TRST_O = LOC_SRST_O;
-        end
+        case ({SPI_MODE_EN, DIRECT_IO_EN}) /*synthesis parallel_case*/
+            2'b00: begin
+                mux_swclk_tck_o = LOC_SWCLK_TCK_O;
+                mux_swdio_tms_t = LOC_SWDIO_TMS_T;
+                mux_swdio_tms_o = LOC_SWDIO_TMS_O;
+                mux_tdi_o = (!ALONE_UART_CON && SWD_MODE) ? LOC_UART_TX : LOC_TDI_O;
+                EXT_SRST_O = LOC_TRST_O;
+                EXT_TRST_O = LOC_SRST_O;
+            end
+            2'b01, 2'b11: begin
+                mux_swclk_tck_o = GPIO_DO[0];
+                mux_swdio_tms_t = GPIO_DO[1];
+                mux_swdio_tms_o = GPIO_DO[2];
+                mux_tdi_o = GPIO_DO[3];
+                EXT_SRST_O = GPIO_DO[4];
+                EXT_TRST_O = GPIO_DO[5];
+            end
+            2'b10: begin
+                mux_swclk_tck_o = LOC_SPI_CLK;
+                mux_swdio_tms_t = 1'd0;
+                mux_swdio_tms_o = LOC_SPI_CSN;
+                mux_tdi_o = LOC_SPI_MOSI;
+                EXT_SRST_O = GPIO_DO[4];
+                EXT_TRST_O = GPIO_DO[5];
+            end
+        endcase
 
         EXT_UART_TX = ALONE_UART_CON ? LOC_UART_TX : 1'd1;
         LOC_SWO_I = SWD_MODE ? LOC_SWO_TDO_I : 1'd0;
@@ -299,17 +310,51 @@ module DAP_GPIO #(
         end
         else begin
             GPIO_SYMPLE <= {
-                            mux_swclk_tck_o,
-                            mux_swdio_tms_t,
-                            mux_swdio_tms_o,
-                            LOC_SWDIO_TMS_I,
-                            LOC_SWO_TDO_I,
-                            mux_tdi_o,
+                            // mux_swclk_tck_o,
+                            // mux_swdio_tms_t,
+                            // mux_swdio_tms_o,
+                            // LOC_SWDIO_TMS_I,
+                            // LOC_SWO_TDO_I,
+                            // mux_tdi_o,
+                            6'd0,
                             EXT_TRST_I,
                             EXT_TRST_O,
                             EXT_SRST_I,
                             EXT_SRST_O
                         };
+        end
+    end
+
+    reg [15:0] caputre_shift;
+    reg [1:0] caputre_ff;
+    reg [1:0] trigger_ff;
+    reg [1:0] capture_en_ff;
+    reg [5:0] capture_cnt;
+    wire [3:0] trigger_signal = GPIO_DO[3:0];
+
+    always @(posedge cali_clk or negedge resetn) begin
+        if (!resetn) begin
+            caputre_shift <= 16'd0;
+            capture_en_ff <= 2'd0;
+            trigger_ff <= 2'd0;
+            caputre_ff <= 2'd0;
+            capture_cnt <= 5'd0;
+        end
+        else begin
+            capture_en_ff <= {CALI_EN ,capture_en_ff[1]};            // 使能信号二级触发器
+            trigger_ff <= {trigger_signal[CALI_SEL] ,trigger_ff[1]}; // 触发信号二级触发器
+            caputre_ff <= {LOC_SWO_TDO_I ,caputre_ff[1]}; // 采样信号二级触发
+
+            if (capture_en_ff && trigger_ff[0]) begin
+                // 触发信号为高时开始计数，采样16次，采样时间66ns
+                if (capture_cnt != 5'd16) begin
+                    caputre_shift <= {caputre_shift[14:0], caputre_ff[0]};
+                    capture_cnt <= capture_cnt + 1'd1;
+                end
+            end
+            else begin
+                capture_cnt <= 5'd0;
+            end
         end
     end
 
@@ -321,7 +366,7 @@ module DAP_GPIO #(
                 SWDIO_TMS_I_DELAY_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = {8'd0, TDI_O_DELAY, TDO_I_DELAY, SWDIO_TMS_I_DELAY};
                 GPIO_STATUS_ADDR[ADDRWIDTH-1:2]:
-                    ahb_rdata = {22'd0, GPIO_SYMPLE};
+                    ahb_rdata = {caputre_shift, 6'd0, GPIO_SYMPLE};
                 GPIO_DO_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = {24'd0, GPIO_DO};
                 GPIO_LED_R_PWM_ADDR[ADDRWIDTH-1:2]:

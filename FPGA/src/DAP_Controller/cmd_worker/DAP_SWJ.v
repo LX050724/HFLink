@@ -726,7 +726,7 @@ module DAP_SWJ #(
                             write_abort_ram_write_addr <= 10'd0;
                             write_abort_ram_write_en <= 1'd1;
                             // SWD模式判断ack，JTAG模式没有反馈返回成功
-                            if (seq_rx_flag[3:0] == 4'b0001 || SWJ_CR_MODE == 1'b0) begin
+                            if (seq_rx_flag[3:0] == 4'b0001 || SWD_MODE == 1'b0) begin
                                 write_abort_ram_write_data <= 8'h00;
                             end
                             else begin

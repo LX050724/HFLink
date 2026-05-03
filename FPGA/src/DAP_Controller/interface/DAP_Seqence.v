@@ -736,8 +736,6 @@ module DAP_Seqence (
                             end
                             SWD_TRANS_IO_DATA_PATIYY: begin
                                 swd_trans_rx_parity <= swd_trans_rx_parity ^ SWDIO_TMS_I;
-                                swd_trans_swdio_o_reg <= 1'd0;
-                                swd_trans_swdio_t_reg <= 1'd0;
                             end
                             SWD_TRANS_IO_DONE: begin
                                 swd_trans_rx_sm <= SWD_TRANS_IO_DONE;

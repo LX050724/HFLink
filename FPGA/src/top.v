@@ -49,6 +49,7 @@ module HFLink_TOP(
     wire lock;
     wire clkout0;
     wire clkout1;
+    wire clkout2;
     wire n_reset = !reset;
     wire m1_halt;
     wire [3:0] intr;
@@ -108,6 +109,7 @@ module HFLink_TOP(
                   .lock(lock), //output lock
                   .clkout0(clkout0), //output clkout0
                   .clkout1(clkout1), //output clkout1
+                  .clkout2(clkout2), //output clkout2
                   .clkin(clk_osc), //input clkin
                   .mdclk(clk_osc)
                   //   .reset(reset) //input reset
@@ -318,6 +320,7 @@ module HFLink_TOP(
                        .hrdatas(AHB2HRDATA),
 
                        .sclk(clkout1),
+                       .cali_clk(clkout2),
 
                        .usb_endpt(ext_usb_endpt),
                        .usb_txact(ext_usb_txact),

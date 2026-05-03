@@ -2,6 +2,7 @@ module Gowin_PLL(
     clkin,
     clkout0,
     clkout1,
+    clkout2,
     lock,
     mdclk
 );
@@ -10,6 +11,7 @@ module Gowin_PLL(
 input clkin;
 output clkout0;
 output clkout1;
+output clkout2;
 output lock;
 input mdclk;
 wire [7:0] mdrdo;
@@ -23,6 +25,7 @@ wire pll_rst;
 
     Gowin_PLL_MOD u_pll(
         .clkout1(clkout1),
+        .clkout2(clkout2),
         .clkout0(clkout0),
         .lock(pll_lock),
         .mdrdo(wMdQOut),

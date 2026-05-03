@@ -19,18 +19,25 @@ extern "C" {
 #define DAP_GPIO_STATUS_SWDIO_TMS_T 0x0100
 #define DAP_GPIO_STATUS_SWCLK_TCK_O 0x0200
 
-#define DAP_GPIO_DO_SWCLK_TCK_O 0x00
-#define DAP_GPIO_DO_SWDIO_TMS_T 0x01
-#define DAP_GPIO_DO_SWDIO_TMS_O 0x02
-#define DAP_GPIO_DO_TDI_O 0x04
-#define DAP_GPIO_DO_TRST_O 0x08
-#define DAP_GPIO_DO_SRST_O 0x10
+#define DAP_GPIO_DO_SWCLK_TCK_O 0x01
+#define DAP_GPIO_DO_SWDIO_TMS_T 0x02
+#define DAP_GPIO_DO_SWDIO_TMS_O 0x04
+#define DAP_GPIO_DO_TDI_O 0x08
+#define DAP_GPIO_DO_TRST_O 0x10
+#define DAP_GPIO_DO_SRST_O 0x20
 #define DAP_GPIO_DO_POWER_CTL_O 0x80
 
 #define DAP_GPIO_CR_INDEPENDENT_UART_MASK 0x01
 #define DAP_GPIO_CR_DIRECTIO_MASK 0x02
 #define DAP_GPIO_CR_SPI_MODE_MASK 0x04
 #define DAP_GPIO_CR_LED_MODE_MASK 0x08
+
+#define DAP_GPIO_CR_CALIB_MASK 0x10
+#define DAP_GPIO_CR_CALIB_SELECT_MASK 0x60
+#define DAP_GPIO_CR_CALIB_SELECT_CLK 0x00
+#define DAP_GPIO_CR_CALIB_SELECT_TMS 0x20
+#define DAP_GPIO_CR_CALIB_SELECT_TDO 0x40
+
 
 #define DAP_GPIO_LED_R 0
 #define DAP_GPIO_LED_G 1
@@ -247,6 +254,30 @@ inline static uint16_t dap_gpio_get_status(DAP_TypeDef *dap)
     return dap->GPIO.GPIO_STATUS;
 }
 
+inline static uint16_t dap_gpio_get_cali_simpling(DAP_TypeDef *dap)
+{
+    return dap->GPIO.CALI_SIMPLING;
+}
+
+inline static void dap_gpio_enable_calib_simpling(DAP_TypeDef *dap)
+{
+    dap->GPIO.CR |= DAP_GPIO_CR_CALIB_MASK;
+}
+
+inline static void dap_gpio_disable_calib_simpling(DAP_TypeDef *dap)
+{
+    dap->GPIO.CR &= ~DAP_GPIO_CR_CALIB_MASK;
+}
+
+inline static void dap_gpio_send_break(DAP_TypeDef *dap)
+{
+    dap->GPIO.CR |= DAP_GPIO_CR_CALIB_MASK;
+}
+
+inline static void dap_gpio_set_calib_select(DAP_TypeDef *dap, uint8_t select)
+{
+    dap->GPIO.CR = (dap->GPIO.CR & ~DAP_GPIO_CR_CALIB_SELECT_MASK) | select;
+}
 /*************************************************************************************************************************/
 
 inline static void dap_jtag_set_irlen(DAP_TypeDef *dap, uint8_t index, uint8_t irlen)

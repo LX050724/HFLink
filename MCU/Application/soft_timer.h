@@ -16,6 +16,7 @@ typedef enum {
 void timer_set_tick(TIMER t, uint32_t value);
 uint32_t timer_get_tick(TIMER t);
 void timer_systick(void);
+void delay_1ms(uint32_t count);
 
 #ifdef __cplusplus
 }

@@ -502,7 +502,7 @@ typedef struct {
     __I uint8_t RESERVED0;
 
     __I uint16_t GPIO_STATUS;
-    __I uint16_t RESERVED1;
+    __I uint16_t CALI_SIMPLING;
 
     __IO uint8_t DIRECTIO_DO;
     __IO uint8_t DIRECTIO_SET;

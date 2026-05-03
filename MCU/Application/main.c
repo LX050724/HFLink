@@ -125,6 +125,26 @@ int main(void)
         {
             led_default_mode_loop();
         }
+
+
+        // print("calib test start ===========================\n");
+        // for (int i = 0; i < 256; i++)
+        // {
+        //     dap_gpio_set_tck_odelay(DAP, i);
+        //     dap_gpio_set_calib_select(DAP, DAP_GPIO_CR_CALIB_SELECT_CLK);
+        //     dap_gpio_reset_pin(DAP, DAP_GPIO_DO_SWCLK_TCK_O | DAP_GPIO_DO_SWDIO_TMS_T);
+        //     dap_gpio_enable_directio(DAP);
+        //     delay_1ms(2);
+    
+        //     dap_gpio_enable_calib_simpling(DAP);
+        //     dap_gpio_set_pin(DAP, DAP_GPIO_DO_SWCLK_TCK_O);
+        //     delay_1ms(2);
+        //     dap_gpio_reset_pin(DAP, DAP_GPIO_DO_SWCLK_TCK_O);
+        //     dap_gpio_disable_calib_simpling(DAP);
+    
+        //     print("%d, %04x\n", i, dap_gpio_get_cali_simpling(DAP));
+        // }
+
     }
 }
 
