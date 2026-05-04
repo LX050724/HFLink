@@ -39,8 +39,8 @@
 -clkout1_dt_dir 1
 -clkout1_dt_step 0
 -dyn_pe1_sel false
--clkout1_pe_coarse 0
--clkout1_pe_fine 0
+-clkout1_pe_coarse 1
+-clkout1_pe_fine 2
 -de1_en false
 -en_clkout2 true
 -clkout2_bypass false
