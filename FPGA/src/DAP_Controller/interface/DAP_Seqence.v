@@ -204,12 +204,12 @@ module DAP_Seqence (
             end
             5'b?1???: begin  // JTAG_SEQ 活跃
                 SWDIO_TMS_O = jtag_seq_tms_o_reg;
-                SWDIO_TMS_T = ~clock_oen[CMD_INDEX_JTAG_SEQ];
+                SWDIO_TMS_T = 1'd0;
                 TDI_O       = jtag_seq_tdi_o_reg;
             end
             5'b1????: begin  // JTAG_TRANS 活跃
                 SWDIO_TMS_O = jtag_trans_tms_o_reg;
-                SWDIO_TMS_T = ~clock_oen[CMD_INDEX_JTAG_TRANS];
+                SWDIO_TMS_T = 1'd0;
                 TDI_O       = jtag_trans_tdi_o_reg;
             end
             default: begin
@@ -793,7 +793,6 @@ module DAP_Seqence (
         end
         else begin
             rx_valid[CMD_INDEX_JTAG_SEQ] <= 1'd0;
-            delay_clk_en[CMD_INDEX_JTAG_SEQ] <= 1'd1;
 
             case (jtag_seq_sm)
                 1'd0: begin
@@ -808,10 +807,14 @@ module DAP_Seqence (
                         jtag_seq_tms <= tx_cmd[4];
                         delay_clk_en[CMD_INDEX_JTAG_SEQ] <= 1'd0; // 复位延迟时钟标志
                     end
+                    else begin
+                        delay_clk_en[CMD_INDEX_JTAG_SEQ] <= 1'd1;
+                    end
                 end
                 1'd1: begin
                     if (sclk_negedge) begin
                         if (jtag_seq_tx_count != jtag_seq_num) begin
+                            delay_clk_en[CMD_INDEX_JTAG_SEQ] <= 1'd1;
                             clock_oen[CMD_INDEX_JTAG_SEQ] <= 1'd1;
                             {jtag_seq_tx_data, jtag_seq_tdi_o_reg} <= {1'd0, jtag_seq_tx_data};
                             jtag_seq_tms_o_reg <= jtag_seq_tms;
