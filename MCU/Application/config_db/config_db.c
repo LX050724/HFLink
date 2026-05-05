@@ -1,6 +1,7 @@
 #include "spiflash/spiflash.h"
 #include "board.h"
 #include "config_db.h"
+#include "GOWIN_M1_dap.h"
 #include <string.h>
 
 #define FLASH_CONFIG_END_ADDR (0x800000)
@@ -15,6 +16,11 @@ static uint32_t next_flash_addr;
 
 int config_data_load()
 {
+    if (dap_gpio_is_spi_mode(DAP))
+    {
+        return -1;
+    }
+
     ConfigData_t temp_config;
     uint32_t last_valid_addr = 0;
     uint32_t crc;
@@ -90,6 +96,11 @@ int config_data_load()
 
 int config_data_save()
 {
+    if (dap_gpio_is_spi_mode(DAP))
+    {
+        return -1;
+    }
+
     uint32_t crc = crc32(0xffffffff, (uint8_t *)&global_config.clock_freq_mapping,
                          sizeof(global_config) - offsetof(ConfigData_t, clock_freq_mapping));
     if (global_config.crc32 == crc)

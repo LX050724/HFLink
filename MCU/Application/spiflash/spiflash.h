@@ -22,6 +22,10 @@ extern "C" {
 #define SPIFLASH_CMD_ERASE_BLOCK_32K   0x52
 #define SPIFLASH_CMD_ERASE_BLOCK_64K   0xD8
 #define SPIFLASH_CMD_ERASE_CHIP        0xC7
+#define SPIFLASH_CMD_READ_IDENTIFICATION_ID      0x9F
+#define SPIFLASH_CMD_READ_SFDP_TABLE   0x5A
+#define SPIFLASH_CMD_RESET_CHIP_1        0x66
+#define SPIFLASH_CMD_RESET_CHIP_2        0x99
 
 /**
  * @brief 初始化SPIFlash设备
@@ -116,6 +120,28 @@ void spiflash_page_program(SPI_TypeDef *spi, uint32_t addr, const uint8_t *data,
  * @param len 要读取的字节数
  */
 void spiflash_read_data(SPI_TypeDef *spi, uint32_t addr, uint8_t *data, uint32_t len);
+
+/**
+ * @brief 从Flash设备读取3字节识别ID
+ * @param spi SPI外设指针
+ * @param id 接收识别ID缓存区指针
+ */
+void spiflash_read_identification_id(SPI_TypeDef *spi, uint8_t *id);
+
+/**
+ * @brief 从Flash设备读取SFDP表
+ * @param spi SPI外设指针
+ * @param addr 读取起始地址
+ * @param buf 接收SFDP表缓存区指针
+ * @param len 要读取的字节数
+ */
+void spiflash_read_sfdp_table(SPI_TypeDef *spi, uint32_t addr, uint8_t *buf, uint32_t len);
+
+/**
+ * @brief 重置Flash芯片
+ * @param spi SPI外设指针
+ */
+void spiflash_reset_chip(SPI_TypeDef *spi);
 
 #ifdef __cplusplus
 }

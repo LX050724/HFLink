@@ -26,6 +26,7 @@ static void dap_jtag_configure_handler(DAP_TypeDef *dap);
 static void dap_swo_transport_handler(DAP_TypeDef *dap);
 static void dap_swo_mode_handler(DAP_TypeDef *dap);
 void dap_vendor0_handler(DAP_TypeDef *dap);
+void dap_vendor1_handler(DAP_TypeDef *dap);
 
 void dap_irq_handler(DAP_TypeDef *dap)
 {
@@ -64,6 +65,9 @@ void dap_irq_handler(DAP_TypeDef *dap)
         break;
     case ID_DAP_Vendor0:
         dap_vendor0_handler(dap);
+        break;
+    case ID_DAP_Vendor1:
+        dap_vendor1_handler(dap);
         break;
     default:
         DAP_DEBUG("unknown cmd %02x\n", cmd);
@@ -372,6 +376,11 @@ static void dap_return_n_string(DAP_TypeDef *dap, const char *str)
 }
 
 __WEAK void dap_vendor0_handler(DAP_TypeDef *dap)
+{
+    (void)dap;
+}
+
+__WEAK void dap_vendor1_handler(DAP_TypeDef *dap)
 {
     (void)dap;
 }

@@ -11,6 +11,8 @@ extern "C" {
 #define print(fmt, ...)
 #endif
 
+extern uint8_t shared_buffer[256];
+
 uint32_t crc32(uint32_t init, uint8_t *data, uint32_t length);
 
 #ifdef __cplusplus

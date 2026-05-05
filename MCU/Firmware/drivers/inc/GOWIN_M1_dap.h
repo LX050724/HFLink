@@ -184,6 +184,11 @@ inline static void dap_gpio_disable_spi_mode(DAP_TypeDef *dap)
     dap->GPIO.CR &= ~DAP_GPIO_CR_SPI_MODE_MASK;
 }
 
+inline static bool dap_gpio_is_spi_mode(DAP_TypeDef *dap)
+{
+    return (dap->GPIO.CR & DAP_GPIO_CR_SPI_MODE_MASK) != 0;
+}
+
 inline static void dap_gpio_set_led_mode(DAP_TypeDef *dap, uint8_t mode)
 {
     dap->GPIO.CR = (dap->GPIO.CR & ~DAP_GPIO_CR_LED_MODE_MASK) | mode;

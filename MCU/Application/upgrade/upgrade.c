@@ -2,6 +2,7 @@
 #include <string.h>
 #include "board.h"
 #include "spiflash/spiflash.h"
+#include "GOWIN_M1_dap.h"
 
 #define FPGA_BITSTREAM_BEGIN_ADDR 0x00000000U
 #define FPGA_BITSTREAM_END_ADDR 0x00100000U
@@ -20,7 +21,6 @@ static volatile uint32_t upg_write_addr;
 static volatile uint32_t upg_checksum = 0xFFFFFFFFU;
 static volatile uint8_t upg_busy_flag;
 static volatile UPG_Status status;
-static uint8_t upg_buffer[256];
 
 
 void upgrade_loop(void)
@@ -42,7 +42,7 @@ void upgrade_loop(void)
         break;
     }
     case UPG_PROGRAM: {
-        spiflash_page_program(SPI, upg_write_addr, upg_buffer, 256);
+        spiflash_page_program(SPI, upg_write_addr, shared_buffer, 256);
         upg_write_addr += 256;
         if (upg_write_addr >= upg_firm_size)
         {
@@ -61,8 +61,8 @@ void upgrade_loop(void)
             uint32_t len = upg_firm_size - (addr - FPGA_BITSTREAM_BEGIN_ADDR);
             if (len > 256)
                 len = 256;
-            spiflash_read_data(SPI, addr, upg_buffer, len);
-            temp = crc32(~temp, upg_buffer, len);
+            spiflash_read_data(SPI, addr, shared_buffer, len);
+            temp = crc32(~temp, shared_buffer, len);
         }
         upg_checksum = temp;
         status = UPG_IDLE;
@@ -73,6 +73,10 @@ void upgrade_loop(void)
 
 int upgrade_start(uint32_t firm_size)
 {
+    if (dap_gpio_is_spi_mode(DAP))
+    {
+        return -1;
+    }
     if (status == UPG_IDLE)
     {
         upg_firm_size = firm_size;
@@ -87,7 +91,7 @@ int upgrade_start(uint32_t firm_size)
 volatile uint8_t *upgrade_get_buffer(void)
 {
     if (status == UPG_WAIT_DATA)
-        return upg_buffer;
+        return shared_buffer;
     return NULL;
 }
 

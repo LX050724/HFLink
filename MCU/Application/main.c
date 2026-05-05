@@ -21,6 +21,9 @@ uint8_t adc_channel;
 // 0: VREF*4; 1: CURRENT
 int16_t adc_result[2];
 
+uint8_t shared_buffer[256];
+
+
 static void led_default_mode_loop(void);
 
 int main(void)

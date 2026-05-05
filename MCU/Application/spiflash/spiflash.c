@@ -1,13 +1,13 @@
-#include "spiflash.h"
 #include "GOWIN_M1_spi.h"
+#include "spiflash.h"
 
 static uint8_t spi_transfer_byte(SPI_TypeDef *spi, uint8_t byte)
 {
     spi->WDATA = byte;
-    while (!(spi->STATUS & SPI_STATUS_RRDY));
+    while (!(spi->STATUS & SPI_STATUS_RRDY))
+        ;
     return spi->RDATA;
 }
-
 
 void spiflash_init(SPI_TypeDef *spi, uint8_t clk_div, uint8_t mode)
 {
@@ -58,7 +58,8 @@ void spiflash_write_disable(SPI_TypeDef *spi)
 
 void spiflash_wait_busy(SPI_TypeDef *spi)
 {
-    while (spiflash_read_status_reg(spi, SPIFLASH_CMD_READ_STATUS_SR1) & 0x01);
+    while (spiflash_read_status_reg(spi, SPIFLASH_CMD_READ_STATUS_SR1) & 0x01)
+        ;
 }
 
 void spiflash_write_status_reg(SPI_TypeDef *spi, uint8_t reg_cmd, uint8_t sr)
@@ -146,3 +147,40 @@ void spiflash_read_data(SPI_TypeDef *spi, uint32_t addr, uint8_t *data, uint32_t
     spi->SSMASK = 0;
 }
 
+void spiflash_read_identification_id(SPI_TypeDef *spi, uint8_t *id)
+{
+    spi->SSMASK = 1;
+    spi_transfer_byte(spi, SPIFLASH_CMD_READ_IDENTIFICATION_ID);
+    for (int i = 0; i < 3; i++)
+    {
+        id[i] = spi_transfer_byte(spi, 0x00);
+    }
+    spi->SSMASK = 0;
+}
+
+void spiflash_read_sfdp_table(SPI_TypeDef *spi, uint32_t addr, uint8_t *buf, uint32_t len)
+{
+    spi->SSMASK = 1;
+    spi_transfer_byte(spi, SPIFLASH_CMD_READ_SFDP_TABLE);
+    spi_transfer_byte(spi, (addr >> 16) & 0xFF);
+    spi_transfer_byte(spi, (addr >> 8) & 0xFF);
+    spi_transfer_byte(spi, addr & 0xFF);
+    spi_transfer_byte(spi, 0x00); // dummy byte
+    for (uint32_t i = 0; i < len; i++)
+    {
+        buf[i] = spi_transfer_byte(spi, 0x00);
+    }
+    spi->SSMASK = 0;
+}
+
+
+void spiflash_reset_chip(SPI_TypeDef *spi)
+{
+    spiflash_write_enable(spi);
+    spi->SSMASK = 1;
+    spi_transfer_byte(spi, SPIFLASH_CMD_RESET_CHIP_1);
+    spi->SSMASK = 0;
+    spi->SSMASK = 1;
+    spi_transfer_byte(spi, SPIFLASH_CMD_RESET_CHIP_2);
+    spi->SSMASK = 0;
+}
