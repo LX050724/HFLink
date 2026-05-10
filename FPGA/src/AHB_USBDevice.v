@@ -43,6 +43,9 @@ module AHB_USBDevice #(
         output ext_usb_rxact,
         output ext_usb_rxpktval,
 
+        input [7:0] swo_tdata,
+        input swo_tvalid,
+
         // 数据AxisStream
         input cdc_in_tvalid,
         input [7:0] cdc_in_tdata,
@@ -443,10 +446,10 @@ module AHB_USBDevice #(
                  .o_usb_txdat(ep_usb_txdat),
 
                  // SWO IN
-                 .i_ep6_rx_clk(hclk),
-                 .i_ep6_rx_rdy(1'd0),
-                 .o_ep6_rx_dval(),
-                 .o_ep6_rx_data(),
+                 .i_ep6_tx_clk(hclk),
+                 .i_ep6_tx_max(TRANS_MAX),
+                 .i_ep6_tx_dval(swo_tvalid),
+                 .i_ep6_tx_data(swo_tdata),
 
                  // CDC IN
                  .i_ep3_tx_clk(hclk),

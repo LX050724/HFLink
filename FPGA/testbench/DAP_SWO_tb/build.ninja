@@ -1,0 +1,9 @@
+rule compile
+    command = iverilog.exe -g2012 -I../../src/DAP_Controller -DSIMULATION -o $out $in
+
+rule vvp
+    command = vvp $in
+
+build .wave: compile DAP_SWO_tb.v ../../src/DAP_Controller/interface/DAP_SWO.v
+
+build all: vvp .wave

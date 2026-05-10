@@ -3,7 +3,7 @@ module DAP_GPIO #(
         parameter [ADDRWIDTH-1:0] BASE_ADDR = 0
     )(
         input clk,
-        input cali_clk,
+        input clk_200M,
         input resetn,
 
         // AHB MEM接口
@@ -60,7 +60,7 @@ module DAP_GPIO #(
         input LOC_SRST_O,
 
         // 内部SWO信号
-        output reg LOC_SWO_I,
+        output [1:0] LOC_SWO_DDR_Q,
 
         // 内部返回时钟信号
         output LOC_RTCK_I,
@@ -78,13 +78,14 @@ module DAP_GPIO #(
     localparam [ADDRWIDTH-1:0] TDO_I_DELAY_ADDR = BASE_ADDR + 5; // RW
     localparam [ADDRWIDTH-1:0] TDI_O_DELAY_ADDR = BASE_ADDR + 6; // RW
     localparam [ADDRWIDTH-1:0] GPIO_STATUS_ADDR = BASE_ADDR + 8; // R
-    localparam [ADDRWIDTH-1:0] GPIO_CALI_ADDR = BASE_ADDR + 10; // R
     localparam [ADDRWIDTH-1:0] GPIO_DO_ADDR = BASE_ADDR + 12; // RW
     localparam [ADDRWIDTH-1:0] GPIO_DO_SET_ADDR = BASE_ADDR + 13; // W
     localparam [ADDRWIDTH-1:0] GPIO_DO_RESET_ADDR = BASE_ADDR + 14; // W
     localparam [ADDRWIDTH-1:0] GPIO_LED_R_PWM_ADDR = BASE_ADDR + 16; // RW
     localparam [ADDRWIDTH-1:0] GPIO_LED_G_PWM_ADDR = BASE_ADDR + 17; // RW
     localparam [ADDRWIDTH-1:0] GPIO_LED_B_PWM_ADDR = BASE_ADDR + 18; // RW
+    localparam [ADDRWIDTH-1:0] GPIO_CALI_ADDR = BASE_ADDR + 20; // R
+
 
     reg [7:0] GPIO_REG_CR;
     reg [7:0] GPIO_DO;
@@ -148,7 +149,6 @@ module DAP_GPIO #(
         endcase
 
         EXT_UART_TX = ALONE_UART_CON ? LOC_UART_TX : 1'd1;
-        LOC_SWO_I = SWD_MODE ? LOC_SWO_TDO_I : 1'd0;
     end
 
     assign DAP_GPIO[3] = GPIO_DO[7];
@@ -207,7 +207,12 @@ module DAP_GPIO #(
                 .DLYSTEP(TDI_O_DELAY)
             );
 
-
+    IDDR SWO_IDDR_inst(
+        .CLK(clk_200M),
+        .D(LOC_SWO_TDO_I),
+        .Q0(LOC_SWO_DDR_Q[0]),
+        .Q1(LOC_SWO_DDR_Q[1])
+    );
 
     always @(posedge clk or negedge resetn) begin : ahb_mem_write_ctrl
         if (!resetn) begin
@@ -325,16 +330,16 @@ module DAP_GPIO #(
         end
     end
 
-    reg [15:0] caputre_shift;
+    reg [31:0] caputre_shift;
     reg [1:0] caputre_ff;
     reg [1:0] trigger_ff;
     reg [1:0] capture_en_ff;
     reg [5:0] capture_cnt;
     wire [3:0] trigger_signal = GPIO_DO[3:0];
 
-    always @(posedge cali_clk or negedge resetn) begin
+    always @(posedge clk_200M or negedge resetn) begin
         if (!resetn) begin
-            caputre_shift <= 16'd0;
+            caputre_shift <= 32'd0;
             capture_en_ff <= 2'd0;
             trigger_ff <= 2'd0;
             caputre_ff <= 2'd0;
@@ -348,7 +353,7 @@ module DAP_GPIO #(
             if (capture_en_ff && trigger_ff[0]) begin
                 // 触发信号为高时开始计数，采样16次，采样时间66ns
                 if (capture_cnt != 5'd16) begin
-                    caputre_shift <= {caputre_shift[14:0], caputre_ff[0]};
+                    caputre_shift <= {caputre_shift[29:0], LOC_SWO_DDR_Q};
                     capture_cnt <= capture_cnt + 1'd1;
                 end
             end
@@ -366,11 +371,13 @@ module DAP_GPIO #(
                 SWDIO_TMS_I_DELAY_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = {8'd0, TDI_O_DELAY, TDO_I_DELAY, SWDIO_TMS_I_DELAY};
                 GPIO_STATUS_ADDR[ADDRWIDTH-1:2]:
-                    ahb_rdata = {caputre_shift, 6'd0, GPIO_SYMPLE};
+                    ahb_rdata = {16'd0, 6'd0, GPIO_SYMPLE};
                 GPIO_DO_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = {24'd0, GPIO_DO};
                 GPIO_LED_R_PWM_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = {8'd0, RGB_PWM_CMP[2], RGB_PWM_CMP[1], RGB_PWM_CMP[0]};
+                GPIO_CALI_ADDR[ADDRWIDTH-1:2]:
+                    ahb_rdata = caputre_shift;
                 default:
                     ahb_rdata = {32{1'bx}};
             endcase

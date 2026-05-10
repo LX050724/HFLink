@@ -205,6 +205,8 @@ module HFLink_TOP(
     wire cdc_out_tready;
     wire cdc_out_tvalid;
     wire [7:0] cdc_out_tdata;
+    wire [7:0] swo_tdata;
+    wire swo_tvalid;
 
     wire [3:0] ext_usb_endpt;
     wire ext_usb_txact;
@@ -254,6 +256,9 @@ module HFLink_TOP(
                       .ext_usb_rxrdy(ext_usb_rxrdy),
                       .ext_usb_rxact(ext_usb_rxact),
                       .ext_usb_rxpktval(ext_usb_rxpktval),
+
+                      .swo_tdata(swo_tdata),
+                      .swo_tvalid(swo_tvalid),
 
                       .cdc_in_tvalid(cdc_in_tvalid),
                       .cdc_in_tdata(cdc_in_tdata),
@@ -320,7 +325,7 @@ module HFLink_TOP(
                        .hrdatas(AHB2HRDATA),
 
                        .sclk(clkout1),
-                       .cali_clk(clkout2),
+                       .clk_200M(clkout2),
 
                        .usb_endpt(ext_usb_endpt),
                        .usb_txact(ext_usb_txact),
@@ -334,6 +339,9 @@ module HFLink_TOP(
                        .usb_rxrdy(ext_usb_rxrdy),
                        .usb_rxact(ext_usb_rxact),
                        .usb_rxpktval(ext_usb_rxpktval),
+
+                       .swo_tdata(swo_tdata),
+                       .swo_tvalid(swo_tvalid),
 
                        .intr(intr[1]),
 

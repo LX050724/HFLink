@@ -12,6 +12,7 @@
         <File path="src/DAP_Controller/cmd_worker/DAP_SWJ.v" type="file.verilog" enable="1"/>
         <File path="src/DAP_Controller/interface/DAP_BaudGenerator.v" type="file.verilog" enable="1"/>
         <File path="src/DAP_Controller/interface/DAP_GPIO.v" type="file.verilog" enable="1"/>
+        <File path="src/DAP_Controller/interface/DAP_SWO.v" type="file.verilog" enable="1"/>
         <File path="src/DAP_Controller/interface/DAP_Seqence.v" type="file.verilog" enable="1"/>
         <File path="src/DAP_Controller/interface/DAP_USB_Packer.v" type="file.verilog" enable="1"/>
         <File path="src/DAP_Controller/interface/DAP_USB_Receiver.v" type="file.verilog" enable="1"/>
@@ -32,6 +33,8 @@
         <File path="src/timming.sdc" type="file.sdc" enable="1"/>
         <File path="src/HFLink.rao" type="file.gao" enable="0"/>
         <File path="src/HFLinkDAP.rao" type="file.gao" enable="0"/>
+        <File path="src/HFLinkJTAG.rao" type="file.gao" enable="0"/>
+        <File path="src/HFLinkSWD.rao" type="file.gao" enable="0"/>
         <File path="src/HFLinkUART.rao" type="file.gao" enable="0"/>
     </FileList>
 </Project>

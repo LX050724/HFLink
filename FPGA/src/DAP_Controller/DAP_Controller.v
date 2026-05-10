@@ -6,7 +6,7 @@ module DAP_Controller #(
         parameter GPIO_NUM = 4
     ) (
         input  wire                  sclk,
-        input  wire                  cali_clk,
+        input  wire                  clk_200M,
         input  wire                  hclk,       // clock
         input  wire                  hresetn,    // reset
 
@@ -19,7 +19,7 @@ module DAP_Controller #(
         input  wire                  hreadys,
         input  wire [31:0]           hwdatas,
 
-        output reg                   hreadyouts,
+        output                       hreadyouts,
         output wire                  hresps,
         output reg [31:0]            hrdatas,
 
@@ -37,6 +37,9 @@ module DAP_Controller #(
         output usb_rxrdy,
         input usb_rxact,
         input usb_rxpktval,
+
+        output [7:1] swo_tdata,
+        output swo_tvalid,
 
         // 内部串口
         input LOC_UART_TX,
@@ -178,6 +181,7 @@ module DAP_Controller #(
     wire [3:0] byte_strobe = byte_strobe_reg;
 
     assign hresps      = 1'b0;  // OKAY response from slave
+    assign hreadyouts = 1'd1;
     //-----------------------------------------------------------
     //Module logic end
     //----------------------------------------------------------
@@ -196,6 +200,7 @@ module DAP_Controller #(
     localparam [ADDRWIDTH-1:0] DAP_GPIO_DO_ADDR          = 12'h02C;
 
     localparam [ADDRWIDTH-1:0] DAP_SWJ_CR_ADDR           = 12'h040;
+    localparam [ADDRWIDTH-1:0] DAP_SWO_CR_ADDR           = 12'h080;
 
 
     function addr_equ;
@@ -648,14 +653,15 @@ module DAP_Controller #(
                           .sclk_sampling_en(sclk_sampling_en)
                       );
 
+    wire [1:0] LOC_SWO_DDR_Q;
     wire [31:0] gpio_hrdatas;
     DAP_GPIO #(
                  .ADDRWIDTH(ADDRWIDTH),
                  .BASE_ADDR(DAP_GPIO_CR_DELAY_ADDR)
              ) dap_gpio_inst (
                  .clk(hclk),
-                 .cali_clk(cali_clk),
-                 
+                 .clk_200M(clk_200M),
+
                  .resetn(hresetn),
 
                  .ahb_write_en(write_en),
@@ -691,69 +697,86 @@ module DAP_Controller #(
                  .LOC_SRST_I(LOC_SRST_I),
                  .LOC_SRST_O(LOC_SRST_O),
 
-                  .SWD_MODE(SWD_MODE),
-                  .LOC_UART_TX(LOC_UART_TX),
-                  .LOC_UART_RX(LOC_UART_RX),
+                 .SWD_MODE(SWD_MODE),
+                 .LOC_SWO_DDR_Q(LOC_SWO_DDR_Q),
+                 .LOC_UART_TX(LOC_UART_TX),
+                 .LOC_UART_RX(LOC_UART_RX),
 
-                  .LOC_SPI_CSN(LOC_SPI_CSN),
-                  .LOC_SPI_MISO(LOC_SPI_MISO),
-                  .LOC_SPI_MOSI(LOC_SPI_MOSI),
-                  .LOC_SPI_CLK(LOC_SPI_CLK),
-                  .LOC_SPI_MUX(LOC_SPI_MUX),
+                 .LOC_SPI_CSN(LOC_SPI_CSN),
+                 .LOC_SPI_MISO(LOC_SPI_MISO),
+                 .LOC_SPI_MOSI(LOC_SPI_MOSI),
+                 .LOC_SPI_CLK(LOC_SPI_CLK),
+                 .LOC_SPI_MUX(LOC_SPI_MUX),
 
-                  .DAP_BUSY(dap_sm == DAP_SM_WORKING),
-                  .DAP_GPIO(DAP_GPIO)
-              );
+                 .DAP_BUSY(dap_sm == DAP_SM_WORKING),
+                 .DAP_GPIO(DAP_GPIO)
+             );
 
+    wire [31:0] swo_hrdatas;
+    DAP_SWO #(
+                .ADDRWIDTH(ADDRWIDTH),
+                .BASE_ADDR(DAP_SWO_CR_ADDR)
+            ) dap_swo_inst (
+                .clk(hclk),
+                .clk_200M(clk_200M),
+
+                .resetn(hresetn),
+
+                .ahb_write_en(write_en),
+                .ahb_read_en(read_en),
+                .ahb_addr(addr),
+                .ahb_rdata(swo_hrdatas),
+                .ahb_wdata(hwdatas),
+                .ahb_byte_strobe(byte_strobe_reg),
+
+                .swo_byte(swo_tdata),
+                .swo_valid(swo_tvalid),
+
+                .LOC_SWO_DDR_Q(LOC_SWO_DDR_Q)
+            );
 
     always @(*) begin
         if (read_en) begin
             casez (addr[ADDRWIDTH-1:2]) /*synthesis parallel_case*/
                 DAP_CR_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = dap_ctrl_reg;
-                    hreadyouts = 1'd1;
                 end
                 DAP_TIME_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = clk_timer;
-                    hreadyouts = 1'd1;
                 end
                 DAP_SR_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = worker_start_flags;
-                    hreadyouts = 1'd1;
                 end
                 DAP_DR_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = {23'd0, dap_in_tvalid, dap_in_tdata};
-                    hreadyouts = 1'd1;
                 end
                 DAP_CURCMD_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = {24'd0, processing_cmd};
-                    hreadyouts = 1'd1;
                 end
                 // BAUD GENERATOR RANGE 14 18
                 DAP_BAUD_CR_ADDR[ADDRWIDTH-1:2],
                 DAP_BAUD_TIMING_ADDR[ADDRWIDTH-1:2]: begin
                     hrdatas = baudgenerator_hrdatas;
-                    hreadyouts = 1'd1;
                 end
                 // GPIO ADDR RANGE 2x 3x
                 (10'b0000_001?_??): begin
                     hrdatas = gpio_hrdatas;
-                    hreadyouts = 1'd1;
                 end
                 // SWJ ADDR RANGE 4x 5x 6x 7x
                 (10'b0000_01??_??): begin
                     hrdatas = swj_hrdatas;
-                    hreadyouts = 1'd1;
+                end
+                // SWO ADDR RANGE 8x
+                (10'b0000_1000_??): begin
+                    hrdatas = swo_hrdatas;
                 end
                 default: begin
                     hrdatas = {32{1'bx}};
-                    hreadyouts = 1'd1;
                 end
             endcase
         end
         else begin
             hrdatas = {32{1'bx}};
-            hreadyouts  = 1'b1;  // slave always ready
         end
     end
 

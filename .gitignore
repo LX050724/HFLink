@@ -54,3 +54,5 @@ Hardware/plus/HFLink_Plus.step
 *.wave
 *.vcd
 FPGA/src/gowin_empu_m1/gowin_empu_m1.v
+.claude/
+CLAUDE.md

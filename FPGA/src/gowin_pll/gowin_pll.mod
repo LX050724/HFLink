@@ -44,7 +44,7 @@
 -de1_en false
 -en_clkout2 true
 -clkout2_bypass false
--odiv2_sel 5
+-odiv2_sel 6
 -clkout2_dt_dir 1
 -clkout2_dt_step 0
 -dyn_pe2_sel false

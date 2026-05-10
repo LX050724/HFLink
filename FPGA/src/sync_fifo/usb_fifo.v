@@ -18,7 +18,7 @@
 `define    EP3_IN_EN
 //`define    EP4_IN_EN
 //`define    EP5_IN_EN
-//`define    EP6_IN_EN
+`define    EP6_IN_EN
 //`define    EP7_IN_EN
 // `define    EP8_IN_EN
 //`define    EP9_IN_EN
@@ -33,7 +33,7 @@
 //`define    EP3_OUT_EN
 `define    EP4_OUT_EN
 //`define    EP5_OUT_EN
-`define    EP6_OUT_EN
+// `define    EP6_OUT_EN
 //`define    EP7_OUT_EN
 //`define    EP8_OUT_EN
 // `define    EP9_OUT_EN
