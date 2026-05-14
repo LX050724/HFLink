@@ -4789,6 +4789,12 @@
 		(uuid "3cde9913-33b1-43a9-947f-bd029b6de2cb")
 	)
 	(junction
+		(at 105.41 124.46)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "3dbacb7d-575a-4f66-bdb5-42e6b66951b5")
+	)
+	(junction
 		(at 271.78 83.82)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -4903,12 +4909,6 @@
 		(uuid "81b0400e-725f-40c0-a865-7a8c418c5e52")
 	)
 	(junction
-		(at 118.11 49.53)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "826d8d53-24ff-4d05-a5e3-34c59389986e")
-	)
-	(junction
 		(at 110.49 160.02)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -4939,6 +4939,12 @@
 		(uuid "94de8243-4380-4079-9250-43f8e5ddfbc9")
 	)
 	(junction
+		(at 91.44 124.46)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "9c8dcc8d-abd7-467b-8ef7-5c3d618f3dce")
+	)
+	(junction
 		(at 246.38 78.74)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -4949,6 +4955,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "a22792ab-15a7-4236-b274-6508e129240d")
+	)
+	(junction
+		(at 109.22 49.53)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "b210b0c0-b375-4e5a-bffa-1a7e50f14387")
 	)
 	(junction
 		(at 58.42 81.28)
@@ -5085,10 +5097,6 @@
 	(no_connect
 		(at 127 107.95)
 		(uuid "ef11398c-7757-4618-8cc0-4712e8d48fde")
-	)
-	(no_connect
-		(at 127 105.41)
-		(uuid "f1ec6a1d-d364-4949-beec-925f4e0e318d")
 	)
 	(bus_entry
 		(at 36.83 71.12)
@@ -5368,6 +5376,16 @@
 	)
 	(wire
 		(pts
+			(xy 139.7 105.41) (xy 127 105.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "117ea131-adeb-49fe-b9eb-da68719f1539")
+	)
+	(wire
+		(pts
 			(xy 191.77 129.54) (xy 191.77 118.11)
 		)
 		(stroke
@@ -5408,7 +5426,7 @@
 	)
 	(wire
 		(pts
-			(xy 77.47 172.72) (xy 68.58 172.72)
+			(xy 86.36 172.72) (xy 77.47 172.72)
 		)
 		(stroke
 			(width 0)
@@ -5445,6 +5463,16 @@
 			(type default)
 		)
 		(uuid "265fe7a5-3dd6-43ed-9073-8cbc524943b8")
+	)
+	(wire
+		(pts
+			(xy 69.85 172.72) (xy 68.58 172.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2668104b-9031-41f6-bd7d-c8fadb814a26")
 	)
 	(wire
 		(pts
@@ -5968,6 +5996,16 @@
 	)
 	(wire
 		(pts
+			(xy 105.41 124.46) (xy 120.65 124.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "651dc200-30c0-4725-b796-aeafe4515e14")
+	)
+	(wire
+		(pts
 			(xy 262.89 116.84) (xy 271.78 116.84)
 		)
 		(stroke
@@ -6248,6 +6286,16 @@
 	)
 	(wire
 		(pts
+			(xy 91.44 124.46) (xy 105.41 124.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8081028d-f15e-4859-b8cf-555de8358363")
+	)
+	(wire
+		(pts
 			(xy 146.05 72.39) (xy 157.48 72.39)
 		)
 		(stroke
@@ -6275,6 +6323,16 @@
 			(type default)
 		)
 		(uuid "82e34645-aba7-4899-88bb-6285b09f315e")
+	)
+	(wire
+		(pts
+			(xy 91.44 125.73) (xy 91.44 124.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "834408df-b6b5-4fc7-9fba-e0519be62c73")
 	)
 	(bus
 		(pts
@@ -6308,7 +6366,7 @@
 	)
 	(wire
 		(pts
-			(xy 68.58 71.12) (xy 118.11 71.12)
+			(xy 68.58 71.12) (xy 109.22 71.12)
 		)
 		(stroke
 			(width 0)
@@ -6398,16 +6456,6 @@
 	)
 	(wire
 		(pts
-			(xy 118.11 49.53) (xy 116.84 49.53)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8fabd65f-d60a-46cb-b88c-a882ba3f6702")
-	)
-	(wire
-		(pts
 			(xy 110.49 160.02) (xy 114.3 160.02)
 		)
 		(stroke
@@ -6485,6 +6533,16 @@
 			(type default)
 		)
 		(uuid "91e39b66-1eff-438d-84c6-cebdc8593291")
+	)
+	(wire
+		(pts
+			(xy 109.22 49.53) (xy 109.22 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "947d2227-a3fe-49a5-9cba-542c58e40edb")
 	)
 	(wire
 		(pts
@@ -6605,6 +6663,16 @@
 			(type default)
 		)
 		(uuid "a2da8b66-f3fb-4cc3-a132-ce27b7140795")
+	)
+	(wire
+		(pts
+			(xy 91.44 134.62) (xy 91.44 133.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a6939873-c52c-4ab3-ba74-fbb19078f478")
 	)
 	(wire
 		(pts
@@ -6748,6 +6816,16 @@
 	)
 	(wire
 		(pts
+			(xy 69.85 167.64) (xy 68.58 167.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ba7fef68-7b5d-4400-af1b-092d31c15f8b")
+	)
+	(wire
+		(pts
 			(xy 273.05 53.34) (xy 271.78 53.34)
 		)
 		(stroke
@@ -6855,6 +6933,16 @@
 			(type default)
 		)
 		(uuid "ca59d85a-7a2b-41d8-9627-11630b3eac2c")
+	)
+	(wire
+		(pts
+			(xy 69.85 66.04) (xy 68.58 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cf078f87-ddee-49f5-8482-a5afae182109")
 	)
 	(wire
 		(pts
@@ -7038,16 +7126,6 @@
 	)
 	(wire
 		(pts
-			(xy 118.11 49.53) (xy 118.11 71.12)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e5311653-6ac3-44ad-a853-33eaf23676e8")
-	)
-	(wire
-		(pts
 			(xy 80.01 49.53) (xy 81.28 49.53)
 		)
 		(stroke
@@ -7158,7 +7236,7 @@
 	)
 	(wire
 		(pts
-			(xy 118.11 49.53) (xy 124.4927 49.53)
+			(xy 116.84 49.53) (xy 124.4927 49.53)
 		)
 		(stroke
 			(width 0)
@@ -7238,7 +7316,7 @@
 	)
 	(wire
 		(pts
-			(xy 77.47 167.64) (xy 68.58 167.64)
+			(xy 86.36 167.64) (xy 77.47 167.64)
 		)
 		(stroke
 			(width 0)
@@ -7258,7 +7336,7 @@
 	)
 	(wire
 		(pts
-			(xy 74.93 66.04) (xy 68.58 66.04)
+			(xy 83.82 66.04) (xy 77.47 66.04)
 		)
 		(stroke
 			(width 0)
@@ -7367,7 +7445,7 @@
 		(uuid "1c83157f-b5af-4d75-b56c-29dfa4058592")
 	)
 	(label "TDO"
-		(at 74.93 66.04 180)
+		(at 83.82 66.04 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7437,7 +7515,7 @@
 		(uuid "42b4346e-a1d5-4b5c-93ae-1eefe8947c1e")
 	)
 	(label "RTCK"
-		(at 77.47 167.64 180)
+		(at 86.36 167.64 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7505,6 +7583,26 @@
 			(justify left bottom)
 		)
 		(uuid "5b98c20f-5a41-4e08-bc64-b37538fa92fe")
+	)
+	(label "VBUS_ADC"
+		(at 139.7 105.41 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "6305f5ec-3771-45c3-b789-5f81e1b5c903")
+	)
+	(label "VBUS_ADC"
+		(at 120.65 124.46 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "687f655d-b61a-4523-93b6-d9db25e381d6")
 	)
 	(label "TRST"
 		(at 231.14 38.1 180)
@@ -7647,7 +7745,7 @@
 		(uuid "c4e9c3f4-da80-41eb-b392-1ce6337baebc")
 	)
 	(label "UART_RX"
-		(at 77.47 172.72 180)
+		(at 86.36 172.72 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -9603,6 +9701,72 @@
 			(project "HFLink_Plus"
 				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
 					(reference "#PWR097")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 105.41 134.62 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "300e6c41-c999-4d55-9d18-c1d7978e5323")
+		(property "Reference" "#PWR0122"
+			(at 105.41 140.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 105.41 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 105.41 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 105.41 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 105.41 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "34398b1c-fc6a-43f2-97ce-f28fdbc3bfd4")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "#PWR0122")
 					(unit 1)
 				)
 			)
@@ -12055,6 +12219,72 @@
 		)
 	)
 	(symbol
+		(lib_id "power:+5V")
+		(at 91.44 116.84 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "6bd7c79a-567a-4f87-bd74-5b790396cdf5")
+		(property "Reference" "#PWR0119"
+			(at 91.44 120.65 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+5V"
+			(at 91.44 111.76 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 91.44 116.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 91.44 116.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+5V\""
+			(at 91.44 116.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "cd11ffc9-cc99-43cf-a3a3-743c1391ea25")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "#PWR0119")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "HPM6280Foc:0402WGF1002TCE")
 		(at 170.18 127 270)
 		(unit 1)
@@ -12310,6 +12540,92 @@
 			(project "HFLink_Plus"
 				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
 					(reference "#PWR60")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "HPM6280Foc:0402WGF330JTCE")
+		(at 73.66 167.64 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "7329d4a0-ec57-4065-a22c-17eaa0869694")
+		(property "Reference" "R44"
+			(at 73.66 161.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "33R,1%"
+			(at 73.66 163.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 73.66 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 73.66 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 73.66 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0064864"
+			(at 73.66 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C25105"
+			(at 73.66 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "53fa27aa-6280-472f-a45c-5b6ba4b087f3")
+		)
+		(pin "1"
+			(uuid "fb3f6449-72db-493a-9991-498a0f727e1f")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "R44")
 					(unit 1)
 				)
 			)
@@ -12706,6 +13022,92 @@
 		)
 	)
 	(symbol
+		(lib_id "HPM6280Foc:0402WGF330JTCE")
+		(at 73.66 66.04 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "7abea16b-1673-45d0-9f1a-a94725ded5fb")
+		(property "Reference" "R46"
+			(at 73.66 59.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "33R,1%"
+			(at 73.66 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 73.66 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 73.66 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 73.66 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0064864"
+			(at 73.66 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C25105"
+			(at 73.66 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "e42a07d6-585b-40f9-9935-a547cf20247c")
+		)
+		(pin "1"
+			(uuid "4950f38d-9a3f-4424-a9c6-cbaa5186b154")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "R46")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:+1V0")
 		(at 91.44 39.37 0)
 		(unit 1)
@@ -12942,6 +13344,94 @@
 			(project "HFLink_Plus"
 				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
 					(reference "U4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "HPM6280Foc:0402WGF1002TCE")
+		(at 91.44 120.65 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "7cdcc7bd-d0a5-447e-95ea-834b17d0ea27")
+		(property "Reference" "R47"
+			(at 93.98 119.3799 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10K,1%"
+			(at 93.98 121.9199 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 91.44 120.65 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://atta.szlcsc.com/upload/public/pdf/source/20200306/C422600_1E6D84923E4A46A82E41ADD87F860B5C.pdf"
+			(at 91.44 120.65 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "厚膜电阻 33Ω ±1% 50mW"
+			(at 91.44 120.65 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C25744"
+			(at 91.44 120.65 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0063278"
+			(at 91.44 120.65 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "4d29e0bc-0abd-4ba6-9734-9e06983712e2")
+		)
+		(pin "2"
+			(uuid "5ac98ea0-4cfe-4370-9e11-e9acb0c02c83")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "R47")
 					(unit 1)
 				)
 			)
@@ -13568,6 +14058,92 @@
 		)
 	)
 	(symbol
+		(lib_id "HPM6280Foc:0402WGF330JTCE")
+		(at 73.66 172.72 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "89dea62d-2da4-40ae-870b-237c348d3179")
+		(property "Reference" "R45"
+			(at 73.66 176.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "33R,1%"
+			(at 73.66 179.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 73.66 172.72 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 73.66 172.72 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 73.66 172.72 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0064864"
+			(at 73.66 172.72 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C25105"
+			(at 73.66 172.72 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "a35ea383-bcb4-4531-a38e-d3203d323c89")
+		)
+		(pin "1"
+			(uuid "040f68fe-0392-46b5-b082-a0ae1006e921")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "R45")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 232.41 128.27 0)
 		(unit 1)
@@ -13628,6 +14204,94 @@
 			(project ""
 				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
 					(reference "#PWR042")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "HPM6280Foc:0402WGF1002TCE")
+		(at 91.44 129.54 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "91784504-41e0-4418-914c-f7e9077d5b36")
+		(property "Reference" "R48"
+			(at 93.98 128.2699 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10K,1%"
+			(at 93.98 130.8099 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 91.44 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://atta.szlcsc.com/upload/public/pdf/source/20200306/C422600_1E6D84923E4A46A82E41ADD87F860B5C.pdf"
+			(at 91.44 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "厚膜电阻 33Ω ±1% 50mW"
+			(at 91.44 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C25744"
+			(at 91.44 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0063278"
+			(at 91.44 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "820863c3-8a91-47ef-b277-fd4dd800530b")
+		)
+		(pin "2"
+			(uuid "3a760cdc-794e-4091-a473-bb755a7aa1d6")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "R48")
 					(unit 1)
 				)
 			)
@@ -15707,6 +16371,112 @@
 		)
 	)
 	(symbol
+		(lib_id "HPM6280Foc:0402B222K500NT")
+		(at 105.41 129.54 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "be422477-82d8-4e46-aac3-53bc22fdfd03")
+		(property "Reference" "C33"
+			(at 109.22 128.2699 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "2.2nF,50V"
+			(at 109.22 130.8099 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+			(at 105.41 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://item.szlcsc.com/datasheet/0402B222K500NT/1883.html?spm=sc.it.xds.a___sc.cidn.xh12.zy.t&lcsc_vid=RFRfBVcDE1AKVwFQFlNZVFdVEVVeBlJXT1hWXgUERFUxVlNSTlNcVldfT1VbXjsOAxUeFF5JWA0HFBBIBBsCBBcFWQIBCks%3D"
+			(at 105.41 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "2.2nF ±10% 50V"
+			(at 105.41 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "制造商编号" ""
+			(at 105.41 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "华秋编号" "G0069655"
+			(at 105.41 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "制造商" ""
+			(at 105.41 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "立创编号" "C1531"
+			(at 105.41 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "503ce709-9ccd-4bd2-92f9-6f2246ff20de")
+		)
+		(pin "1"
+			(uuid "69311897-3c02-40b0-967c-24e063d8fe92")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "C33")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "HPM6280Foc:CL05A475KP5NRNC")
 		(at 153.67 129.54 180)
 		(unit 1)
@@ -16864,6 +17634,72 @@
 			(project "HFLink_Plus"
 				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
 					(reference "R40")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 91.44 134.62 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "d01500ff-ccf8-44e9-a636-c820aaf32103")
+		(property "Reference" "#PWR0121"
+			(at 91.44 140.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 91.44 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 91.44 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 91.44 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 91.44 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "69d9fb43-6e4e-491b-ba55-d1c741237ebb")
+		)
+		(instances
+			(project "HFLink_Plus"
+				(path "/3baf7474-83dc-4d17-85a7-862b5853a92a/486eb215-8ff5-4def-8b9d-57fcc34d9fbf"
+					(reference "#PWR0121")
 					(unit 1)
 				)
 			)
