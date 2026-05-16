@@ -96,7 +96,7 @@ module DAP_GPIO #(
     wire LED_MODE = GPIO_REG_CR[3];
 
     wire CALI_EN = GPIO_REG_CR[4];
-    wire [1:0] CALI_SEL = GPIO_REG_CR[6:5];
+    wire CALI_SEL = GPIO_REG_CR[5];
 
     reg [7:0] SWCLK_TCK_O_DELAY;
     reg [7:0] SWDIO_TMS_T_DELAY;
@@ -315,13 +315,12 @@ module DAP_GPIO #(
         end
         else begin
             GPIO_SYMPLE <= {
-                            // mux_swclk_tck_o,
-                            // mux_swdio_tms_t,
-                            // mux_swdio_tms_o,
-                            // LOC_SWDIO_TMS_I,
-                            // LOC_SWO_TDO_I,
-                            // mux_tdi_o,
-                            6'd0,
+                            mux_swclk_tck_o,
+                            mux_swdio_tms_t,
+                            mux_swdio_tms_o,
+                            LOC_SWDIO_TMS_I,
+                            LOC_SWO_TDO_I,
+                            mux_tdi_o,
                             EXT_TRST_I,
                             EXT_TRST_O,
                             EXT_SRST_I,
@@ -331,27 +330,25 @@ module DAP_GPIO #(
     end
 
     reg [31:0] caputre_shift;
-    reg [1:0] caputre_ff;
     reg [1:0] trigger_ff;
     reg [1:0] capture_en_ff;
     reg [5:0] capture_cnt;
-    wire [3:0] trigger_signal = GPIO_DO[3:0];
+    wire [1:0] trigger_signal = {GPIO_DO[3], GPIO_DO[0]}; // 0: TCK->TDO, 1: TMS->TDO
 
     always @(posedge clk_200M or negedge resetn) begin
         if (!resetn) begin
             caputre_shift <= 32'd0;
             capture_en_ff <= 2'd0;
             trigger_ff <= 2'd0;
-            caputre_ff <= 2'd0;
             capture_cnt <= 5'd0;
         end
         else begin
             capture_en_ff <= {CALI_EN ,capture_en_ff[1]};            // 使能信号二级触发器
             trigger_ff <= {trigger_signal[CALI_SEL] ,trigger_ff[1]}; // 触发信号二级触发器
-            caputre_ff <= {LOC_SWO_TDO_I ,caputre_ff[1]}; // 采样信号二级触发
 
+            // 触发信号为高时开始计数，采样16次，采样时间80ns
+            // 触发信号二级触发器延迟10ns，IDDR延迟15ns，第一个采样在-5ns时刻
             if (capture_en_ff && trigger_ff[0]) begin
-                // 触发信号为高时开始计数，采样16次，采样时间66ns
                 if (capture_cnt != 5'd16) begin
                     caputre_shift <= {caputre_shift[29:0], LOC_SWO_DDR_Q};
                     capture_cnt <= capture_cnt + 1'd1;

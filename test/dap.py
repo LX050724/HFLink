@@ -24,6 +24,20 @@ DAP_TRANS_W_SELECT1 = DAP_TRANS_WRITE | DAP_TRANS_DP | DAP_TRANS_A4
 DAP_TRANS_W_DLCR = DAP_TRANS_WRITE | DAP_TRANS_DP | DAP_TRANS_A4
 
 
+# CMSIS-DAP SWO 传输类型
+DAP_SWO_TRANSPORT_NONE    = 0x00
+DAP_SWO_TRANSPORT_CAPTURE = 0x01
+DAP_SWO_TRANSPORT_STREAM  = 0x02
+
+# CMSIS-DAP SWO 模式
+DAP_SWO_MODE_DEFAULT    = 0x00
+DAP_SWO_MODE_UART       = 0x01
+DAP_SWO_MODE_MANCHESTER = 0x02
+
+# CMSIS-DAP SWO 控制
+DAP_SWO_CTRL_DISABLE = 0x00
+DAP_SWO_CTRL_ENABLE  = 0x01
+
 class DAP_SWD_Seqence:
     DIR_OUTPUT = 0
     DIR_INPUT = 0x80
@@ -78,7 +92,10 @@ class DAP:
         self._dev = dev
         self._dap_out_ep = dap_out_ep
         self._dap_in_ep = dap_in_ep
-        self._dap_swo_ep = None
+
+        # SWO 端点
+        self._dap_swo_ep = dap_intf[2]
+
         for _ in range(16):
             self._read()
 
@@ -289,3 +306,94 @@ class DAP:
         return self._read(n, timeout)
     def write(self, data):
         self._write(data)
+
+    # ========================================================================
+    # SWO 追踪接口 (CMSIS-DAP v2 / HFLink 扩展)
+    # ========================================================================
+
+    def swo_transport(self, transport: int):
+        """配置 SWO 传输模式
+        Args:
+            transport: DAP_SWO_TRANSPORT_NONE(0) / CAPTURE(1) / STREAM(2)
+        """
+        self._write(b'\x17' + transport.to_bytes(1))
+        return self._read(2)
+
+    def swo_mode(self, mode: int):
+        """配置 SWO 编码模式
+        Args:
+            mode: DAP_SWO_MODE_DEFAULT(0) / UART(1) / MANCHESTER(2)
+        """
+        self._write(b'\x18' + mode.to_bytes(1))
+        return self._read(2)
+
+    def swo_baudrate(self, baudrate: int):
+        """设置 SWO 波特率 (最大 100MHz)
+        Firmware 根据 3.2GHz 基频自动计算 bit_time / decision_low / decision_high
+        """
+        self._write(b'\x19' + baudrate.to_bytes(4, 'little'))
+        data = self._read(5)
+        if data[0] == 0x19:
+            actual = int.from_bytes(data[1:5], 'little')
+            return actual
+        return None
+
+    def swo_control(self, enable: bool):
+        """启停 SWO 采集
+        enable=True: 应用 swo_mode + swo_baudrate 配置，使能 SWO 解码器
+        enable=False: 关闭 SWO
+        """
+        ctrl = DAP_SWO_CTRL_ENABLE if enable else DAP_SWO_CTRL_DISABLE
+        self._write(b'\x1a' + ctrl.to_bytes(1))
+        return self._read(2)
+
+    def swo_status(self) -> bool:
+        """查询 SWO 是否已使能"""
+        self._write(b'\x1b')
+        data = self._read(2)
+        return (data[0] == 0x1b and (data[1] & 0x01) != 0)
+
+    def swo_data(self, max_count: int = 512) -> bytes | None:
+        """读取 SWO 追踪数据
+        Args:
+            max_count: 最大期望字节数 (16-bit LE)
+        Returns:
+            追踪数据字节串，无数据时返回 None
+        """
+        self._write(b'\x1c' + max_count.to_bytes(2, 'little'))
+        data = self._read(max_count + 4, timeout=100)
+        if data is None or len(data) < 4:
+            return None
+        if data[0] != 0x1c:
+            return None
+        count = int.from_bytes(data[1:3], 'little')
+        if count == 0:
+            return None
+        return bytes(data[3:3 + count])
+
+    def swo_read_swo_ep(self, max_size: int = 4096, timeout: int = 1000) -> bytes | None:
+        """从 SWO 专用 BULK IN 端点 (EP6 0x86) 直接读取追踪数据流"""
+        try:
+            data = self._dev.read(self._dap_swo_ep.bEndpointAddress, max_size, timeout=timeout)
+            return bytes(data)
+        except usb.core.USBTimeoutError:
+            return None
+
+    def swo_init_uart(self, baudrate: int = 1000000):
+        """一站式初始化 UART 模式 SWO (传输+模式+波特率+使能)"""
+        self.swo_transport(DAP_SWO_TRANSPORT_CAPTURE)
+        self.swo_mode(DAP_SWO_MODE_UART)
+        self.swo_baudrate(baudrate)
+        return self.swo_control(True)
+
+    def swo_init_manchester(self, baudrate: int = 1000000):
+        """一站式初始化 Manchester 模式 SWO"""
+        self.swo_transport(DAP_SWO_TRANSPORT_CAPTURE)
+        self.swo_mode(DAP_SWO_MODE_MANCHESTER)
+        self.swo_baudrate(baudrate)
+        return self.swo_control(True)
+
+    def swo_disable(self):
+        """关闭 SWO"""
+        self.swo_control(False)
+        self.swo_transport(DAP_SWO_TRANSPORT_NONE)

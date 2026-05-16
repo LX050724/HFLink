@@ -4,6 +4,6 @@ rule compile
 rule vvp
     command = vvp $in
 
-build .wave: compile DAP_SWO_tb.v ../../src/DAP_Controller/interface/DAP_SWO.v
+build .wave: compile DAP_SWO_tb.v IDDR.v ../../src/DAP_Controller/interface/DAP_SWO.v
 
 build all: vvp .wave

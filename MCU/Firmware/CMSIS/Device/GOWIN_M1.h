@@ -502,7 +502,7 @@ typedef struct {
     __I uint8_t RESERVED0;
 
     __I uint16_t GPIO_STATUS;
-    __I uint16_t CALI_SIMPLING;
+    __I uint16_t RESERVED1;
 
     __IO uint8_t DIRECTIO_DO;
     __IO uint8_t DIRECTIO_SET;
@@ -510,7 +510,9 @@ typedef struct {
     __I uint8_t RESERVED2;
 
     __IO uint8_t LED_CMP[3];
-    __I uint8_t RESERVED3[13];
+    __I uint8_t RESERVED3;
+    __I uint32_t CALI_SIMPLING;
+    __I uint8_t RESERVED4[8];
   } GPIO;
   struct {
     __IO uint32_t CR;
@@ -523,7 +525,16 @@ typedef struct {
       __IO uint32_t IR_BEFORE_LEN : 8;
       __IO uint32_t IR_LEN : 4;
     } JTAG_IR_CONF [8];
+    __I uint32_t RESERVED0[4];
   } SWJ;
+  struct {
+    __IO uint16_t CR;
+    __I uint16_t RESERVED0;
+    __IO uint16_t BIT_TIME0;
+    __IO uint16_t BIT_TIME1;
+    __IO uint16_t BIT_DECISION_HIGH;
+    __IO uint16_t BIT_DECISION_LOW;
+  } SWO;
 } DAP_TypeDef;
 
 /* --------  End of section using anonymous unions and disabling warnings  -------- */

@@ -9,14 +9,14 @@ module DAP_SWO_tb();
     reg clk_200M;
     reg resetn;
 
-    // clk: 50MHz (20ns)
+    // clk: 60MHz (16.666ns)
     always begin
-        #10 clk <= ~clk;
+        #16.666 clk <= ~clk;
     end
 
-    // clk_200M: 240MHz (~4.167ns)
+    // clk_200M: 200MHz
     always begin
-        #2.08333 clk_200M <= ~clk_200M;
+        #2.5 clk_200M <= ~clk_200M;
     end
 
     // ========================================================================
@@ -29,7 +29,8 @@ module DAP_SWO_tb();
     reg  [31:0]      ahb_wdata;
     reg  [3:0]       ahb_byte_strobe;
     reg  [31:0]      ahb_rdata_reg;
-    reg  [1:0]       LOC_SWO_DDR_Q;
+    reg              swo_pin_in;      // 模拟物理SWO引脚（单端输入）
+    wire [1:0]       LOC_SWO_DDR_Q;   // IDDR输出: [1]=Q1, [0]=Q0
     wire [7:0]       swo_byte;
     wire             swo_valid;
 
@@ -41,24 +42,23 @@ module DAP_SWO_tb();
     localparam ADDR_BIT_TIME = 12'd4;
     localparam ADDR_PARAM    = 12'd8;
 
-    // ---- 刺激生成用的240MHz周期数 ----
-    // UART:  10周期/bit = 24Mbps (240MHz / 10)
-    // Manch: 5周期/half-bit = 48Mbps
-    localparam UART_CYCLES       = 16'd2;
-    localparam MANCH_HALF_CYCLES = 16'd5;
+    // ---- 刺激生成用的200MHz周期数 ----
+    localparam UART_CYCLES       = 12'd10;
+    localparam MANCH_HALF_CYCLES = 12'd10;
 
-    // ---- 寄存器写入值 (采样计数单位, 每240M周期2个采样) ----
+    // ---- 寄存器写入值 (采样计数单位, 每200M周期2个采样) ----
     // UART 参数
-    localparam UART_BIT_TIME     = 16'd1;   // 10周期 × 2采样/周期
-    localparam UART_BIT_DEC_LOW  = 16'd0;   // 半bit附近开始检测边沿
-    localparam UART_BIT_DEC_HIGH = 16'd1;   // 略大于bit_time, 超时阈值
-    localparam UART_EDGE_DEC     = 4'd0;     // 边沿判决: 2个稳定采样
+    localparam [11:0] UART_BIT_TIME_0     = UART_CYCLES - 1;   // bit：1+1周期
+    localparam [11:0] UART_BIT_TIME_1     = UART_CYCLES;   // bit：1+1周期
+    localparam [11:0] UART_BIT_DEC_LOW  =  UART_CYCLES - 3;   // 死区：0+1周期
+    localparam [11:0] UART_BIT_DEC_HIGH =  UART_CYCLES + 3;   // 超时：0+1周期
+    localparam [11:0] UART_EDGE_DEC     = 4'd1;    // 边沿判决：>0采样
 
     // Manchester 参数
-    localparam MANCH_BIT_TIME    = 16'd5;   // 5周期 × 2采样/周期
-    localparam MANCH_BIT_DEC_LOW = 16'd6;
-    localparam MANCH_BIT_DEC_HIGH = 16'd14;
-    localparam MANCH_EDGE_DEC    = 4'd2;
+    localparam [11:0] MANCH_BIT_TIME    = MANCH_HALF_CYCLES - 1;
+    localparam [11:0] MANCH_BIT_DEC_LOW = MANCH_HALF_CYCLES - 3;
+    localparam [11:0] MANCH_BIT_DEC_HIGH = MANCH_HALF_CYCLES + 3;
+    localparam [11:0] MANCH_EDGE_DEC    = 4'd1;
 
     // ========================================================================
     // DUT 例化
@@ -79,6 +79,17 @@ module DAP_SWO_tb();
         .LOC_SWO_DDR_Q  (LOC_SWO_DDR_Q),
         .swo_byte  (swo_byte),
         .swo_valid (swo_valid)
+    );
+
+    // ========================================================================
+    // IDDR 仿真模型例化 (Gowin IDDR 原语)
+    // 上升沿采样 → Q0, 下降沿采样 → Q1
+    // ========================================================================
+    IDDR u_iddr (
+        .CLK(clk_200M),
+        .D  (swo_pin_in),
+        .Q0 (LOC_SWO_DDR_Q[0]),
+        .Q1 (LOC_SWO_DDR_Q[1])
     );
 
     // ========================================================================
@@ -123,11 +134,11 @@ module DAP_SWO_tb();
         begin
             ahb_write(ADDR_CTRL, 32'd0, 4'b0011);
             // BIT_TIME = {BIT_TIME_1, BIT_TIME_0}
-            ahb_write(ADDR_BIT_TIME, {UART_BIT_TIME, UART_BIT_TIME}, 4'b1111);
+            ahb_write(ADDR_BIT_TIME, {4'd0, UART_BIT_TIME_1, 4'd0, UART_BIT_TIME_0}, 4'b1111);
             // PARAM = {BIT_DEC_LOW, BIT_DEC_HIGH}
-            ahb_write(ADDR_PARAM, {UART_BIT_DEC_LOW, UART_BIT_DEC_HIGH}, 4'b1111);
+            ahb_write(ADDR_PARAM, {4'd0, UART_BIT_DEC_LOW, 4'd0, UART_BIT_DEC_HIGH}, 4'b1111);
             // CR: [15:8]=EDGE_DEC, [6:2]=JITTER, [1]=MODE(0=UART), [0]=EN(1)
-            ahb_write(ADDR_CTRL, {16'd0, UART_EDGE_DEC, 2'd0, 4'd0, 1'b0, 1'b1}, 4'b0011);
+            ahb_write(ADDR_CTRL, {16'd0, UART_EDGE_DEC, 2'd0, 4'd0, 1'b0, 1'b1}, 4'b1111);
         end
     endtask
 
@@ -136,9 +147,9 @@ module DAP_SWO_tb();
         begin
             ahb_write(ADDR_CTRL, 32'd0, 4'b0011);
             // CR: [15:8]=EDGE_DEC, [6:2]=JITTER, [1]=MODE(1=Manch), [0]=EN(1)
-            ahb_write(ADDR_BIT_TIME, {MANCH_BIT_TIME, MANCH_BIT_TIME}, 4'b1111);
-            ahb_write(ADDR_PARAM, {MANCH_BIT_DEC_LOW, MANCH_BIT_DEC_HIGH}, 4'b1111);
-            ahb_write(ADDR_CTRL, {16'd0, MANCH_EDGE_DEC, 2'd0, 4'd0, 1'b1, 1'b1}, 4'b0011);
+            ahb_write(ADDR_BIT_TIME, {4'd0, MANCH_BIT_TIME, 4'd0, MANCH_BIT_TIME}, 4'b1111);
+            ahb_write(ADDR_PARAM, {4'd0, MANCH_BIT_DEC_LOW, 4'd0, MANCH_BIT_DEC_HIGH}, 4'b1111);
+            ahb_write(ADDR_CTRL, {16'd0, MANCH_EDGE_DEC, 2'd0, 4'd0, 1'b1, 1'b1}, 4'b1111);
         end
     endtask
 
@@ -149,17 +160,17 @@ module DAP_SWO_tb();
         end
     endtask
 
-    // 产生稳定的DDR信号 (两个样本电平相同)
-    // level=1: 2'b11, level=0: 2'b00
+    // 产生稳定的DDR信号 (IDDR双沿采样，两个样本电平相同)
+    // 驱动单端引脚 swo_pin_in，由IDDR在双沿采样
     task ddr_stable;
         input level;
         begin
-            LOC_SWO_DDR_Q <= level ? 2'b11 : 2'b00;
+            swo_pin_in <= level;
         end
     endtask
 
-    // 在240M时钟域驱动UART bit
-    // level=0/1, 持续 cycles 个240M周期
+    // 在200M时钟域驱动UART bit
+    // level=0/1, 持续 cycles 个200M周期
     task drive_uart_bit;
         input level;
         input [15:0] cycles;
@@ -173,15 +184,12 @@ module DAP_SWO_tb();
     endtask
 
     // 发送UART字节: start(0) + 8bit LSB first + stop(1)
-    // cycles_per_bit: 每个bit的240M周期数
+    // cycles_per_bit: 每个bit的200M周期数
     task send_uart_byte;
         input [7:0] byte_data;
         input [15:0] cycles_per_bit;
         integer b;
         begin
-            // 确保line先保持idle (HIGH) 至少一个bit周期，让decoder进入IDLE
-            drive_uart_bit(1, cycles_per_bit);
-
             // 起始位 (LOW)
             drive_uart_bit(0, cycles_per_bit);
 
@@ -191,34 +199,18 @@ module DAP_SWO_tb();
             end
 
             // 停止位 (HIGH)
-            drive_uart_bit(1, cycles_per_bit);
-            // 起始位 (LOW)
-            drive_uart_bit(0, cycles_per_bit);
-
-            // 8数据位 LSB first
-            for (b = 0; b < 8; b = b + 1) begin
-                drive_uart_bit(byte_data[b], cycles_per_bit);
-            end
-
-            // 停止位 (HIGH)
-            drive_uart_bit(1, cycles_per_bit);
-
-            // 继续保持idle
             drive_uart_bit(1, cycles_per_bit);
         end
     endtask
 
     // 发送Manchester帧
     // 起始位=1 (HIGH→LOW), 8bit数据, 停止位=连续两个LOW半bit
-    // half_cycles: 每个半bit的240M周期数
+    // half_cycles: 每个半bit的200M周期数
     task send_manch_frame;
         input [7:0] byte_data;
         input [15:0] half_cycles;
         integer b;
         begin
-            // 确保IDLE (先保持HIGH)
-            drive_uart_bit(0, half_cycles * 2);
-
             // 起始位=1: HIGH(前半) → LOW(后半)
             drive_uart_bit(1, half_cycles);   // 前半HIGH
             drive_uart_bit(0, half_cycles);   // 后半LOW
@@ -238,11 +230,7 @@ module DAP_SWO_tb();
             end
 
             // 停止位: 连续两个LOW半bit
-            drive_uart_bit(0, half_cycles);   // 第1个LOW
-            drive_uart_bit(0, half_cycles);   // 第2个LOW
-
-            // 回IDLE
-            // drive_uart_bit(0, half_cycles);
+            drive_uart_bit(0, half_cycles * 2);
         end
     endtask
 
@@ -289,7 +277,7 @@ module DAP_SWO_tb();
         ahb_addr        = 0;
         ahb_wdata       = 0;
         ahb_byte_strobe = 0;
-        LOC_SWO_DDR_Q   = 2'b11;  // idle HIGH
+        swo_pin_in      = 1;   // idle HIGH
         test_pass       = 0;
         test_fail       = 0;
 
@@ -346,6 +334,28 @@ module DAP_SWO_tb();
         send_uart_byte(8'hA5, UART_CYCLES);
         check_output(8'hA5);
 
+
+        send_uart_byte(8'h19, UART_CYCLES);
+        #10
+        send_uart_byte(8'h70, UART_CYCLES);
+        #10
+        send_uart_byte(8'h05, UART_CYCLES);
+        #10
+        send_uart_byte(8'h19, UART_CYCLES);
+        #10
+        send_uart_byte(8'h70, UART_CYCLES);
+        #10
+        send_uart_byte(8'h05, UART_CYCLES);
+        send_uart_byte(8'h19, UART_CYCLES);
+        send_uart_byte(8'h70, UART_CYCLES);
+        send_uart_byte(8'h05, UART_CYCLES);
+        send_uart_byte(8'h19, UART_CYCLES);
+        send_uart_byte(8'h70, UART_CYCLES);
+        send_uart_byte(8'h05, UART_CYCLES);
+        send_uart_byte(8'h19, UART_CYCLES);
+        send_uart_byte(8'h70, UART_CYCLES);
+        send_uart_byte(8'h05, UART_CYCLES);
+
         // ---------------------------------------------------------------
         // TEST 3: UART模式 - 发送0xFF (全1，测试连续无跳变位)
         // ---------------------------------------------------------------
@@ -382,10 +392,66 @@ module DAP_SWO_tb();
         check_output(8'h55);
 
         // ---------------------------------------------------------------
-        // TEST 6: Manchester模式 - 初始化并发送字节
+        // TEST 5B: 空闲期注入1bit宽LOW脉冲（模拟虚假起始位），然后正常帧
         // ---------------------------------------------------------------
         $display("");
-        $display("--- TEST 6: Manchester mode, init and send 0x5A ---");
+        $display("--- TEST 5B: UART idle LOW pulse (1 bit wide) + 0x3C ---");
+
+        // 长空闲
+        drive_uart_bit(1, 16'd10);
+        // 注入1个bit宽度的LOW脉冲
+        drive_uart_bit(0, UART_CYCLES);
+        // 恢复空闲
+        drive_uart_bit(1, 16'd10);
+        // 发送正常帧
+        send_uart_byte(8'h3C, UART_CYCLES);
+        check_output(8'h3C);
+
+        // ---------------------------------------------------------------
+        // TEST 5C: 空闲期注入短LOW毛刺（1周期），然后正常帧
+        // ---------------------------------------------------------------
+        $display("");
+        $display("--- TEST 5C: UART idle glitch (1 cycle LOW) + 0x69 ---");
+
+        // 长空闲
+        drive_uart_bit(1, 16'd10);
+        // 注入1周期LOW毛刺
+        ddr_stable(0);
+        @(posedge clk_200M);
+        ddr_stable(1);
+        // 恢复空闲
+        drive_uart_bit(1, 16'd10);
+        // 发送正常帧
+        send_uart_byte(8'h69, UART_CYCLES);
+        check_output(8'h69);
+
+        // ---------------------------------------------------------------
+        // TEST 5D: 空闲期连续噪声脉冲，长空闲恢复后正常帧
+        // ---------------------------------------------------------------
+        $display("");
+        $display("--- TEST 5D: UART idle noise burst, long recovery + 0xC3 ---");
+
+        // 空闲
+        drive_uart_bit(1, 16'd5);
+        // 连续多个噪声脉冲
+        drive_uart_bit(0, UART_CYCLES);
+        drive_uart_bit(1, UART_CYCLES);
+        drive_uart_bit(0, 16'd1);
+        @(posedge clk_200M);
+        ddr_stable(1);
+        drive_uart_bit(0, UART_CYCLES);
+        // 长空闲恢复
+        drive_uart_bit(1, 16'd30);
+        // 发送正常帧
+        send_uart_byte(8'hC3, UART_CYCLES);
+        check_output(8'hC3);
+
+        // ---------------------------------------------------------------
+        // TEST 6: Manchester 基本收发
+        // ---------------------------------------------------------------
+        $display("");
+        $display("--- TEST 6: Manchester init and send 0x5A ---");
+        ddr_stable(1'd0);
 
         config_manch();
         #200;
@@ -394,34 +460,55 @@ module DAP_SWO_tb();
         check_output(8'h5A);
 
         // ---------------------------------------------------------------
-        // TEST 7: Manchester模式 - 另一个字节
+        // TEST 7: Manchester 另一个字节
         // ---------------------------------------------------------------
         $display("");
-        $display("--- TEST 7: Manchester mode, byte 0xE7 ---");
+        $display("--- TEST 7: Manchester send 0xE7 ---");
 
         send_manch_frame(8'hE7, MANCH_HALF_CYCLES);
         check_output(8'hE7);
 
         // ---------------------------------------------------------------
-        // TEST 8: 模式切换 UART→Manch→UART
+        // TEST 8: Manchester 帧前注入HIGH脉冲干扰
         // ---------------------------------------------------------------
         $display("");
-        $display("--- TEST 8: Mode switch UART→Manch→UART ---");
+        $display("--- TEST 8: Manchester pre-frame HIGH pulse + 0xE8 ---");
 
-        config_uart();
-        #200;
-        send_uart_byte(8'h7E, UART_CYCLES);
-        check_output(8'h7E);
+        drive_uart_bit(1, MANCH_HALF_CYCLES);
+        drive_uart_bit(0, 32);
+        send_manch_frame(8'hE8, MANCH_HALF_CYCLES);
+        check_output(8'hE8);
 
-        config_manch();
-        #200;
-        send_manch_frame(8'h3C, MANCH_HALF_CYCLES);
-        check_output(8'h3C);
+        // ---------------------------------------------------------------
+        // TEST 9: Manchester 帧前注入高低电平干扰
+        // ---------------------------------------------------------------
+        $display("");
+        $display("--- TEST 9: Manchester pre-frame HIGH+LOW burst + 0xE9 ---");
 
-        config_uart();
-        #200;
-        send_uart_byte(8'h81, UART_CYCLES);
-        check_output(8'h81);
+        drive_uart_bit(1, 32);
+        drive_uart_bit(0, 32);
+        send_manch_frame(8'hE9, MANCH_HALF_CYCLES);
+        check_output(8'hE9);
+
+        // ---------------------------------------------------------------
+        // TEST 10: Manchester 连续两帧
+        // ---------------------------------------------------------------
+        $display("");
+        $display("--- TEST 10: Manchester back-to-back 0x55 0xAA ---");
+        begin
+            fork
+                begin
+                    send_manch_frame(8'h55, MANCH_HALF_CYCLES);
+                    send_manch_frame(8'hAA, MANCH_HALF_CYCLES);
+                end
+                begin
+                   check_output(8'h55);
+                   check_output(8'hAA);
+                end
+            join
+            disable fork;
+        end
+
 
         // ---------------------------------------------------------------
         // 测试完成

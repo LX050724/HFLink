@@ -38,7 +38,7 @@ module DAP_Controller #(
         input usb_rxact,
         input usb_rxpktval,
 
-        output [7:1] swo_tdata,
+        output [7:0] swo_tdata,
         output swo_tvalid,
 
         // 内部串口

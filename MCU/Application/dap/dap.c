@@ -14,6 +14,14 @@
 #define DAP_DEBUG(fmt, ...)
 #endif
 
+typedef struct
+{
+    uint8_t mode;
+    uint32_t baudrate;
+} SWO_Config;
+
+static SWO_Config swo_cfg;
+
 static void dap_return_n_string(DAP_TypeDef *dap, const char *str);
 static void dap_get_info_handler(DAP_TypeDef *dap);
 static void dap_connect_handler(DAP_TypeDef *dap);
@@ -25,6 +33,10 @@ static void dap_swd_configure_handler(DAP_TypeDef *dap);
 static void dap_jtag_configure_handler(DAP_TypeDef *dap);
 static void dap_swo_transport_handler(DAP_TypeDef *dap);
 static void dap_swo_mode_handler(DAP_TypeDef *dap);
+static void dap_swo_baudrate_handler(DAP_TypeDef *dap);
+static void dap_swo_control_handler(DAP_TypeDef *dap);
+static void dap_swo_status_handler(DAP_TypeDef *dap);
+static void dap_swo_data_handler(DAP_TypeDef *dap);
 void dap_vendor0_handler(DAP_TypeDef *dap);
 void dap_vendor1_handler(DAP_TypeDef *dap);
 
@@ -62,6 +74,18 @@ void dap_irq_handler(DAP_TypeDef *dap)
         break;
     case ID_DAP_SWO_Mode:
         dap_swo_mode_handler(dap);
+        break;
+    case ID_DAP_SWO_Baudrate:
+        dap_swo_baudrate_handler(dap);
+        break;
+    case ID_DAP_SWO_Control:
+        dap_swo_control_handler(dap);
+        break;
+    case ID_DAP_SWO_Status:
+        dap_swo_status_handler(dap);
+        break;
+    case ID_DAP_SWO_Data:
+        dap_swo_data_handler(dap);
         break;
     case ID_DAP_Vendor0:
         dap_vendor0_handler(dap);
@@ -111,7 +135,7 @@ static void dap_get_info_handler(DAP_TypeDef *dap)
         break;
     case DAP_ID_CAPABILITIES:
         dap_write_data(dap, 0x02);
-        dap_write_data(dap, 0xB3);
+        dap_write_data(dap, 0xFF);
         dap_write_data(dap, 0x01);
         break;
     case DAP_ID_TIMESTAMP_CLOCK:
@@ -125,6 +149,10 @@ static void dap_get_info_handler(DAP_TypeDef *dap)
     case DAP_ID_PACKET_SIZE:
         dap_write_data(dap, 0x02);
         dap_write_data16(dap, DAP_PACKET_SIZE);
+        break;
+    case DAP_ID_SWO_BUFFER_SIZE:
+        dap_write_data(dap, 0x04);
+        dap_write_data32(dap, SWO_BUFFER_SIZE);
         break;
     default:
         DAP_DEBUG("unknown info id %02x\n", info_req);
@@ -299,14 +327,169 @@ static void dap_swo_transport_handler(DAP_TypeDef *dap)
 {
     uint8_t transport = dap_read_data(dap);
     DAP_DEBUG("SWO transport %d\n", transport);
-    dap_write_data(dap, 0);
+
+    if (transport == 0x02 || transport == 0x00)
+    {
+        dap_write_data(dap, 0);
+    }
+    else
+    {
+        DAP_DEBUG("Error: unsupported transport\n");
+        dap_write_data(dap, 0xff);
+    }
 }
 
 static void dap_swo_mode_handler(DAP_TypeDef *dap)
 {
     uint8_t mode = dap_read_data(dap);
-    DAP_DEBUG("SWO Mode %02x\n", mode);
+
+    switch (mode)
+    {
+    case 0x00:
+        swo_cfg.mode = 0xff;
+        DAP_DEBUG("SWO mode default\n");
+        break;
+    case 0x01:
+        DAP_DEBUG("SWO mode uart\n");
+        swo_cfg.mode = DAP_SWO_CR_MODE_UART;
+        break;
+    case 0x02:
+        DAP_DEBUG("SWO mode manchester\n");
+        swo_cfg.mode = DAP_SWO_CR_MODE_MANCHESTER;
+        break;
+    default:
+        dap_write_data(dap, 0xff);
+        return;
+    }
+    dap_write_data(dap, 0x00);
+}
+
+static void dap_swo_baudrate_handler(DAP_TypeDef *dap)
+{
+    uint32_t baudrate = dap_read_data32(dap);
+    DAP_DEBUG("SWO baudrate %d\n", baudrate);
+
+    if (baudrate > 100000000 || baudrate < 50000)
+    {
+        DAP_DEBUG("Error: baudrate is invalid\n");
+        dap_write_data(dap, 0xff);
+        return;
+    }
+
+    swo_cfg.baudrate = baudrate;
+    uint32_t bit_time = 3200000000ULL / baudrate;
+    if (swo_cfg.mode == DAP_SWO_CR_MODE_MANCHESTER)
+    {
+        bit_time &= 0xfff0;
+        return;
+    }
+
+    uint32_t actual_baudrate = 3200000000ULL / bit_time;
+    uint32_t diff = abs((int)actual_baudrate - (int)baudrate) * 10000 / baudrate;
+    DAP_DEBUG("actual baudrate %u, err: %3d.%02d%%\n", actual_baudrate, diff / 100, diff % 100);
+    DAP_DEBUG("bit time %d, jitter %d\n", bit_time >> 4, bit_time & 0xf);
+
+    dap_write_data32(dap, baudrate);
+}
+
+static int dap_swo_apply_config(DAP_TypeDef *dap)
+{
+    if (dap_swo_is_enabled(dap))
+    {
+        DAP_DEBUG("Error: SWO is enabled\n");
+        return -1;
+    }
+
+    if (swo_cfg.mode == 0xff)
+    {
+        DAP_DEBUG("Error: mode is not set\n");
+        return -1;
+    }
+
+    if (swo_cfg.baudrate > 100000000 || swo_cfg.baudrate < 5000000)
+    {
+        DAP_DEBUG("Error: baudrate is invalid\n");
+        return -1;
+    }
+
+    uint32_t baud_div = 3200000000ULL / swo_cfg.baudrate; // 波特率分频值
+    uint16_t bt = (baud_div >> 4);                        // bit时钟周期数
+    uint16_t bit_time0 = bt - 1;                          // 默认bit时间
+    uint16_t bit_time1 = bt;                              // 抖动注入bit时间
+    uint16_t decision_low;                                // 死区时间
+    uint16_t decision_high;                               // 超时时间
+
+    if (swo_cfg.mode == DAP_SWO_CR_MODE_UART)
+    {
+        dap_swo_set_mode(dap, DAP_SWO_CR_MODE_UART);
+        dap_swo_set_jitter(dap, baud_div & 0xf); // 抖动注入比例，高波特率会增加误码
+        decision_low = bt - bt / 8;              // NRZ死区时间  87.5%
+        decision_high = bt + bt / 8;             // NRZ超时时间 112.5%
+    }
+    else if (swo_cfg.mode == DAP_SWO_CR_MODE_MANCHESTER)
+    {
+        dap_swo_set_mode(dap, DAP_SWO_CR_MODE_MANCHESTER);
+        dap_swo_set_jitter(dap, 0);  // 曼彻斯特不使用jitter
+        decision_low = bt / 2;       // 曼彻斯特死区时间  50%
+        decision_high = bt + bt / 2; // 曼彻斯特超时时间 150%
+    }
+    else
+    {
+        DAP_DEBUG("Error: unsupported mode %d\n", swo_cfg.mode);
+        return -1;
+    }
+
+    if (decision_low >= bit_time0)
+    {
+        decision_low = bit_time0 - 1;
+    }
+
+    dap_swo_set_bit_time0(dap, bit_time0);
+    dap_swo_set_bit_time1(dap, bit_time1);
+    dap_swo_set_bit_decision_low(dap, decision_low);
+    dap_swo_set_bit_decision_high(dap, decision_high);
+    dap_swo_set_edge(dap, bt / 200);
+
+    DAP_DEBUG("SWO config applied mode %d\n", swo_cfg.mode);
+    DAP_DEBUG("bit time %d / %d\n", bit_time0, bit_time1);
+    DAP_DEBUG("decision %d / %d\n", decision_low, decision_high);
+    DAP_DEBUG("jitter %d\n", dap_swo_get_jitter(dap));
+    DAP_DEBUG("edge %d\n", dap_swo_get_edge(dap));
+    return 0;
+}
+
+static void dap_swo_control_handler(DAP_TypeDef *dap)
+{
+    uint8_t control = dap_read_data(dap);
+    DAP_DEBUG("SWO control %d\n", control);
+    if (control)
+    {
+        if (dap_swo_apply_config(dap) != 0)
+        {
+            DAP_DEBUG("Error: apply config failed\n");
+            dap_write_data(dap, 0xff);
+            return;
+        }
+        dap_swo_enable(dap);
+    }
+    else
+    {
+        dap_swo_disable(dap);
+    }
     dap_write_data(dap, 0);
+}
+
+static void dap_swo_status_handler(DAP_TypeDef *dap)
+{
+    dap_write_data(dap, 1);
+    dap_write_data32(dap, 0);
+}
+
+static void dap_swo_data_handler(DAP_TypeDef *dap)
+{
+    (void)dap_read_data16(dap);
+    dap_write_data(dap, dap_swo_is_enabled(dap));
+    dap_write_data16(dap, 0);
 }
 
 static void dap_transfer_configure_handler(DAP_TypeDef *dap)

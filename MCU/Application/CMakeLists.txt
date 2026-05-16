@@ -7,6 +7,7 @@ add_executable(HFLinkAPP
     usb/usbd_core.c
     dap/dap.c
     dap/dap_vendor0_handler.c
+    dap/dap_vendor1_handler.c
     ads1115/ads1115.c
     upgrade/upgrade.c
     config_db/config_db.c

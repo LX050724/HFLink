@@ -93,9 +93,9 @@ module DAP_SWO #(
                 SWO_CTRL_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = {8'd0, swo_byte, SWO_CR};
                 SWO_BIT_TIME_ADDR[ADDRWIDTH-1:2]:
-                    ahb_rdata = {SWO_BIT_TIME_1, SWO_BIT_TIME_0};
+                    ahb_rdata = {4'd0, SWO_BIT_TIME_1, 4'd0, SWO_BIT_TIME_0};
                 SWO_PARAM_ADDR[ADDRWIDTH-1:2]:
-                    ahb_rdata = {SWO_BIT_DECISION_LOW, SWO_BIT_DECISION_HIGH};
+                    ahb_rdata = {4'd0, SWO_BIT_DECISION_LOW, 4'd0, SWO_BIT_DECISION_HIGH};
                 default:
                     ahb_rdata = {32{1'bx}};
             endcase
@@ -151,7 +151,7 @@ module DAP_SWO #(
                 ST_LOW: begin
                     case (LOC_SWO_DDR_Q)
                         2'b00:
-                            edge_cnt <= (edge_cnt > 1) ? edge_cnt - 4'd2 : 4'd0;
+                            edge_cnt <= (edge_cnt > 4'd1) ? edge_cnt - 4'd2 : 4'd0;
                         2'b11:
                             edge_cnt <= edge_cnt + 4'd2;
                         2'b10:
@@ -160,17 +160,17 @@ module DAP_SWO #(
                             edge_cnt <= (edge_cnt == 4'd0) ? 4'd0 : edge_cnt - 4'd1;
                     endcase
                     if (edge_cnt > SWO_EDGE_DECISION) begin
-                        swo_edge   <= swo_init;
+                        swo_edge <= swo_init | SWO_MODE; // 曼彻斯特模式下不需要忽略第一个上升沿
                         swo_init <= 1'd1;
-                        swo_state  <= ST_HIGH;
-                        edge_cnt   <= 4'd0;
+                        swo_state <= ST_HIGH;
+                        edge_cnt <= 4'd0;
                     end
                 end
 
                 ST_HIGH: begin
                     case (~LOC_SWO_DDR_Q)
                         2'b00:
-                            edge_cnt <= (edge_cnt > 1) ? edge_cnt - 4'd2 : 4'd0;
+                            edge_cnt <= (edge_cnt > 4'd1) ? edge_cnt - 4'd2 : 4'd0;
                         2'b11:
                             edge_cnt <= edge_cnt + 4'd2;
                         2'b10:
@@ -179,7 +179,7 @@ module DAP_SWO #(
                             edge_cnt <= (edge_cnt == 4'd0) ? 4'd0 : edge_cnt - 4'd1;
                     endcase
                     if (edge_cnt > SWO_EDGE_DECISION) begin
-                        swo_edge   <= swo_init;
+                        swo_edge   <= swo_init | SWO_MODE;
                         swo_init <= 1'd1;
                         swo_state  <= ST_LOW;
                         edge_cnt   <= 4'd0;
@@ -194,9 +194,9 @@ module DAP_SWO #(
     // 240M时钟域 - 比特判定模块
     // 每周期累加高低电平数量，边沿脉冲来时清零
     // ========================================================================
-    localparam [2:0] BIT_SM_IDLE = 2'd0;
-    localparam [2:0] BIT_SM_BIT_RANGE1 = 2'd1;
-    localparam [2:0] BIT_SM_BIT_RANGE2 = 2'd2;
+    localparam [1:0] BIT_SM_IDLE = 2'd0;
+    localparam [1:0] BIT_SM_BIT_RANGE1 = 2'd1;
+    localparam [1:0] BIT_SM_BIT_RANGE2 = 2'd3;
 
 
     reg [11:0] high_sample_cnt; // 高电平采样计数
@@ -210,7 +210,7 @@ module DAP_SWO #(
     reg [1:0] swo_input_ff1;
     reg [1:0] swo_input_bitcount_h;
     reg [1:0] swo_input_bitcount_l;
-    
+
     wire [3:0] jitter_cnt_inv = {jitter_cnt[0], jitter_cnt[1], jitter_cnt[2], jitter_cnt[3]};
 
     wire decoder_wait_stop;
@@ -228,14 +228,16 @@ module DAP_SWO #(
             swo_input_ff1 <= 2'd0;
             swo_input_bitcount_h <= 2'd0;
             swo_input_bitcount_l <= 2'd0;
-        end begin
+        end
+        else begin
             swo_input_ff1 <= LOC_SWO_DDR_Q;
             swo_input_bitcount_h <= bitcount_h(swo_input_ff1);
             swo_input_bitcount_l <= bitcount_l(swo_input_ff1);
-            bit_time <= (jitter_cnt_inv < SWO_JITTER) ? SWO_BIT_TIME_0 : SWO_BIT_TIME_1;
+            bit_time <= (jitter_cnt_inv < SWO_JITTER) ? SWO_BIT_TIME_1 : SWO_BIT_TIME_0;
 
             case (bit_sm)
                 BIT_SM_IDLE: begin
+                    // 触发边沿要和模式相匹配
                     if (swo_edge && swo_rising == SWO_MODE) begin
                         bit_sm <= BIT_SM_BIT_RANGE1;
                         high_sample_cnt <= swo_input_bitcount_h;
@@ -351,95 +353,109 @@ module DAP_SWO #(
     // ========================================================================
     localparam M_IDLE = 2'd0;
     localparam M_DATA = 2'd1;
-    localparam M_STOP = 2'd2;
+    localparam M_STOP_1 = 2'd3;
+    localparam M_STOP_2 = 2'd2;
 
     reg [1:0]  manch_state;
     reg        manch_half;
-    reg        manch_first_level;
+    reg        manch_find_start;
+    reg        manch_bit_ff;
     reg [2:0]  manch_bit_cnt;
     reg [7:0]  manch_shift;
-    reg        stop_low_cnt;
     reg [7:0]  manch_byte;
     reg        manch_valid;
+    reg        manch_error;
 
     always @(posedge clk_200M) begin : manch_decode
         if (!resetn_200M) begin
             manch_state       <= M_IDLE;
             manch_half        <= 1'd0;
-            manch_first_level <= 1'd0;
+            manch_find_start  <= 1'd0;
+            manch_bit_ff      <= 1'd0;
             manch_bit_cnt     <= 3'd0;
             manch_shift       <= 8'd0;
-            stop_low_cnt      <= 1'd0;
             manch_byte        <= 8'd0;
             manch_valid       <= 1'd0;
+            manch_error       <= 1'd0;
         end
         else begin
             manch_valid <= 1'd0;
+            manch_error <= 1'd0;
+
+            if (manch_state == M_IDLE) begin
+                // 空闲状态复位其他寄存器
+                manch_bit_cnt <= 3'd0;
+                manch_half <= 1'd0;
+            end
+
+            if (bit_sm == BIT_SM_IDLE) begin
+                manch_find_start <= 1'd0;
+            end
+
+            // 移位寄存器无条件持续工作
+            if (bit_valid) begin
+                manch_bit_ff <= bit_level;
+            end
 
             if (bit_valid && SWO_MODE == 1'd1) begin
                 case (manch_state)
                     M_IDLE: begin
-                        if (manch_half == 1'd0) begin
-                            if (bit_level == 1'd1) begin
-                                manch_first_level <= 1'd1;
-                                manch_half <= 1'd1;
-                            end
-                        end
-                        else begin
-                            manch_half <= 1'd0;
-                            if (bit_level == 1'd0) begin
-                                // 高→低: 起始位(bit 1) 检测到
-                                manch_state   <= M_DATA;
-                                manch_bit_cnt <= 3'd0;
-                            end
+                        manch_find_start <= manch_find_start ^ bit_level;
+                        if (manch_find_start) begin
+                            manch_find_start <= 1'd0;
+                            // 第二位为0确认起始位，转移下一状态
+                            manch_state <= bit_level ? M_IDLE : M_DATA;
+                            manch_error <= bit_level;
                         end
                     end
 
                     M_DATA: begin
-                        if (manch_half == 1'd0) begin
-                            manch_first_level <= bit_level;
-                            manch_half <= 1'd1;
-                        end
-                        else begin
-                            manch_half <= 1'd0;
-                            if (manch_first_level != bit_level) begin
-                                // manch_first_level 即解码bit值
+                        // 位有效翻转half标志
+                        manch_half <= ~manch_half;
+                        manch_bit_cnt <= manch_bit_cnt + manch_half;
+                        if (manch_half) begin
+                            manch_shift <= {manch_bit_ff, manch_shift[7:1]};
+                            if (manch_bit_ff ^ bit_level) begin
+                                // 有效电平
                                 if (manch_bit_cnt == 3'd7) begin
-                                    manch_shift  <= {manch_first_level, manch_shift[7:1]};
-                                    manch_state  <= M_STOP;
-                                    stop_low_cnt <= 1'd0;
+                                    manch_state <= M_STOP_1;
                                 end
                                 else begin
-                                    manch_shift   <= {manch_first_level, manch_shift[7:1]};
-                                    manch_bit_cnt <= manch_bit_cnt + 1'd1;
+                                    manch_state <= M_DATA;
                                 end
                             end
                             else begin
+                                // 错误电平
+                                manch_error <= 1'd1;
                                 manch_state <= M_IDLE;
                             end
                         end
+                        else begin
+                            manch_state <= M_DATA;
+                        end
                     end
 
-                    M_STOP: begin
+                    M_STOP_1: begin
                         if (bit_level == 1'd0) begin
-                            stop_low_cnt <= stop_low_cnt + 1'd1;
-                            if (stop_low_cnt == 1'd1) begin
-                                manch_byte  <= manch_shift;
-                                manch_valid <= 1'd1;
-                                manch_half      <= 1'd0;
-                                manch_state     <= M_IDLE;
-                            end
+                            manch_state <= M_STOP_2;
+                            manch_byte <= manch_shift;
                         end
                         else begin
                             manch_state <= M_IDLE;
                         end
+                        manch_error <= bit_level;
+                    end
+                    M_STOP_2: begin
+                        manch_state <= M_IDLE;
+                        manch_valid <= ~bit_level;
+                        manch_error <= bit_level;
                     end
                 endcase
             end
         end
     end
 
-    assign decoder_wait_stop = (SWO_MODE == 1'd0) ? (uart_state == U_STOP) : (manch_state == M_STOP);
+    assign decoder_wait_stop = (SWO_MODE == 1'd0) ? (uart_state == U_STOP) : (manch_state == M_STOP_2 || manch_error);
 
     // ========================================================================
     // CDC: clk_200M → clk  选通 + 跨时钟域

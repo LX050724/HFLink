@@ -1,0 +1,94 @@
+[*]
+[*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
+[*] Sat May 16 09:33:28 2026
+[*]
+[dumpfile] "d:\source\tang25K\HFLink\FPGA\testbench\DAP_SWO_tb\test.vcd"
+[dumpfile_mtime] "Sat May 16 09:31:45 2026"
+[dumpfile_size] 16104359
+[savefile] "d:\source\tang25K\HFLink\FPGA\testbench\DAP_SWO_tb\ui.gtkw"
+[timestart] 340147000
+[size] 2560 1377
+[pos] -1 -1
+*-19.000000 341777500 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] DAP_SWO_tb.
+[sst_width] 293
+[signals_width] 406
+[sst_expanded] 1
+[sst_vpaned_height] 425
+@28
+DAP_SWO_tb.u_dut.swo_init
+DAP_SWO_tb.u_dut.clk_200M
+DAP_SWO_tb.u_dut.SWO_EN
+DAP_SWO_tb.u_dut.SWO_MODE
+DAP_SWO_tb.swo_pin_in
+@800028
+DAP_SWO_tb.u_dut.LOC_SWO_DDR_Q[1:0]
+@28
+(0)DAP_SWO_tb.u_dut.LOC_SWO_DDR_Q[1:0]
+(1)DAP_SWO_tb.u_dut.LOC_SWO_DDR_Q[1:0]
+@1001200
+-group_end
+@28
+DAP_SWO_tb.u_dut.swo_rising
+DAP_SWO_tb.u_dut.swo_edge
+@c00024
+DAP_SWO_tb.u_dut.bit_sm[1:0]
+@28
+(0)DAP_SWO_tb.u_dut.bit_sm[1:0]
+(1)DAP_SWO_tb.u_dut.bit_sm[1:0]
+@1401200
+-group_end
+@28
+DAP_SWO_tb.u_dut.resetn_200M
+@22
+DAP_SWO_tb.u_dut.high_sample_cnt[11:0]
+DAP_SWO_tb.u_dut.low_sample_cnt[11:0]
+@24
+DAP_SWO_tb.u_dut.time_sample_cnt[11:0]
+@22
+DAP_SWO_tb.u_dut.bit_time[11:0]
+DAP_SWO_tb.u_dut.manch_byte[7:0]
+@28
+DAP_SWO_tb.u_dut.manch_find_start
+DAP_SWO_tb.u_dut.manch_half
+DAP_SWO_tb.u_dut.manch_valid
+@24
+DAP_SWO_tb.u_dut.bit_sm[1:0]
+@28
+DAP_SWO_tb.u_dut.bit_valid
+DAP_SWO_tb.u_dut.swo_input_bitcount_h[1:0]
+DAP_SWO_tb.u_dut.swo_input_ff1[1:0]
+DAP_SWO_tb.u_dut.swo_state
+@200
+-MANCH
+@28
+DAP_SWO_tb.u_dut.bit_level
+DAP_SWO_tb.u_dut.bit_valid
+DAP_SWO_tb.u_dut.manch_find_start
+DAP_SWO_tb.u_dut.manch_half
+@24
+DAP_SWO_tb.u_dut.manch_bit_cnt[2:0]
+@25
+DAP_SWO_tb.u_dut.manch_state[1:0]
+@22
+DAP_SWO_tb.u_dut.manch_shift[7:0]
+DAP_SWO_tb.u_dut.manch_byte[7:0]
+@28
+DAP_SWO_tb.u_dut.manch_valid
+DAP_SWO_tb.swo_valid
+@22
+DAP_SWO_tb.swo_byte[7:0]
+@28
+DAP_SWO_tb.u_dut.manch_error
+@200
+-UART
+@28
+DAP_SWO_tb.u_dut.uart_bit_cnt[2:0]
+@22
+DAP_SWO_tb.u_dut.uart_byte[7:0]
+DAP_SWO_tb.u_dut.uart_shift[7:0]
+@28
+DAP_SWO_tb.u_dut.uart_state[1:0]
+DAP_SWO_tb.u_dut.uart_valid
+[pattern_trace] 1
+[pattern_trace] 0

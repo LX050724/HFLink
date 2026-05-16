@@ -1,3 +1,4 @@
 {
-    "editor.fontLigatures": false
+    "editor.fontLigatures": false,
+    "cmake.ignoreCMakeListsMissing": true
 }
