@@ -306,7 +306,7 @@ module DAP_Controller #(
     // 一阶段解码器，命令字转换独热码
     reg [`CMD_REG_WIDTH-1:0] cmd_decoder_reslut;
     always @(*) begin
-        cmd_decoder_reslut = 14'd0;
+        cmd_decoder_reslut = 13'd0;
         case ((dap_sm == DAP_SM_WAIT_CMD) ? dap_in_tdata : processing_cmd)
             // ID_DAP_Transfer
             8'h05:
@@ -338,6 +338,9 @@ module DAP_Controller #(
             // ID_DAP_JTAG_IDCODE
             8'h16:
                 cmd_decoder_reslut = `CMD_JTAG_IDCODE;
+            // ID_DAP_SWO_Status
+            8'h1B:
+                cmd_decoder_reslut = `CMD_SWO_STATUS;
             // ID_DAP_QueueCommands
             // ID_DAP_ExecuteCommands
             8'h7E, 8'h7F:
@@ -355,7 +358,6 @@ module DAP_Controller #(
             // ID_DAP_SWO_Mode
             // ID_DAP_SWO_Baudrate
             // ID_DAP_SWO_Control
-            // ID_DAP_SWO_Status
             // ID_DAP_SWO_ExtendedStatus
             // ID_DAP_SWO_Data
             // ID_DAP_UART_Transport

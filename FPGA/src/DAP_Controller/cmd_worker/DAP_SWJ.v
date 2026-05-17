@@ -524,6 +524,12 @@ module DAP_SWJ #(
                 seq_tx_data = 32'd0;
                 seq_tx_valid = jtag_idcode_seq_tx_valid;
             end
+            `CMD_SWO_STATUS: begin
+                ram_write_addr = swo_status_byte_cnt;
+                ram_write_data = (swo_status_byte_cnt == 3'd0) ? SWO_STATUS_BYTE0 : 8'h00;
+                ram_write_en = (swo_status_byte_cnt < SWO_STATUS_RESP_LEN);
+                packet_len = SWO_STATUS_RESP_LEN;
+            end
             default: begin
                 // All signals already initialized to 0 above
             end
@@ -1635,6 +1641,35 @@ module DAP_SWJ #(
         end
     end
 
+    // SWO_Status Controller
+    // 直接返回固定5字节: 0x01, 0x00, 0x00, 0x00, 0x00
+    // ram_write_* 信号在组合逻辑中根据 byte_cnt 直接生成
+    localparam SWO_STATUS_RESP_LEN = 5;  // 响应总字节数
+    localparam SWO_STATUS_BYTE0 = 8'h01; // 首字节常量
+
+    reg [2:0] swo_status_byte_cnt;  // 0~4 递增计数
+
+    always @(posedge clk or negedge resetn) begin
+        if (!resetn) begin
+            swo_status_byte_cnt <= 3'd0;
+            done[`CMD_SWO_STATUS_SHIFT] <= 1'd0;
+        end
+        else begin
+            if (start[`CMD_SWO_STATUS_SHIFT]) begin
+                if (swo_status_byte_cnt < SWO_STATUS_RESP_LEN) begin
+                    swo_status_byte_cnt <= swo_status_byte_cnt + 1'd1;
+                end
+                else begin
+                    done[`CMD_SWO_STATUS_SHIFT] <= 1'd1;
+                end
+            end
+            else begin
+                swo_status_byte_cnt <= 3'd0;
+                done[`CMD_SWO_STATUS_SHIFT] <= 1'd0;
+            end
+        end
+    end
+
     // JTAG IR 配置解码逻辑
     // 根据命令选择对应的配置
     reg [19:0] jtag_ir_conf_selected;
@@ -1682,6 +1717,8 @@ module DAP_SWJ #(
            (jtag_seq_sm == JTAG_SEQ_SM_READ_SEQ_COUNT || jtag_seq_sm == JTAG_SEQ_SM_READ_SEQ_INFO || jtag_seq_sm == JTAG_SEQ_SM_READ_DATA);
 
     assign dap_in_tready[`CMD_JTAG_IDCODE_SHIFT] = (jtag_idcode_sm == JTAG_IDCODE_SM_WAIT_INDEX);
+
+    assign dap_in_tready[`CMD_SWO_STATUS_SHIFT] = 1'd0;
 
     task AHB_WRITE_REG32;
         output [31:0] optreg;

@@ -35,7 +35,7 @@
         <File path="src/HFLinkDAP.rao" type="file.gao" enable="0"/>
         <File path="src/HFLinkJTAG.rao" type="file.gao" enable="0"/>
         <File path="src/HFLinkSWD.rao" type="file.gao" enable="0"/>
-        <File path="src/HFLinkSWO.rao" type="file.gao" enable="1"/>
+        <File path="src/HFLinkSWO.rao" type="file.gao" enable="0"/>
         <File path="src/HFLinkUART.rao" type="file.gao" enable="0"/>
     </FileList>
 </Project>
