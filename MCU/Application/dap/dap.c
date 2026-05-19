@@ -415,23 +415,58 @@ static int dap_swo_apply_config(DAP_TypeDef *dap)
     uint32_t baud_div = 3200000000ULL / swo_cfg.baudrate; // 波特率分频值
     uint16_t bt = (baud_div >> 4);                        // bit时钟周期数
     uint16_t bit_time0 = bt - 1;                          // 默认bit时间
-    uint16_t bit_time1 = bt;                              // 抖动注入bit时间
+    uint16_t bit_time1 = bt + bt / 16 - 1;                // 抖动注入bit时间
     uint16_t decision_low;                                // 死区时间
     uint16_t decision_high;                               // 超时时间
+
+    // bit_time1 一定要大于 bit_time0
+    if (bit_time1 == bit_time0)
+    {
+        bit_time1 = bt;
+    }
 
     if (swo_cfg.mode == DAP_SWO_CR_MODE_UART)
     {
         dap_swo_set_mode(dap, DAP_SWO_CR_MODE_UART);
         dap_swo_set_jitter(dap, baud_div & 0xf); // 抖动注入比例，高波特率会增加误码
-        decision_low = bt - bt / 8;              // NRZ死区时间  87.5%
-        decision_high = bt + bt / 8;             // NRZ超时时间 112.5%
+        decision_low = bt - bt / 2 - 1;          // NRZ死区时间  50%
+        decision_high = bt + bt / 4 - 1;         // NRZ超时时间 125%
+
+        // decision_low 不能大于 bit_time0
+        if (decision_low >= bit_time0)
+        {
+            decision_low = bit_time0 - 1;
+        }
+
+        if ((baud_div & 0xf) != 0)
+        {
+            // 有注入时，decision_high 不能小于 bit_time1
+            if (decision_high < bit_time1)
+            {
+                decision_high = bit_time1;
+            }
+        }
+        else
+        {
+            // 无注入时，decision_high 不能小于 bit_time0
+            if (decision_high < bit_time0)
+            {
+                decision_high = bit_time0;
+            }
+        }
+
+        // decision_high 不能大于 bit_time0 两倍
+        if (decision_high >= bit_time0 * 2)
+        {
+            decision_high = bit_time0 * 2 - 1;
+        }
     }
     else if (swo_cfg.mode == DAP_SWO_CR_MODE_MANCHESTER)
     {
         dap_swo_set_mode(dap, DAP_SWO_CR_MODE_MANCHESTER);
         dap_swo_set_jitter(dap, 0);  // 曼彻斯特不使用jitter
         decision_low = bt / 2;       // 曼彻斯特死区时间  50%
-        decision_high = bt + bt / 2; // 曼彻斯特超时时间 150%
+        decision_high = bt + bt / 4; // 曼彻斯特超时时间 125%
     }
     else
     {
@@ -439,21 +474,16 @@ static int dap_swo_apply_config(DAP_TypeDef *dap)
         return -1;
     }
 
-    if (decision_low >= bit_time0)
-    {
-        decision_low = bit_time0 - 1;
-    }
-
     dap_swo_set_bit_time0(dap, bit_time0);
     dap_swo_set_bit_time1(dap, bit_time1);
     dap_swo_set_bit_decision_low(dap, decision_low);
     dap_swo_set_bit_decision_high(dap, decision_high);
-    dap_swo_set_edge(dap, bt / 200);
+    dap_swo_set_edge(dap, (bt / 200) & 0xf);
 
     DAP_DEBUG("SWO config applied mode %d\n", swo_cfg.mode);
     DAP_DEBUG("bit time %d / %d\n", bit_time0, bit_time1);
     DAP_DEBUG("decision %d / %d\n", decision_low, decision_high);
-    DAP_DEBUG("jitter %d\n", dap_swo_get_jitter(dap));
+    DAP_DEBUG("jitter level %d\n", dap_swo_get_jitter(dap));
     DAP_DEBUG("edge %d\n", dap_swo_get_edge(dap));
     return 0;
 }

@@ -147,45 +147,53 @@ module DAP_SWO #(
         else begin
             swo_edge   <= 1'd0;
 
-            case (swo_state)
-                ST_LOW: begin
-                    case (LOC_SWO_DDR_Q)
-                        2'b00:
-                            edge_cnt <= (edge_cnt > 4'd1) ? edge_cnt - 4'd2 : 4'd0;
-                        2'b11:
-                            edge_cnt <= edge_cnt + 4'd2;
-                        2'b10:
-                            edge_cnt <= (edge_cnt == 4'd0) ? 4'd1 : edge_cnt;
-                        2'b01:
-                            edge_cnt <= (edge_cnt == 4'd0) ? 4'd0 : edge_cnt - 4'd1;
-                    endcase
-                    if (edge_cnt > SWO_EDGE_DECISION) begin
-                        swo_edge <= swo_init | SWO_MODE; // 曼彻斯特模式下不需要忽略第一个上升沿
-                        swo_init <= 1'd1;
-                        swo_state <= ST_HIGH;
-                        edge_cnt <= 4'd0;
-                    end
+            if (!swo_init) begin
+                // 根据模式同步当前电平状态，等待模式匹配的边沿触发状态机
+                // 串口模式默认高电平，曼彻斯特模式默认低电平
+                if (LOC_SWO_DDR_Q == {~SWO_MODE, ~SWO_MODE}) begin
+                    swo_state <= (SWO_MODE == 1'b0) ? ST_HIGH : ST_LOW;
+                    swo_init <= 1'd1;
                 end
-
-                ST_HIGH: begin
-                    case (~LOC_SWO_DDR_Q)
-                        2'b00:
-                            edge_cnt <= (edge_cnt > 4'd1) ? edge_cnt - 4'd2 : 4'd0;
-                        2'b11:
-                            edge_cnt <= edge_cnt + 4'd2;
-                        2'b10:
-                            edge_cnt <= (edge_cnt == 4'd0) ? 4'd1 : edge_cnt;
-                        2'b01:
-                            edge_cnt <= (edge_cnt == 4'd0) ? 4'd0 : edge_cnt - 4'd1;
-                    endcase
-                    if (edge_cnt > SWO_EDGE_DECISION) begin
-                        swo_edge   <= swo_init | SWO_MODE;
-                        swo_init <= 1'd1;
-                        swo_state  <= ST_LOW;
-                        edge_cnt   <= 4'd0;
+            end
+            else begin
+                case (swo_state)
+                    ST_LOW: begin
+                        case (LOC_SWO_DDR_Q)
+                            2'b00:
+                                edge_cnt <= (edge_cnt > 4'd1) ? edge_cnt - 4'd2 : 4'd0;
+                            2'b11:
+                                edge_cnt <= edge_cnt + 4'd2;
+                            2'b10:
+                                edge_cnt <= (edge_cnt == 4'd0) ? 4'd1 : edge_cnt;
+                            2'b01:
+                                edge_cnt <= (edge_cnt == 4'd0) ? 4'd0 : edge_cnt - 4'd1;
+                        endcase
+                        if (edge_cnt > SWO_EDGE_DECISION) begin
+                            swo_edge <= 1'd1;
+                            swo_state <= ST_HIGH;
+                            edge_cnt <= 4'd0;
+                        end
                     end
-                end
-            endcase
+    
+                    ST_HIGH: begin
+                        case (~LOC_SWO_DDR_Q)
+                            2'b00:
+                                edge_cnt <= (edge_cnt > 4'd1) ? edge_cnt - 4'd2 : 4'd0;
+                            2'b11:
+                                edge_cnt <= edge_cnt + 4'd2;
+                            2'b10:
+                                edge_cnt <= (edge_cnt == 4'd0) ? 4'd1 : edge_cnt;
+                            2'b01:
+                                edge_cnt <= (edge_cnt == 4'd0) ? 4'd0 : edge_cnt - 4'd1;
+                        endcase
+                        if (edge_cnt > SWO_EDGE_DECISION) begin
+                            swo_edge   <= 1'd1;
+                            swo_state  <= ST_LOW;
+                            edge_cnt   <= 4'd0;
+                        end
+                    end
+                endcase
+            end
         end
     end
 
