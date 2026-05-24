@@ -50,7 +50,8 @@ extern "C" {
 
 #define DAP_SWO_CR_EN_MASK            0x0001
 #define DAP_SWO_CR_MODE_MASK          0x0002
-#define DAP_SWO_CR_JITTER_Pos            2
+#define DAP_SWO_CR_FIFO_CLEAR         0x0004
+#define DAP_SWO_CR_JITTER_Pos            4
 #define DAP_SWO_CR_JITTER_MASK           (0xf << DAP_SWO_CR_JITTER_Pos)
 #define DAP_SWO_CR_EDGE_Pos              8
 #define DAP_SWO_CR_EDGE_MASK             (0xf << DAP_SWO_CR_EDGE_Pos)
@@ -676,6 +677,48 @@ inline static uint16_t dap_swo_get_bit_decision_high(DAP_TypeDef *dap)
 inline static uint16_t dap_swo_get_bit_decision_low(DAP_TypeDef *dap)
 {
     return dap->SWO.BIT_DECISION_LOW;
+}
+
+/**
+ * @brief 开始清除FIFO缓存
+ * 
+ * @param dap DAP 实例指针。
+ */
+inline static void dap_swo_clear_fifo_start(DAP_TypeDef *dap)
+{
+    dap->SWO.CR |= DAP_SWO_CR_FIFO_CLEAR;
+}
+
+/**
+ * @brief 停止清除FIFO缓存
+ * 
+ * @param dap DAP 实例指针。
+ */
+inline static void dap_swo_clear_fifo_stop(DAP_TypeDef *dap)
+{
+    dap->SWO.CR &= ~DAP_SWO_CR_FIFO_CLEAR;
+}
+
+/**
+ * @brief 获取FIFO缓存清除状态
+ * 
+ * @param dap dap DAP 实例指针。
+ * @return bool 清除完成
+ */
+inline static bool dap_swo_fifo_clear_status(DAP_TypeDef *dap)
+{
+    return (dap->SWO.CR & DAP_SWO_CR_FIFO_CLEAR) == DAP_SWO_CR_FIFO_CLEAR;
+}
+
+/**
+ * @brief 获取FIFO缓存大小
+ * 
+ * @param dap dap DAP 实例指针。
+ * @return uint16_t FIFO缓存大小
+ */
+inline static uint16_t dap_swo_fifo_get_size(DAP_TypeDef *dap)
+{
+    return dap->SWO.FIFO_SIZE;
 }
 
 /*************************************************************************************************************************/

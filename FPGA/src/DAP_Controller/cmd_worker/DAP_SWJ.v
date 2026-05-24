@@ -24,6 +24,9 @@ module DAP_SWJ #(
         input [31:0] ahb_wdata,
         input [3:0] ahb_byte_strobe,
 
+        input [11:0] swo_fifo_size,
+        input swo_active,
+
         input dap_in_tvalid,
         output [`CMD_SWJ_RANGE] dap_in_tready,
         input [7:0] dap_in_tdata,
@@ -526,8 +529,8 @@ module DAP_SWJ #(
             end
             `CMD_SWO_STATUS: begin
                 ram_write_addr = swo_status_byte_cnt;
-                ram_write_data = (swo_status_byte_cnt == 3'd0) ? SWO_STATUS_BYTE0 : 8'h00;
-                ram_write_en = (swo_status_byte_cnt < SWO_STATUS_RESP_LEN);
+                ram_write_data = swo_status_ram_data;
+                ram_write_en = swo_status_ram_en;
                 packet_len = SWO_STATUS_RESP_LEN;
             end
             default: begin
@@ -1642,29 +1645,54 @@ module DAP_SWJ #(
     end
 
     // SWO_Status Controller
-    // 直接返回固定5字节: 0x01, 0x00, 0x00, 0x00, 0x00
-    // ram_write_* 信号在组合逻辑中根据 byte_cnt 直接生成
+    // 返回固定5字节: 0x01, swo_fifo_size[15:0], 0x00, 0x00
+    // 通过状态机生成 ram_write_data/ram_write_en
     localparam SWO_STATUS_RESP_LEN = 5;  // 响应总字节数
-    localparam SWO_STATUS_BYTE0 = 8'h01; // 首字节常量
 
-    reg [2:0] swo_status_byte_cnt;  // 0~4 递增计数
+    reg [2:0] swo_status_byte_cnt;
+    reg [7:0] swo_status_ram_data;
+    reg       swo_status_ram_en;
+    reg [12:0] swo_fifo_size_reg; // 需要外部连接实际的SWO FIFO大小
 
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
             swo_status_byte_cnt <= 3'd0;
+            swo_status_ram_data <= 8'd0;
+            swo_status_ram_en <= 1'd0;
+            swo_fifo_size_reg <= 13'd0;
             done[`CMD_SWO_STATUS_SHIFT] <= 1'd0;
         end
         else begin
             if (start[`CMD_SWO_STATUS_SHIFT]) begin
-                if (swo_status_byte_cnt < SWO_STATUS_RESP_LEN) begin
-                    swo_status_byte_cnt <= swo_status_byte_cnt + 1'd1;
-                end
-                else begin
-                    done[`CMD_SWO_STATUS_SHIFT] <= 1'd1;
-                end
+                swo_status_byte_cnt <= swo_status_byte_cnt + 1'd1;
+                swo_status_ram_en <= 1'd1;
+
+                case (swo_status_byte_cnt)
+                    3'd0: begin
+                        swo_status_ram_data <= {7'd0, swo_active};
+                        swo_fifo_size_reg <= swo_fifo_size;
+                    end
+                    3'd1: begin
+                        swo_status_ram_data <= swo_fifo_size_reg[ 7: 0];
+                    end
+                    3'd2: begin
+                        swo_status_ram_data <= {3'd0, swo_fifo_size_reg[12: 8]};
+                    end
+                    3'd3, 3'd4: begin
+                        swo_status_ram_data <= 8'd0;
+                    end
+                    default: begin
+                        swo_status_byte_cnt <= swo_status_byte_cnt;
+                        swo_status_ram_en <= 1'd0;
+                        done[`CMD_SWO_STATUS_SHIFT] <= 1'd1;
+                    end
+                endcase
+
             end
             else begin
                 swo_status_byte_cnt <= 3'd0;
+                swo_status_ram_data <= 8'd0;
+                swo_status_ram_en <= 1'd0;
                 done[`CMD_SWO_STATUS_SHIFT] <= 1'd0;
             end
         end

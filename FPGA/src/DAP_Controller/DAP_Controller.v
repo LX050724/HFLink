@@ -3,7 +3,9 @@
 module DAP_Controller #(
         parameter ADDRWIDTH = 12,
         parameter [5:0] CLOCK_FREQ_M = 60,
-        parameter GPIO_NUM = 4
+        parameter GPIO_NUM = 4,
+        parameter [3:0] USB_EP_PACKER = 4'd1,
+        parameter [3:0] USB_EP_SWO    = 4'd6
     ) (
         input  wire                  sclk,
         input  wire                  clk_200M,
@@ -37,9 +39,6 @@ module DAP_Controller #(
         output usb_rxrdy,
         input usb_rxact,
         input usb_rxpktval,
-
-        output [7:0] swo_tdata,
-        output swo_tvalid,
 
         // 内部串口
         input LOC_UART_TX,
@@ -282,9 +281,9 @@ module DAP_Controller #(
                        .usb_txact(usb_txact),
                        .usb_txpop(usb_txpop),
                        .usb_txpktfin(usb_txpktfin),
-                       .usb_txcork(usb_txcork),
-                       .usb_txdata(usb_txdata),
-                       .usb_txlen(usb_txlen),
+                       .usb_txcork(packer_txcork),
+                       .usb_txdata(packer_txdata),
+                       .usb_txlen(packer_txlen),
 
                        .ram_write_addr(ram_write_addr),
                        .ram_write_data(ram_write_data),
@@ -294,6 +293,49 @@ module DAP_Controller #(
                        .packet_finish(packet_finish),
                        .fifo_full(packet_fifo_full)
                    );
+    defparam dap_usb_packer_inst.P_ENDPOINT = USB_EP_PACKER;
+
+    // ── USB TX 多路复用：Packer(EP1) / Transfer(EP6) ──
+    wire packer_txcork, transfer_txcork;
+    wire [7:0] packer_txdata, transfer_txdata;
+    wire [11:0] packer_txlen, transfer_txlen;
+
+    assign usb_txcork = (usb_endpt == USB_EP_SWO) ? transfer_txcork : packer_txcork;
+    assign usb_txdata = (usb_endpt == USB_EP_SWO) ? transfer_txdata : packer_txdata;
+    assign usb_txlen  = (usb_endpt == USB_EP_SWO) ? transfer_txlen  : packer_txlen;
+
+    // ── SWO → DAP_USB_Transfer FIFO → USB EP6 ──
+    wire swo_fifo_tvalid, swo_fifo_tready;
+    wire [7:0] swo_fifo_tdata;
+    wire [13:0] swo_fifo_size;
+    wire swo_fifo_clear;
+    wire swo_fifo_clear_done;
+
+    DAP_USB_Transfer #(
+        .P_ENDPOINT(USB_EP_SWO),
+        .FIFO_DEPTH(4096),
+        .FIFO_BUFFER_LEN(512)
+    ) dap_usb_transfer_inst (
+        .clk(hclk),
+        .resetn(hresetn),
+
+        .clear_data(swo_fifo_clear), // SWO_CR[7] 控制 FIFO 复位
+        .clear_done(swo_fifo_clear_done), // 反馈复位完成状态
+
+        .in_tdata(swo_fifo_tdata),
+        .in_tvalid(swo_fifo_tvalid),
+        .in_tready(swo_fifo_tready),
+
+        .fifo_size(swo_fifo_size),            // 未用
+
+        .usb_endpt(usb_endpt),
+        .usb_txact(usb_txact),
+        .usb_txpop(usb_txpop),
+        .usb_txpktfin(usb_txpktfin),
+        .usb_txcork(transfer_txcork),
+        .usb_txdata(transfer_txdata),
+        .usb_txlen(transfer_txlen)
+    );
 
     localparam [2:0] DAP_SM_WAIT_CMD = 3'd0;
     localparam [2:0] DAP_SM_READ_EXEC_NUM = 3'd1;
@@ -463,6 +505,8 @@ module DAP_Controller #(
     wire sclk_sampling;
     wire sclk_sampling_en;
 
+    wire swo_active;
+
     wire [31:0] swj_hrdatas;
     DAP_SWJ #(
                 .ADDRWIDTH(ADDRWIDTH),
@@ -485,6 +529,9 @@ module DAP_Controller #(
                 .ahb_rdata(swj_hrdatas),
                 .ahb_wdata(hwdatas),
                 .ahb_byte_strobe(byte_strobe_reg),
+
+                .swo_fifo_size(swo_fifo_size),
+                .swo_active(swo_active),
 
                 .start(worker_start_flags[`CMD_SWJ_RANGE]),
                 .done(worker_done_flags[`CMD_SWJ_RANGE]),
@@ -731,8 +778,12 @@ module DAP_Controller #(
                 .ahb_wdata(hwdatas),
                 .ahb_byte_strobe(byte_strobe_reg),
 
-                .swo_byte(swo_tdata),
-                .swo_valid(swo_tvalid),
+                .fifo_size(swo_fifo_size),
+                .swo_active(swo_active),
+                .swo_byte(swo_fifo_tdata),
+                .swo_valid(swo_fifo_tvalid),
+                .swo_fifo_clear(swo_fifo_clear),
+                .swo_fifo_clear_done(swo_fifo_clear_done),
 
                 .LOC_SWO_DDR_Q(LOC_SWO_DDR_Q)
             );

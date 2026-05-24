@@ -16,9 +16,14 @@ module DAP_SWO #(
         input [3:0] ahb_byte_strobe,
 
         input [1:0] LOC_SWO_DDR_Q,
+        
+        input [13:0] fifo_size,
+        output swo_active,
 
         output reg [7:0] swo_byte,
-        output reg       swo_valid
+        output reg       swo_valid,
+        output wire      swo_fifo_clear,      // FIFO 复位请求（连接到 DAP_USB_Transfer.clear_data）
+        input  wire      swo_fifo_clear_done  // FIFO 复位完成（来自 DAP_USB_Transfer.clear_done）
     );
 
     localparam [ADDRWIDTH-1:0] SWO_CTRL_ADDR           = BASE_ADDR + 0;  // {BIT_TIME[15:0], CR[15:8]=EDGE_DEC, CR[7:0]=CTRL}
@@ -34,8 +39,12 @@ module DAP_SWO #(
 
     wire SWO_EN      = SWO_CR[0];        // 使能标志位
     wire SWO_MODE    = SWO_CR[1];        // 0: UART模式, 1: 曼彻斯特模式
-    wire [3:0] SWO_JITTER = SWO_CR[6:2]; // 4bit 抖动比较值
+    wire SWO_FIFO_RESET  = SWO_CR[2];    // FIFO 复位标志（写1复位，写0清除，读获取状态）
+    wire [3:0] SWO_JITTER = SWO_CR[7:4]; // 4bit 抖动比较值
     wire [3:0] SWO_EDGE_DECISION = SWO_CR[11:8]; // 4bit 边沿判决时间
+
+    assign swo_fifo_clear = SWO_FIFO_RESET;
+    assign swo_active = SWO_EN;
 
     // AHB 写操作
     always @(posedge clk or negedge resetn) begin : ahb_mem_write_ctrl
@@ -91,7 +100,7 @@ module DAP_SWO #(
         if (ahb_read_en) begin
             case (ahb_addr[ADDRWIDTH-1:2]) /*synthesis parallel_case*/
                 SWO_CTRL_ADDR[ADDRWIDTH-1:2]:
-                    ahb_rdata = {8'd0, swo_byte, SWO_CR};
+                    ahb_rdata = {3'd0, fifo_size, SWO_CR[15:4], 1'd0, swo_fifo_clear_done, SWO_CR[1:0]};
                 SWO_BIT_TIME_ADDR[ADDRWIDTH-1:2]:
                     ahb_rdata = {4'd0, SWO_BIT_TIME_1, 4'd0, SWO_BIT_TIME_0};
                 SWO_PARAM_ADDR[ADDRWIDTH-1:2]:

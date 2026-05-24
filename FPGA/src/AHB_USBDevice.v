@@ -1,5 +1,6 @@
 module AHB_USBDevice #(
-        parameter ADDRWIDTH = 12
+        parameter ADDRWIDTH = 12,
+        parameter [3:0] USB_EP_SWO = 4'd6
     ) (
         input  wire                  hclk,       // clock
         input  wire                  hresetn,    // reset
@@ -42,9 +43,6 @@ module AHB_USBDevice #(
         input ext_usb_rxrdy,
         output ext_usb_rxact,
         output ext_usb_rxpktval,
-
-        input [7:0] swo_tdata,
-        input swo_tvalid,
 
         // 数据AxisStream
         input cdc_in_tvalid,
@@ -205,6 +203,7 @@ module AHB_USBDevice #(
     localparam ENDPT0 = 4'd0;
     localparam ENDPT1 = 4'd1;
     localparam ENDPT2 = 4'd2;
+    localparam ENDPT6 = USB_EP_SWO;
 
     wire endpt0_txval;
     wire [7:0] endpt0_dat;
@@ -265,15 +264,15 @@ module AHB_USBDevice #(
                                                    ep_usb_rxrdy;
 
     assign usb_txcork    = (endpt_sel == ENDPT0) ? 1'd0 : 
-                           (endpt_sel == ENDPT1) ? ext_usb_txcork :
+                           (endpt_sel == ENDPT1 || endpt_sel == ENDPT6) ? ext_usb_txcork :
                                                    ep_usb_txcork;
 
     assign usb_txdat     = (endpt_sel == ENDPT0) ? endpt0_dat : 
-                           (endpt_sel == ENDPT1) ? ext_usb_txdata : 
+                           (endpt_sel == ENDPT1 || endpt_sel == ENDPT6) ? ext_usb_txdata : 
                                                    ep_usb_txdat;
 
     assign usb_txdat_len = (endpt_sel == ENDPT0) ? endpt0_txdat_len : 
-                           (endpt_sel == ENDPT1) ? ext_usb_txlen : 
+                           (endpt_sel == ENDPT1 || endpt_sel == ENDPT6) ? ext_usb_txlen : 
                                                    ep_usb_txlen;
 
     assign ext_usb_endpt = endpt_sel;
@@ -444,12 +443,6 @@ module AHB_USBDevice #(
                  .o_usb_txcork(ep_usb_txcork),
                  .o_usb_txlen(ep_usb_txlen),
                  .o_usb_txdat(ep_usb_txdat),
-
-                 // SWO IN
-                 .i_ep6_tx_clk(hclk),
-                 .i_ep6_tx_max(TRANS_MAX),
-                 .i_ep6_tx_dval(swo_tvalid),
-                 .i_ep6_tx_data(swo_tdata),
 
                  // CDC IN
                  .i_ep3_tx_clk(hclk),

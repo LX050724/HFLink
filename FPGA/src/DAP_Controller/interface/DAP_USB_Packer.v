@@ -1,8 +1,7 @@
 
 
 module DAP_USB_Packer#(
-        parameter [3:0] P_ENDPOINT = 1,
-        parameter [3:0] MAX_PACKET_NUM = 8
+        parameter [3:0] P_ENDPOINT = 1
     )(
         input clk,
         input resetn,

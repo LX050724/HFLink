@@ -35,7 +35,6 @@ static void dap_swo_transport_handler(DAP_TypeDef *dap);
 static void dap_swo_mode_handler(DAP_TypeDef *dap);
 static void dap_swo_baudrate_handler(DAP_TypeDef *dap);
 static void dap_swo_control_handler(DAP_TypeDef *dap);
-static void dap_swo_status_handler(DAP_TypeDef *dap);
 static void dap_swo_data_handler(DAP_TypeDef *dap);
 void dap_vendor0_handler(DAP_TypeDef *dap);
 void dap_vendor1_handler(DAP_TypeDef *dap);
@@ -80,9 +79,6 @@ void dap_irq_handler(DAP_TypeDef *dap)
         break;
     case ID_DAP_SWO_Control:
         dap_swo_control_handler(dap);
-        break;
-    case ID_DAP_SWO_Status:
-        dap_swo_status_handler(dap);
         break;
     case ID_DAP_SWO_Data:
         dap_swo_data_handler(dap);
@@ -500,6 +496,13 @@ static void dap_swo_control_handler(DAP_TypeDef *dap)
             dap_write_data(dap, 0xff);
             return;
         }
+
+        dap_swo_clear_fifo_start(dap);
+        while (!dap_swo_fifo_clear_status(dap))
+            ;
+        dap_swo_clear_fifo_stop(dap);
+        while (dap_swo_fifo_clear_status(dap))
+            ;
         dap_swo_enable(dap);
     }
     else
@@ -507,12 +510,6 @@ static void dap_swo_control_handler(DAP_TypeDef *dap)
         dap_swo_disable(dap);
     }
     dap_write_data(dap, 0);
-}
-
-static void dap_swo_status_handler(DAP_TypeDef *dap)
-{
-    dap_write_data(dap, 1);
-    dap_write_data32(dap, 0);
 }
 
 static void dap_swo_data_handler(DAP_TypeDef *dap)

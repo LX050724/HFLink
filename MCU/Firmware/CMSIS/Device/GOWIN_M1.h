@@ -529,7 +529,7 @@ typedef struct {
   } SWJ;
   struct {
     __IO uint16_t CR;
-    __I uint16_t RESERVED0;
+    __I uint16_t FIFO_SIZE;
     __IO uint16_t BIT_TIME0;
     __IO uint16_t BIT_TIME1;
     __IO uint16_t BIT_DECISION_HIGH;
