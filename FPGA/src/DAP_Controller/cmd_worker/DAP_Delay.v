@@ -1,3 +1,5 @@
+`timescale 1 ns / 10 ps
+
 module DAP_Delay #(
         parameter [5:0] CLOCK_FREQ_M = 60
     )(

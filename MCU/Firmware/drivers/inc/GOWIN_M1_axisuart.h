@@ -13,6 +13,27 @@ static inline void axisuart_enable(AXIS_UART_TypeDef *uart)
     uart->CR |= AXISUART_CR_EN;
 }
 
+static inline void axisuart_disable(AXIS_UART_TypeDef *uart)
+{
+    uart->CR &= ~AXISUART_CR_EN;
+}
+
+static inline void axisuart_clear_fifo_start(AXIS_UART_TypeDef *uart)
+{
+    uart->CR |= AXISUART_CR_RXFIFO_CLR | AXISUART_CR_TXFIFO_CLR;
+}
+
+static inline void axisuart_clear_fifo_stop(AXIS_UART_TypeDef *uart)
+{
+    uart->CR &= ~(AXISUART_CR_RXFIFO_CLR | AXISUART_CR_TXFIFO_CLR);
+}
+
+static inline uint32_t axisuart_clear_fifo_status(AXIS_UART_TypeDef *uart)
+{
+    return (uart->CR & (AXISUART_CR_RXFIFO_CLR | AXISUART_CR_TXFIFO_CLR));
+}
+
+
 /**
  * @brief
  *

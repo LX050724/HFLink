@@ -1,6 +1,9 @@
+`timescale 1 ns / 10 ps
 module AHB_USBDevice #(
         parameter ADDRWIDTH = 12,
-        parameter [3:0] USB_EP_SWO = 4'd6
+        parameter [3:0] USB_EP_SWO = 4'd6,
+        parameter [3:0] USB_EP_CDC_IN = 4'd3,
+        parameter [3:0] USB_EP_CDC_OUT = 4'd4
     ) (
         input  wire                  hclk,       // clock
         input  wire                  hresetn,    // reset
@@ -203,33 +206,31 @@ module AHB_USBDevice #(
     localparam ENDPT0 = 4'd0;
     localparam ENDPT1 = 4'd1;
     localparam ENDPT2 = 4'd2;
+    localparam ENDPT3 = USB_EP_CDC_IN;
+    localparam ENDPT4 = USB_EP_CDC_OUT;
     localparam ENDPT6 = USB_EP_SWO;
 
     wire endpt0_txval;
     wire [7:0] endpt0_dat;
     wire [3:0] endpt_sel;
     wire usb_txval = endpt0_txval & (endpt_sel == ENDPT0);
-    wire [7:0] usb_txdat;
-    wire usb_txcork;
+    reg  [7:0] usb_txdat;
+    reg  usb_txcork;
     wire usb_txpop;
     wire usb_txact;
     wire [7:0] usb_rxdat;
     wire usb_rxval;
     wire usb_rxpktval;
     wire usb_rxact;
-    wire usb_rxrdy;
+    reg  usb_rxrdy;
     wire usb_sof;
     wire usb_txpktfin;
     wire setup_active;
     wire usb_status_hispeed;
     wire usb_status_suspend;
     wire usb_status_online;
-    wire [11:0] ep_usb_txlen;
-    wire [11:0] usb_txdat_len;
+    reg  [11:0] usb_txdat_len;
     wire [11:0] endpt0_txdat_len;
-    wire [7:0] ep_usb_txdat;
-    wire ep_usb_rxrdy;
-    wire ep_usb_txcork;
     wire endpt0_rxrdy;
 
     wire [15:0] descrom_raddr;
@@ -259,21 +260,40 @@ module AHB_USBDevice #(
     wire desc_have_strings;
 
     /* 根据USB端点号选通数据线 */
-    assign usb_rxrdy     = (endpt_sel == ENDPT0) ? endpt0_rxrdy : 
-                           (endpt_sel == ENDPT2) ? ext_usb_rxrdy : 
-                                                   ep_usb_rxrdy;
-
-    assign usb_txcork    = (endpt_sel == ENDPT0) ? 1'd0 : 
-                           (endpt_sel == ENDPT1 || endpt_sel == ENDPT6) ? ext_usb_txcork :
-                                                   ep_usb_txcork;
-
-    assign usb_txdat     = (endpt_sel == ENDPT0) ? endpt0_dat : 
-                           (endpt_sel == ENDPT1 || endpt_sel == ENDPT6) ? ext_usb_txdata : 
-                                                   ep_usb_txdat;
-
-    assign usb_txdat_len = (endpt_sel == ENDPT0) ? endpt0_txdat_len : 
-                           (endpt_sel == ENDPT1 || endpt_sel == ENDPT6) ? ext_usb_txlen : 
-                                                   ep_usb_txlen;
+    always @(*) begin
+        case (endpt_sel) /* synthesis parallel_case */
+            ENDPT0: begin
+                usb_rxrdy     = endpt0_rxrdy;
+                usb_txcork    = 1'd0;
+                usb_txdat     = endpt0_dat;
+                usb_txdat_len = endpt0_txdat_len;
+            end
+            ENDPT2: begin
+                usb_rxrdy     = ext_usb_rxrdy;
+                usb_txcork    = 1'b0;
+                usb_txdat     = 8'd0;
+                usb_txdat_len = 12'd0;
+            end
+            ENDPT4: begin
+                usb_rxrdy     = ext_usb_rxrdy;
+                usb_txcork    = 1'b0;
+                usb_txdat     = 8'd0;
+                usb_txdat_len = 12'd0;
+            end
+            ENDPT1, ENDPT3, ENDPT6: begin
+                usb_rxrdy     = 1'b0;
+                usb_txcork    = ext_usb_txcork;
+                usb_txdat     = ext_usb_txdata;
+                usb_txdat_len = ext_usb_txlen;
+            end
+            default: begin
+                usb_rxrdy     = 1'b0;
+                usb_txcork    = 1'b0;
+                usb_txdat     = 8'd0;
+                usb_txdat_len = 12'd0;
+            end
+        endcase
+    end
 
     assign ext_usb_endpt = endpt_sel;
     assign ext_usb_txact = usb_txact;
@@ -426,48 +446,8 @@ module AHB_USBDevice #(
         .intr(intr)
     );
 
-    wire [11:0] TRANS_MAX = usb_status_hispeed ? 12'd512 : 12'd64;
-
-    usb_fifo usb_fifo_u (
-                 .i_clk(hclk),
-                 .i_reset(usb_link_rst),
-                 .i_usb_endpt(endpt_sel),
-                 .i_usb_rxact(usb_rxact),
-                 .i_usb_rxval(usb_rxval),
-                 .i_usb_rxpktval(usb_rxpktval),
-                 .i_usb_rxdat(usb_rxdat),
-                 .o_usb_rxrdy(ep_usb_rxrdy),
-                 .i_usb_txact(usb_txact),
-                 .i_usb_txpop(usb_txpop),
-                 .i_usb_txpktfin(usb_txpktfin),
-                 .o_usb_txcork(ep_usb_txcork),
-                 .o_usb_txlen(ep_usb_txlen),
-                 .o_usb_txdat(ep_usb_txdat),
-
-                 // CDC IN
-                 .i_ep3_tx_clk(hclk),
-                 .i_ep3_tx_max(TRANS_MAX),
-                 .i_ep3_tx_dval(cdc_in_tvalid),
-                 .i_ep3_tx_data(cdc_in_tdata),
-
-                 // CDC OUT
-                 .i_ep4_rx_clk(hclk),
-                 .i_ep4_rx_rdy(cdc_out_tready),
-                 .o_ep4_rx_dval(cdc_out_tvalid),
-                 .o_ep4_rx_data(cdc_out_tdata)
-
-                 //  HID IN
-                 //  .i_ep8_tx_clk(hclk),
-                 //  .i_ep8_tx_max(TRANS_MAX),
-                 //  .i_ep8_tx_dval(),
-                 //  .i_ep8_tx_data(),
-
-                 //  HID OUT
-                 //  .i_ep9_rx_clk(hclk),
-                 //  .i_ep9_rx_rdy(),
-                 //  .o_ep9_rx_dval(),
-                 //  .o_ep9_rx_data()
-             );
+    assign cdc_out_tvalid = 1'b0;
+    assign cdc_out_tdata  = 8'd0;
 
     assign usb_nrst = USB_CR_EN & hresetn;
 

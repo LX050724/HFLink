@@ -1,3 +1,5 @@
+`timescale 1 ns / 10 ps
+
 module APB_Stream_UART#(
         parameter ADDRWIDTH = 4
     ) (
@@ -12,6 +14,11 @@ module APB_Stream_UART#(
         output reg [31:0] PRDATA,
         output PREADY,
         input PRESETn,
+
+        output rx_fifo_clear,
+        input rx_fifo_clear_done,
+        output tx_fifo_clear,
+        input tx_fifo_clear_done,
 
         // AXIStream TX
         input tx_tvalid,
@@ -38,11 +45,16 @@ module APB_Stream_UART#(
     wire UART_CR_EN_PARTY = uart_cr_reg[1];   // 校验位使能
     wire UART_CR_PARTY_ODD = uart_cr_reg[2];  // 0:偶校验 1:奇校验
     wire [1:0] UART_CR_STOP_BIT = uart_cr_reg[4:3]; // 停止位长度 0: 1b; 1: 1.5b; other: 2b
+    wire UART_CR_TX_CLR = uart_cr_reg[5];     // TX FIFO 清除
+    wire UART_CR_RX_CLR = uart_cr_reg[6];     // RX FIFO 清除
     wire UART_BREAK = uart_cr_reg[29];
     wire UART_CR_DTR = uart_cr_reg[30];
     wire UART_CR_RTS = uart_cr_reg[31];
     wire [27:0] UART_BUAD_DIV_I = uart_baud_reg[4+:28];
     wire [3:0] UART_BUAD_DIV_Q = uart_baud_reg[3:0];
+
+    assign rx_fifo_clear = UART_CR_RX_CLR;
+    assign tx_fifo_clear = UART_CR_TX_CLR;
 
     assign UART_RTS = UART_CR_EN & UART_CR_RTS;
     assign UART_DTR = UART_CR_EN & UART_CR_DTR;
@@ -53,42 +65,38 @@ module APB_Stream_UART#(
 
     always @(posedge PCLK or negedge PRESETn) begin
         if (!PRESETn) begin
-            uart_cr_reg <= 32'd0;
-        end
-        else if (PSEL && !PENABLE) begin
-            if (PWRITE) begin
-                case (PADDR[ADDRWIDTH-1:2])
-                    2'd0: begin
-                        if (PSTRB[0])
-                            uart_cr_reg[0+:8] <= PWDATA[0+:8];
-                        if (PSTRB[1])
-                            uart_cr_reg[8+:8] <= PWDATA[8+:8];
-                        if (PSTRB[2])
-                            uart_cr_reg[16+:8] <= PWDATA[16+:8];
-                        if (PSTRB[3])
-                            uart_cr_reg[24+:8] <= PWDATA[24+:8];
-                    end
-                    2'd1: begin
-                        if (PSTRB[0])
-                            uart_baud_reg[0+:8] <= PWDATA[0+:8];
-                        if (PSTRB[1])
-                            uart_baud_reg[8+:8] <= PWDATA[8+:8];
-                        if (PSTRB[2])
-                            uart_baud_reg[16+:8] <= PWDATA[16+:8];
-                        if (PSTRB[3])
-                            uart_baud_reg[24+:8] <= PWDATA[24+:8];
-                    end
-                endcase
-            end
-            else begin
-                case (PADDR[ADDRWIDTH-1:2])
-                    2'd0:
-                        PRDATA <= uart_cr_reg;
-                    2'd1:
-                        PRDATA <= uart_baud_reg;
-                    default:
-                        PRDATA <= 32'd0;
-                endcase
+            uart_cr_reg   <= 32'd0;
+            uart_baud_reg <= 32'd0;
+        end else begin
+            if (PSEL && !PENABLE) begin
+                if (PWRITE) begin
+                    case (PADDR[ADDRWIDTH-1:2])
+                        2'd0: begin
+                            if (PSTRB[0]) uart_cr_reg[0+:8] <= PWDATA[0+:8];
+                            if (PSTRB[1]) uart_cr_reg[8+:8] <= PWDATA[8+:8];
+                            if (PSTRB[2]) uart_cr_reg[16+:8] <= PWDATA[16+:8];
+                            if (PSTRB[3]) uart_cr_reg[24+:8] <= PWDATA[24+:8];
+                        end
+                        2'd1: begin
+                            if (PSTRB[0]) uart_baud_reg[0+:8] <= PWDATA[0+:8];
+                            if (PSTRB[1]) uart_baud_reg[8+:8] <= PWDATA[8+:8];
+                            if (PSTRB[2]) uart_baud_reg[16+:8] <= PWDATA[16+:8];
+                            if (PSTRB[3]) uart_baud_reg[24+:8] <= PWDATA[24+:8];
+                        end
+                    endcase
+                end else begin
+                    case (PADDR[ADDRWIDTH-1:2])
+                        2'd0:
+                        PRDATA <= {
+                            uart_cr_reg[31:7],
+                            rx_fifo_clear_done,
+                            tx_fifo_clear_done,
+                            uart_cr_reg[4:0]
+                        };
+                        2'd1: PRDATA <= uart_baud_reg;
+                        default: PRDATA <= 32'd0;
+                    endcase
+                end
             end
         end
     end

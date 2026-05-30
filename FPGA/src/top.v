@@ -1,3 +1,5 @@
+`timescale 1 ns / 10 ps
+
 module HFLink_TOP(
         input clk_osc
 
@@ -278,6 +280,75 @@ module HFLink_TOP(
     wire LOC_UART_TX;
     wire LOC_UART_RX;
 
+    // ── UART ↔ USB CDC 桥接 (DAP_USB_Receiver / DAP_USB_Transfer) ──
+    wire        cdc_txcork, cdc_rxrdy;
+    wire [7:0]  cdc_txdata;
+    wire [11:0] cdc_txlen;
+    wire        uart_tx_tvalid;
+    wire        uart_tx_tready;
+    wire [7:0]  uart_tx_tdata;
+    wire        uart_rx_tvalid;
+    wire [7:0]  uart_rx_tdata;
+    wire        uart_rx_fifo_clear;
+    wire        uart_rx_fifo_clear_done;
+    wire        uart_tx_fifo_clear;
+    wire        uart_tx_fifo_clear_done;
+
+    // CDC OUT (EP4, host→device): USB RX → AXIS → UART TX
+    DAP_USB_Receiver #(
+        .P_ENDPOINT(4'd4),
+        .FIFO_DEPTH(1024),
+        .FIFO_BUFFER_LEN(512)
+    ) cdc_usb_receiver (
+        .clk(AHB1HCLK),
+        .resetn(AHB1HRESET),
+
+        .clear_data(uart_tx_fifo_clear),
+        .clear_done(uart_tx_fifo_clear_done),
+
+        .usb_endpt(ext_usb_endpt),
+        .usb_rxval(ext_usb_rxval),
+        .usb_rxdat(ext_usb_rxdat),
+        .usb_rxpktval(ext_usb_rxpktval),
+        .usb_rxact(ext_usb_rxact),
+        .usb_rxrdy(cdc_rxrdy),
+
+        .fifo_full(),
+        .fifo_empty(),
+
+        .axis_tvaild(uart_tx_tvalid),
+        .axis_tdata(uart_tx_tdata),
+        .axis_tready(uart_tx_tready)
+    );
+
+    // UART RX → AXIS → USB TX → CDC IN (EP3, device→host)
+    DAP_USB_Transfer #(
+        .P_ENDPOINT(4'd3),
+        .FIFO_DEPTH(1024),
+        .FIFO_BUFFER_LEN(512)
+    ) cdc_usb_transfer (
+        .clk(AHB1HCLK),
+        .resetn(AHB1HRESET),
+
+        .clear_data(uart_rx_fifo_clear),
+        .clear_done(uart_rx_fifo_clear_done),
+
+        .in_tvalid(uart_rx_tvalid),
+        .in_tready(),
+        .in_tdata(uart_rx_tdata),
+
+        .fifo_size(),
+
+        .usb_endpt(ext_usb_endpt),
+        .usb_txact(ext_usb_txact),
+        .usb_txpop(ext_usb_txpop),
+        .usb_txpktfin(ext_usb_txpktfin),
+        .usb_txcork(cdc_txcork),
+        .usb_txdata(cdc_txdata),
+        .usb_txlen(cdc_txlen)
+    );
+
+    // ── APB_Stream_UART (保留 APB 配置 + UART 物理层) ──
     APB_Stream_UART apb_stream_uart(
                         // APB
                         .PCLK(APB1PCLK),
@@ -291,19 +362,35 @@ module HFLink_TOP(
                         .PREADY(APB1PREADY),
                         .PRESETn(APB1PRESET),
 
-                        // Data Stream
-                        .tx_tvalid(cdc_out_tvalid),
-                        .tx_tready(cdc_out_tready),
-                        .tx_tdata(cdc_out_tdata),
-                        .rx_tvalid(cdc_in_tvalid),
-                        .rx_tdata(cdc_in_tdata),
+                        .rx_fifo_clear(uart_rx_fifo_clear),
+                        .rx_fifo_clear_done(uart_rx_fifo_clear_done),
+                        .tx_fifo_clear(uart_tx_fifo_clear),
+                        .tx_fifo_clear_done(uart_tx_fifo_clear_done),
+
+                        // Data Stream (经 DAP 模块桥接)
+                        .tx_tvalid(uart_tx_tvalid),
+                        .tx_tready(uart_tx_tready),
+                        .tx_tdata(uart_tx_tdata),
+                        .rx_tvalid(uart_rx_tvalid),
+                        .rx_tdata(uart_rx_tdata),
 
                         // UART IO
                         .UART_TX(LOC_UART_TX),
                         .UART_RX(LOC_UART_RX)
                     );
+
+    // ── 原内部 CDC 路径 (usb_fifo) 已移除，端口接地 ──
+    assign cdc_in_tvalid = 1'b0;
+    assign cdc_in_tdata  = 8'd0;
+    assign cdc_out_tready = 1'b0;
+
     wire LOC_SPI_MUX;
     wire LOC_SPI_MISO;
+
+    // ── USB TX/RX 多路复用: DAP_Controller ↔ CDC 桥接 ──
+    wire        dap_txcork, dap_rxrdy;
+    wire [7:0]  dap_txdata;
+    wire [11:0] dap_txlen;
 
     DAP_Controller dap_controller_inst(
                        .hclk(AHB2HCLK),
@@ -326,12 +413,12 @@ module HFLink_TOP(
                        .usb_txact(ext_usb_txact),
                        .usb_txpop(ext_usb_txpop),
                        .usb_txpktfin(ext_usb_txpktfin),
-                       .usb_txcork(ext_usb_txcork),
-                       .usb_txdata(ext_usb_txdata),
-                       .usb_txlen(ext_usb_txlen),
+                       .usb_txcork(dap_txcork),
+                       .usb_txdata(dap_txdata),
+                       .usb_txlen(dap_txlen),
                        .usb_rxdat(ext_usb_rxdat),
                        .usb_rxval(ext_usb_rxval),
-                       .usb_rxrdy(ext_usb_rxrdy),
+                       .usb_rxrdy(dap_rxrdy),
                        .usb_rxact(ext_usb_rxact),
                        .usb_rxpktval(ext_usb_rxpktval),
 
@@ -361,6 +448,12 @@ module HFLink_TOP(
                        .LOC_SPI_MUX(LOC_SPI_MUX),
                        .DAP_GPIO(GPIO)
                    );
+
+    // ── 外部 USB TX/RX 多路复用 ──
+    assign ext_usb_txcork = (ext_usb_endpt == 4'd3) ? cdc_txcork : dap_txcork;
+    assign ext_usb_txdata = (ext_usb_endpt == 4'd3) ? cdc_txdata : dap_txdata;
+    assign ext_usb_txlen  = (ext_usb_endpt == 4'd3) ? cdc_txlen  : dap_txlen;
+    assign ext_usb_rxrdy  = (ext_usb_endpt == 4'd4) ? cdc_rxrdy : dap_rxrdy;
 
     assign MCU_SPI_MISO = LOC_SPI_MUX ? LOC_SPI_MISO : FLASH_SPI_MISO;
     assign FLASH_SPI_CSN = LOC_SPI_MUX ? 1'd1 : MCU_SPI_CSN;

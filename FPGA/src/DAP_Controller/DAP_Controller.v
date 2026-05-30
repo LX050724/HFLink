@@ -1,3 +1,5 @@
+`timescale 1 ns / 10 ps
+
 `include "DAP_Cmd.v"
 
 module DAP_Controller #(
@@ -260,6 +262,9 @@ module DAP_Controller #(
     DAP_USB_Receiver dap_usb_receiver_inst (
                          .clk(hclk),
                          .resetn(hresetn),
+
+                         .clear_data(1'd0),
+                         .clear_done(),
 
                          .usb_endpt(usb_endpt),
                          .usb_rxdat(usb_rxdat),

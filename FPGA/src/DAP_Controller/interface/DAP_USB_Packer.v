@@ -1,29 +1,29 @@
+`timescale 1 ns / 10 ps
 
+module DAP_USB_Packer #(
+    parameter [3:0] P_ENDPOINT = 1
+) (
+    input clk,
+    input resetn,
 
-module DAP_USB_Packer#(
-        parameter [3:0] P_ENDPOINT = 1
-    )(
-        input clk,
-        input resetn,
+    // 数据包输入
+    input [9:0] ram_write_addr,  // 数据包相对地址，0起
+    input [7:0] ram_write_data,
+    input ram_write_en,
+    input [9:0] packet_len,  //
+    input packet_finish, // 整包完成，触发发送，发送前必须通过group_finish更新所有数据
+    input group_finish,  // 分组完成，更新头指针位置并累加包总长
+    output fifo_full,
 
-        // 数据包输入
-        input [9:0] ram_write_addr, // 数据包相对地址，0起
-        input [7:0] ram_write_data,
-        input ram_write_en,
-        input [9:0] packet_len, //
-        input packet_finish, // 整包完成，触发发送，发送前必须通过group_finish更新所有数据
-        input group_finish, // 分组完成，更新头指针位置并累加包总长
-        output fifo_full,
-
-        // USB
-        input [3:0] usb_endpt,
-        input usb_txact,
-        input usb_txpop,
-        input usb_txpktfin,
-        output usb_txcork,
-        output reg [7:0] usb_txdata,
-        output [11:0] usb_txlen
-    );
+    // USB
+    input [3:0] usb_endpt,
+    input usb_txact,
+    input usb_txpop,
+    input usb_txpktfin,
+    output usb_txcork,
+    output reg [7:0] usb_txdata,
+    output [11:0] usb_txlen
+);
     reg [7:0] ram [0:4095];
 
     reg [9:0] txlen_queue [0:7];
@@ -47,8 +47,7 @@ module DAP_USB_Packer#(
             txlen_queue[5] <= 10'd0;
             txlen_queue[6] <= 10'd0;
             txlen_queue[7] <= 10'd0;
-        end
-        else begin
+        end else begin
             if (ram_write_en && !fifo_full) begin
                 // 数据写入到当前扇区
                 ram[{wptr[2:0], waddr}] <= ram_write_data;
@@ -59,11 +58,10 @@ module DAP_USB_Packer#(
                 waddr_offset <= 9'd0;
                 total_packet_len <= 9'd0;
                 // 移动扇区
-                wptr <= wptr + 1'd1; 
+                wptr <= wptr + 1'd1;
                 // 存储包长到队列
                 txlen_queue[wptr[2:0]] <= total_packet_len;
-            end
-            else if (group_finish) begin
+            end else if (group_finish) begin
                 // 分包打包完成计算偏移
                 total_packet_len <= total_packet_len + packet_len;
                 waddr_offset <= waddr_offset + packet_len;
@@ -78,10 +76,10 @@ module DAP_USB_Packer#(
     wire usb_ep_select = (usb_endpt == P_ENDPOINT);
     wire ram_read_en = (usb_ep_select && !fifo_empty);
 
-    assign usb_txlen = txlen_queue[rptr[2:0]];
+    assign usb_txlen  = txlen_queue[rptr[2:0]];
     assign usb_txcork = ~ram_read_en;
 
-    reg [8:0] ram_read_addr;
+    reg  [8:0] ram_read_addr;
     wire [8:0] ram_read_addr_next = ram_read_addr + usb_txpop;
 
     always @(posedge clk or negedge resetn) begin
@@ -89,8 +87,7 @@ module DAP_USB_Packer#(
             rptr <= 4'd0;
             ram_read_addr <= 9'd0;
             usb_txdata <= 8'd0;
-        end
-        else begin
+        end else begin
 
             if (ram_read_en) begin
                 ram_read_addr <= ram_read_addr_next;

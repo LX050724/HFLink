@@ -468,8 +468,8 @@ typedef struct
 
 /*-------------------------------------- AXIS_UART --------------------------------------*/
 typedef struct {
-  uint32_t CR;
-  uint32_t BAUD;
+  __IO uint32_t CR;
+  __IO uint32_t BAUD;
 } AXIS_UART_TypeDef;
 
 /*-------------------------------------- DAP_Controller --------------------------------------*/
@@ -974,6 +974,9 @@ typedef struct {
 #define AXISUART_CR_STOP_BIT_1     (0UL << AXISUART_CR_STOP_BIT_Pos)
 #define AXISUART_CR_STOP_BIT_1_5   (1UL << AXISUART_CR_STOP_BIT_Pos)
 #define AXISUART_CR_STOP_BIT_2     (2UL << AXISUART_CR_STOP_BIT_Pos)
+
+#define AXISUART_CR_TXFIFO_CLR ((uint32_t) 0x00000020)
+#define AXISUART_CR_RXFIFO_CLR ((uint32_t) 0x00000040)
 
 #define AXISUART_CR_BREAK_Pos (29)
 #define AXISUART_CR_BREAK ((uint32_t) 0x20000000)

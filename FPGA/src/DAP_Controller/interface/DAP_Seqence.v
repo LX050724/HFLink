@@ -1,3 +1,5 @@
+`timescale 1 ns / 10 ps
+
 `include "DAP_Cmd.v"
 
 module DAP_Seqence (

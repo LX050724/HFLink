@@ -1,0 +1,28 @@
+#:schema https://vide.pascal-lab.net/schemas/v1/vide.schema.json
+sources = [
+    "FPGA/src/AHB_USBDevice.v",
+    "FPGA/src/APB_Stream_UART.v",
+    "FPGA/src/DAP_Controller/DAP_Controller.v",
+    "FPGA/src/DAP_Controller/cmd_worker/DAP_Delay.v",
+    "FPGA/src/DAP_Controller/cmd_worker/DAP_SWJ.v",
+    "FPGA/src/DAP_Controller/interface/DAP_BaudGenerator.v",
+    "FPGA/src/DAP_Controller/interface/DAP_GPIO.v",
+    "FPGA/src/DAP_Controller/interface/DAP_SWO.v",
+    "FPGA/src/DAP_Controller/interface/DAP_Seqence.v",
+    "FPGA/src/DAP_Controller/interface/DAP_USB_Packer.v",
+    "FPGA/src/DAP_Controller/interface/DAP_USB_Receiver.v",
+    "FPGA/src/DAP_Controller/interface/DAP_USB_Transfer.v",
+    "FPGA/src/USB_desc.v",
+    "FPGA/src/gowin_empu_m1/gowin_empu_m1.v",
+    "FPGA/src/gowin_pll/gowin_pll.v",
+    "FPGA/src/gowin_pll/gowin_pll_mod.v",
+    "FPGA/src/pll_init.v",
+    "FPGA/src/top.v",
+    "FPGA/src/usb_device_controller/usb_device_controller.v",
+]
+
+include_dirs = ["FPGA/src/DAP_Controller"]
+# defines = ["SYNTHESIS"]
+top_modules = ["top"]
+# libraries = ["../common_cells"]
+# exclude = ["build/**"]

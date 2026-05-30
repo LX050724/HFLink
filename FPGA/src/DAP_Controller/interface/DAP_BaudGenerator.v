@@ -1,3 +1,5 @@
+`timescale 1 ns / 10 ps
+
 module DAP_BaudGenerator#(
         parameter ADDRWIDTH = 12,
         parameter [ADDRWIDTH-1:0] BASE_ADDR = 0

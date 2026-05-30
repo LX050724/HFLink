@@ -76,9 +76,21 @@ void cdc_acm_class_interface_request_handler(USBD_TypeDef *usbd, const struct us
         /*                                        4 - Space                            */
         /* 6      | bDataBits  |   1   | Number Data bits (5, 6, 7, 8 or 16).          */
         /*******************************************************************************/
+        axisuart_disable(AXIS_UART);
+        axisuart_clear_fifo_start(AXIS_UART);
+        while (axisuart_clear_fifo_status(AXIS_UART) != (AXISUART_CR_RXFIFO_CLR | AXISUART_CR_TXFIFO_CLR))
+        {
+        }
+        axisuart_clear_fifo_stop(AXIS_UART);
+        while (axisuart_clear_fifo_status(AXIS_UART) != 0)
+        {
+        }
+        SEGGER_RTT_printf(0, "Set Line Coding: %d, %d, %d, %d\n", line_coding->dwDTERate, line_coding->bCharFormat, line_coding->bParityType, line_coding->bDataBits);
+
         axisuart_set_baud(AXIS_UART, line_coding->dwDTERate);
         axisuart_set_party(AXIS_UART, line_coding->bParityType);
         axisuart_set_stop_bit(AXIS_UART, line_coding->bCharFormat);
+        axisuart_enable(AXIS_UART);
         break;
     }
     case CDC_REQUEST_SET_CONTROL_LINE_STATE: {

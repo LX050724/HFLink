@@ -1,3 +1,4 @@
+`timescale 1 ns / 10 ps
 
 module DAP_SWO #(
         parameter ADDRWIDTH = 12,
