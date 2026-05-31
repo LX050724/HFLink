@@ -13,16 +13,13 @@
 #include "spiflash/spiflash.h"
 #include "usb/usbd_core.h"
 
-
 #include "board.h"
 #include "config_db/config_db.h"
 
-uint8_t adc_channel;
-// 0: VREF*4; 1: CURRENT
-int16_t adc_result[2];
+uint8_t adc_index;
+int16_t adc_result[3];
 
 uint8_t shared_buffer[256];
-
 
 static void led_default_mode_loop(void);
 
@@ -102,24 +99,32 @@ int main(void)
 
     // 初始化ADC
     ads1115_i2c_init();
-    adc_channel = ADS1115_MUX_A0_GND;
-    ads1115_start_conv(ADS1115_PGA_4096, adc_channel);
+    adc_index = 0;
+    ads1115_start_conv(ADS1115_PGA_1024, ADS1115_MUX_A0_GND);
 
     while (1)
     {
         if (!ads1115_is_busy())
         {
-            if (adc_channel == ADS1115_MUX_A0_GND)
+            int16_t raw = ads1115_read_result();
+            adc_result[adc_index] = raw;
+            adc_index++;
+            if (adc_index >= 3)
             {
-                adc_result[0] = ads1115_read_result();
-                adc_channel = ADS1115_MUX_A1_GND;
-                ads1115_start_conv(ADS1115_PGA_1024, adc_channel);
+                adc_index = 0;
             }
-            else
+
+            switch (adc_index)
             {
-                adc_result[1] = ads1115_read_result() - 433;
-                adc_channel = ADS1115_MUX_A0_GND;
-                ads1115_start_conv(ADS1115_PGA_4096, adc_channel);
+            case 0:
+                ads1115_start_conv(ADS1115_PGA_4096, ADS1115_MUX_A0_GND);
+                break;
+            case 1:
+                ads1115_start_conv(ADS1115_PGA_1024, ADS1115_MUX_A1_GND);
+                break;
+            case 2:
+                ads1115_start_conv(ADS1115_PGA_4096, ADS1115_MUX_A2_GND);
+                break;
             }
         }
 
@@ -129,7 +134,6 @@ int main(void)
             led_default_mode_loop();
         }
 
-
         // print("calib test start ===========================\n");
         // for (int i = 0; i < 256; i++)
         // {
@@ -138,16 +142,15 @@ int main(void)
         //     dap_gpio_reset_pin(DAP, DAP_GPIO_DO_SWCLK_TCK_O | DAP_GPIO_DO_SWDIO_TMS_T);
         //     dap_gpio_enable_directio(DAP);
         //     delay_1ms(2);
-    
+
         //     dap_gpio_enable_calib_simpling(DAP);
         //     dap_gpio_set_pin(DAP, DAP_GPIO_DO_SWCLK_TCK_O);
         //     delay_1ms(2);
         //     dap_gpio_reset_pin(DAP, DAP_GPIO_DO_SWCLK_TCK_O);
         //     dap_gpio_disable_calib_simpling(DAP);
-    
+
         //     print("%d, %04x\n", i, dap_gpio_get_cali_simpling(DAP));
         // }
-
     }
 }
 
@@ -157,7 +160,7 @@ static void led_default_mode_loop(void)
     {
         timer_set_tick(TIMER_LED, 10);
 
-        if (adc_result[0] < 1200 / 4)
+        if (get_vtrg_voltage_mv() < 1200)
         {
             // VREFG 电压低，红灯
             dap_gpio_set_led_cmp(DAP, 255, 0, 0);
@@ -191,4 +194,19 @@ uint32_t crc32(uint32_t init, uint8_t *data, uint32_t length)
         }
     }
     return ~crc;
+}
+
+uint16_t get_5v_supply_current_ma(void)
+{
+    return (adc_result[1] - 433) / 32;
+}
+
+uint16_t get_usb_voltage_mv(void)
+{
+    return adc_result[2] / 4;
+}
+
+uint16_t get_vtrg_voltage_mv(void)
+{
+    return adc_result[0] / 4;
 }

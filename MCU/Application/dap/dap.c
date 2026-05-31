@@ -6,6 +6,7 @@
 #include <GOWIN_M1.h>
 #include <GOWIN_M1_dap.h>
 #include <string.h>
+#include "board.h"
 
 #ifdef DEBUG
 #include "SEGGER_RTT.h"
@@ -160,10 +161,32 @@ static void dap_get_info_handler(DAP_TypeDef *dap)
 static void dap_connect_handler(DAP_TypeDef *dap)
 {
     uint8_t port = dap_read_data(dap);
+
+    if (get_vtrg_voltage_mv() < 1200)
+    {
+        DAP_DEBUG("VTRG Voltage %dmV, too low\n", get_vtrg_voltage_mv());
+        dap_write_data(dap, 0);
+        return;
+    }
+
     if (port == 0)
         port = DAP_DEFAULT_PORT;
-    dap_swj_set_mode(dap, (port == 1) ? DAP_SWJ_MODE_SWD : DAP_SWJ_MODE_JTAG);
-    dap_write_data(dap, port);
+
+    switch (port) {
+        case 1:
+            dap_swj_set_mode(dap, DAP_SWJ_MODE_SWD);
+            dap_write_data(dap, 1);
+            break;
+        case 2:
+            dap_swj_set_mode(dap, DAP_SWJ_MODE_JTAG);
+            dap_write_data(dap, 2);
+            break;
+        default:
+            // 未知端口
+            DAP_DEBUG("Unknown port %d\n", port);
+            dap_write_data(dap, 0);
+            break;
+    }
 }
 
 static void dap_disconnect_handler(DAP_TypeDef *dap)
