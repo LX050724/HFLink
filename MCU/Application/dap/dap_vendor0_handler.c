@@ -3,6 +3,8 @@
 #include "GOWIN_M1_dap.h"
 #include "board.h"
 #include "config_db/config_db.h"
+#include "dap.h"
+#include "git_version.h"
 #include "upgrade/upgrade.h"
 
 #define DAP_VENDOR_CMD_UPGRADE 0x00
@@ -25,9 +27,12 @@
 #define DAP_CONFIG_ID_IODELAY 0x04
 #define DAP_CONFIG_ID_LEDMODE 0x05
 #define DAP_CONFIG_ID_NICKNAME 0x06
+#define DAP_CONFIG_ID_BUILD_TIME 0xfe
+#define DAP_CONFIG_ID_VERSION 0xff
 
 static void dap_upgrade_handler(DAP_TypeDef *dap);
 static void dap_config_handler(DAP_TypeDef *dap);
+static void dap_sensor_handler(DAP_TypeDef *dap);
 
 void dap_vendor0_handler(DAP_TypeDef *dap)
 {
@@ -37,6 +42,10 @@ void dap_vendor0_handler(DAP_TypeDef *dap)
     {
     case DAP_VENDOR_CMD_UPGRADE: {
         dap_upgrade_handler(dap);
+        break;
+    }
+    case DAP_VENDOR_CMD_SENSOR: {
+        dap_sensor_handler(dap);
         break;
     }
     case DAP_VENDOR_CMD_CONFIG: {
@@ -97,6 +106,29 @@ static void dap_upgrade_handler(DAP_TypeDef *dap)
     }
 }
 
+static void dap_sensor_handler(DAP_TypeDef *dap)
+{
+    uint8_t sensor_id = dap_read_data(dap);
+
+    switch (sensor_id)
+    {
+    case 0x00: {
+        uint16_t supply_current = get_5v_supply_current_ma();
+        uint16_t usb_voltage = get_usb_voltage_mv();
+        uint16_t vtrg_voltage = get_vtrg_voltage_mv();
+
+        dap_write_data(dap, 6); // 数据长度
+        dap_write_data16(dap, supply_current);
+        dap_write_data16(dap, usb_voltage);
+        dap_write_data16(dap, vtrg_voltage);
+        break;
+    }
+    default:
+        dap_write_data(dap, 0xff);
+        break;
+    }
+}
+
 static void dap_config_handler(DAP_TypeDef *dap)
 {
     uint8_t config_id = dap_read_data(dap);
@@ -110,7 +142,6 @@ static void dap_config_handler(DAP_TypeDef *dap)
     }
 
     print("config %d\n", config_id);
-
 
     switch (config_id)
     {
@@ -244,6 +275,20 @@ static void dap_config_handler(DAP_TypeDef *dap)
             dap_write_data(dap, 0x00);
         }
         print("nickname: %s\n", global_config.nickname);
+        break;
+    }
+    case DAP_CONFIG_ID_BUILD_TIME: {
+        if (op_cmd == DAP_CONFIG_SUB_CMD_GET)
+        {
+            dap_return_n_string(dap, __DATE__ " " __TIME__);
+        }
+        break;
+    }
+    case DAP_CONFIG_ID_VERSION: {
+        if (op_cmd == DAP_CONFIG_SUB_CMD_GET)
+        {
+            dap_return_n_string(dap, GIT_VERSION_LABEL);
+        }
         break;
     }
     default:

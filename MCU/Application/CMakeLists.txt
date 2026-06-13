@@ -14,7 +14,8 @@ add_executable(HFLinkAPP
     spiflash/spiflash.c
 )
 
-target_include_directories(HFLinkAPP PRIVATE ${CMAKE_CURRENT_LIST_DIR} easyflash)
+target_include_directories(HFLinkAPP PRIVATE ${CMAKE_CURRENT_LIST_DIR} easyflash ${CMAKE_BINARY_DIR}/generated)
+add_dependencies(HFLinkAPP RefreshGitVersion)
 target_link_options(HFLinkAPP PRIVATE -T "${CMAKE_CURRENT_LIST_DIR}/GOWIN_M1_APP.ld")
 
 if (("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo"))

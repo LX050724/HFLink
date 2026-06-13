@@ -200,6 +200,7 @@ extern "C" {
 
 
 void dap_irq_handler(DAP_TypeDef *dap);
+void dap_return_n_string(DAP_TypeDef *dap, const char *str);
 
 #ifdef __cplusplus
 }

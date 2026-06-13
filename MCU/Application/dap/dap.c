@@ -23,7 +23,6 @@ typedef struct
 
 static SWO_Config swo_cfg;
 
-static void dap_return_n_string(DAP_TypeDef *dap, const char *str);
 static void dap_get_info_handler(DAP_TypeDef *dap);
 static void dap_connect_handler(DAP_TypeDef *dap);
 static void dap_disconnect_handler(DAP_TypeDef *dap);
@@ -162,7 +161,7 @@ static void dap_connect_handler(DAP_TypeDef *dap)
 {
     uint8_t port = dap_read_data(dap);
 
-    if (get_vtrg_voltage_mv() < 1200)
+    if (get_vtrg_voltage_mv() < 1650)
     {
         DAP_DEBUG("VTRG Voltage %dmV, too low\n", get_vtrg_voltage_mv());
         dap_write_data(dap, 0);
@@ -591,7 +590,7 @@ static void dap_host_status_handler(DAP_TypeDef *dap)
     dap_write_data(dap, 0);
 }
 
-static void dap_return_n_string(DAP_TypeDef *dap, const char *str)
+void dap_return_n_string(DAP_TypeDef *dap, const char *str)
 {
     if (str)
     {

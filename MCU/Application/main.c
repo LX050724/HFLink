@@ -160,7 +160,7 @@ static void led_default_mode_loop(void)
     {
         timer_set_tick(TIMER_LED, 10);
 
-        if (get_vtrg_voltage_mv() < 1200)
+        if (get_vtrg_voltage_mv() < 1650)
         {
             // VREFG 电压低，红灯
             dap_gpio_set_led_cmp(DAP, 255, 0, 0);

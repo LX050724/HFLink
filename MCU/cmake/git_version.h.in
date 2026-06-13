@@ -1,0 +1,12 @@
+/**
+ * @file git_version.h
+ * @brief 由 CMake 自动生成，包含 Git 版本信息
+ * @warning 请勿手动修改此文件
+ */
+
+#ifndef GIT_VERSION_H
+#define GIT_VERSION_H
+
+#define GIT_VERSION_LABEL        "@GIT_VERSION_LABEL@"
+
+#endif /* GIT_VERSION_H */
