@@ -8,12 +8,12 @@
 | ------------------------------- | ------------------ | -------- |
 | **硬件规格：**                  |                    |          |
 | **Power supply**                | USB                |          |
-| **Download speed into RAM**     | 2.9MB/s@60MHz SWD |          |
+| **Download speed into RAM**     | 3867KB/s@60MHz SWD |          |
 | **Max. target interface speed** | 60MHz              |          |
 | **Max. SWO speed** | 100MHz | |
 | **Max. VCOM speed/baudrate**    | 15 MBd             |          |
 | **Max. SPI interface speed** | 30MHz | |
-| **Supported target voltage**    | 1.2 V - 5 V        |          |
+| **Supported target voltage**    | 1.65 V - 5 V        |          |
 | **Ethernet**                    | ❌️                  |          |
 | **USB**                         | ✅️                  |          |
 | **WiFi**                        | ❌️                  |          |
@@ -57,7 +57,6 @@ Manchester支持大容差无需小数分频，波特率计算公式`200M/n (n>=2
 - VTRG电压&5V电流读取 ⬅️需开发上位机
 - SPI ⬅️需开发上位机
 - 线路延迟自标定⬅️需开发上位机
-- USB支持多个字符串描述符（需求低）
 
 ## 构建&下载方法：
 
